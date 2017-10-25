@@ -2,7 +2,16 @@
 
 #include <vector>
 #include <limits>
+#include <string>
+#include <iostream>
+#include <sstream>
+#include <fstream>
 #include <assert.h>
+#include <locale>
+#include <codecvt>
+
+#include "util.hpp"
+#include "exception.hpp"
 
 namespace Centaur
 {
@@ -19,8 +28,8 @@ public:
     {
         assert(start < end);
 
-        m_start = wide_to_target(start);
-        m_end = wide_to_target(end);
+        m_start = wide_to_target<TCHAR>(start);
+        m_end = wide_to_target<TCHAR>(end);
     }
     Range(const Range<TCHAR>& r)
         : m_start(r.m_start), m_end(r.m_end)
@@ -68,6 +77,10 @@ public:
     }
     virtual ~NFACharClass()
     {
+    }
+    static NFACharClass<TCHAR> make_star()
+    {
+        return NFACharClass<TCHAR>(0, std::numeric_limits<TCHAR>::max());
     }
     bool is_epsilon() const
     {
@@ -129,24 +142,24 @@ public:
 
         for (; i != m_ranges.cend();)
         {
-            if (r.end() == r.start() + 1)
+            if (i->end() == i->start() + 1)
             {
-                if (r.start() == wide_to_target(L'"'))
+                if (i->start() == wide_to_target<TCHAR>(L'"'))
                     os << "\\\"";
                 else
-                    os << r.start();
+                    os << i->start();
             }
             else
             {
-                if (r.start() == wide_to_target(L'"'))
+                if (i->start() == wide_to_target<TCHAR>(L'"'))
                     os << "\\\"";
                 else
-                    os << r.start();
+                    os << i->start();
                 os << '-';
-                if (r.end() == wide_to_target(L'"'))
+                if (i->end() == wide_to_target<TCHAR>(L'"'))
                     os << "\\\"";
                 else
-                    os << r.end();
+                    os << i->end();
             }
             i++;
         }
@@ -183,12 +196,14 @@ public:
     }
 };
 
+template<typename TCHAR> class NFA;
+
 template<typename TCHAR> class NFAState
 {
     std::vector<NFATransition<TCHAR> > m_transitions;
-    NFA& m_parent;
+    NFA<TCHAR>& m_parent;
 public:
-    NFAState(NFA& parent)
+    NFAState(NFA<TCHAR>& parent)
         : m_parent(parent)
     {
     }
@@ -203,12 +218,12 @@ public:
     {
         m_transitions.push_back(transition);
     }
-    void print_transitions(std::ostream& of, int from) const
+    void print_transitions(std::ostream& os, int from) const
     {
         for (const auto& t : m_transitions)
         {
             os << "S" << from << " -> " << "S" << t.dest() << " [ label=\"";
-            t.label().print(of);
+            t.label().print(os);
             os << "\" ];" << std::endl;
         }
     }
@@ -223,22 +238,62 @@ public:
 
         return new_state;
     }
+    void rebase_transitions(const NFAState<TCHAR>& src, int offset_value)
+    {
+        for (const auto& i : src.m_transitions)
+        {
+            add_transition(i.offset(offset_value));
+        }
+    }
 };
 
 template<typename TCHAR> class NFA
 {
     std::vector<NFAState<TCHAR> > m_states;
     int m_final_state;
-    int append(const NFA<TCHAR>& nfa)
+public:
+    /*!
+     * @brief Concatenate another NFA to the final state
+     */
+    int concat(const NFA<TCHAR>& nfa)
     {
         int initial_size = m_states.size();
-        for (const auto& state : nfa.m_states)
+
+        auto i = nfa.m_states.cbegin().advance();
+
+        for (; i != nfa.m_states.cend(); i++)
         {
-            m_states.push_back(state.offset(*this, initial_size));
+            //Copy all states except the initial state
+            m_states.push_back(i->offset(*this, initial_size - 1));
         }
+
+        //Rebase the transitions from the start state to the newly added states
+        m_states[m_final_state].rebase_transitions(nfa.m_states[0], initial_size - 1);
+        m_final_state = nfa.m_final_state + initial_size - 1;
         return initial_size;
     }
-public:
+    int select(const NFA<TCHAR>& nfa)
+    {
+        int initial_size = m_states.size();
+
+        auto i = nfa.m_states.cbegin().advance();
+
+        for (; i != nfa.m_states.cend(); i++)
+        {
+            //Copy all states except the initial state
+            m_states.push_back(i->offset(*this, initial_size - 1));
+        }
+
+        //Rebase the transitions from the start state to the newly added states
+        m_states[0].rebase_transitions(nfa.m_states[0], initial_size - 1);
+        
+        //Add the join state
+        add_state(NFACharClass<TCHAR>());
+        
+        int join_state = m_states.size() - 1;
+
+        add_transition_from(
+    }
     NFA()
     {
         m_states.emplace_back(*this);

@@ -53,7 +53,7 @@ public:
     {
         msg = "Reserved character U+FFFF is not allowed here.";
     }
-    virtual ~UnexpectedException()
+    virtual ~ReservedCharException()
     {
     }
     const char *what() const noexcept
