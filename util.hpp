@@ -2,7 +2,7 @@
 
 namespace Centaur
 {
-template<typename TCHAR> TCHAR get_target_char(wchar_t ch)
+template<typename TCHAR> TCHAR wide_to_target(wchar_t ch)
 {
     return static_cast<TCHAR>(ch);
 }
