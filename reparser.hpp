@@ -146,99 +146,101 @@ private:
     {
         return NFACharClass<TCHAR>(ch, ch + 1);
     }
-    NFA<TCHAR> parse_sub(std::wistream& stream)
-    {
-        NFA<TCHAR> new_nfa;
-    
-        return new_nfa;
-    }
-    NFA<TCHAR> parse(std::wistream& stream, std::wistream::int_type ch)
+    NFA<TCHAR> parse_unit(std::wistream& stream, std::wistream::int_type ch)
     {
         NFA<TCHAR> new_nfa;
 
-        int current_state = -1;
-
-        for (; ch != EOF && ch != L')'; ch = stream.get())
+        switch (ch)
         {
+        case L'\\':
+            ch = stream.get();
+            if (ch == EOF)
+                throw UnexpectedException(EOF);
             switch (ch)
             {
-            case L'\\':
-                ch = stream.get();
-                if (ch == EOF)
-                    throw UnexpectedException(EOF);
-                switch (ch)
-                {
-                case L'[':
-                case L']':
-                case L'+':
-                case L'*':
-                case L'{':
-                case L'}':
-                case L'?':
-                case L'\\':
-                case L'|':
-                case L'(':
-                case L')':
-                case L'.':
-                    current_state = new_nfa.add_state(parse_single_char(ch));
-                    break;
-                default:
-                    throw UnexpectedException(ch);
-                }
-                break;
             case L'[':
-                current_state = new_nfa.add_state(parse_char_class(stream));
-                break;
-            case L'.':
-                current_state = new_nfa.add_state(NFACharClass<TCHAR>::make_star());
-                break;
+            case L']':
             case L'+':
-                //Throw if there is nothing to apply the operator to
-                if (current_state == -1)
-                    throw UnexpectedException(L'+');
-                //Add an epsilon transition to the last state
-                new_nfa.add_transition_to(NFACharClass<TCHAR>(), current_state);
-                current_state = -1;
-                break;
             case L'*':
-                //Throw if there is nothing to apply the operator to
-                if (current_state == -1)
-                    throw UnexpectedException(L'*');
-                //Add an epsilon transition to the last state
-                new_nfa.add_transition_to(NFACharClass<TCHAR>(), current_state);
-                //Add a confluence
-                new_nfa.add_state(NFACharClass<TCHAR>());
-                //Add a skipping transition
-                new_nfa.add_transition_from(NFACharClass<TCHAR>(), current_state);
-                current_state = -1;
-                break;
-            case L'?':
-                if (current_state == -1)
-                    throw UnexpectedException(L'?');
-                //Add a skipping transition
-                new_nfa.add_transition_from(NFACharClass<TCHAR>(), current_state);
-                current_state = -1;
-                break;
-            case L'(':
-                current_state = new_nfa.concat(parse(stream, stream.get()));
-                break;
             case L'{':
-                if (current_state == -1)
-                    throw UnexpectedException(L'{');
-
+            case L'}':
+            case L'?':
+            case L'\\':
             case L'|':
-                if (current_state == -1)
-                    throw UnexpectedException(L'+');
+            case L'(':
+            case L')':
+            case L'.':
+                new_nfa.add_state(parse_single_char(ch));
+                break;
+            default:
+                throw UnexpectedException(ch);
+            }
+            break;
+        case L'[':
+            new_nfa.add_state(parse_char_class(stream));
+            break;
+        case L'.':
+            new_nfa.add_state(NFACharClass<TCHAR>::make_star());
+            break;
+        case L'(':
+            new_nfa.concat(parse(stream));
+            break;
+        default:
+            throw UnexpectedException(ch);
+        }
+        ch = stream.get();
+        switch (ch)
+        {
+        case L'+':
+            //Add an epsilon transition to the last state
+            new_nfa.add_transition_to(NFACharClass<TCHAR>(), 0);
+            break;
+        case L'*':
+            //Add an epsilon transition to the last state
+            new_nfa.add_transition_to(NFACharClass<TCHAR>(), 0);
+            //Add a confluence
+            new_nfa.add_state(NFACharClass<TCHAR>());
+            //Add a skipping transition
+            new_nfa.add_transition_from(NFACharClass<TCHAR>(), 0);
+            break;
+        case L'?':
+            //Add a skipping transition
+            new_nfa.add_transition_from(NFACharClass<TCHAR>(), 0);
+            break;
+        default:
+            stream.unget(ch);
+            break;
+        }
+
+        return new_nfa;
+    }
+    NFA<TCHAR> parse_selection(std::wistream& stream)
+    {
+        NFA<TCHAR> new_nfa;
+
+        while (true)
+        {
+            NFA<TCHAR> unit = parse_unit(stream);
+        }
+
+        return new_nfa;
+    }
+    NFA<TCHAR> parse(std::wistream& stream)
+    {
+        NFA<TCHAR> new_nfa;
+
+        std::wistream::int_type ch = stream.get();
+
+        for (; ch != L')' && ch != EOF; ch = stream.get())
+        {
+            NFA<TCHAR> part = parse_sub(stream, ch);
+
+            ch = stream.get();
+
+            switch (ch)
+            {
+            case L'|':
                 ch = stream.get();
-                switch (ch)
-                {
-                case EOF:
-                case L'+':
-                case L'?':
-                case L'{':
-                case L'
-                    throw UnexpectedException(ch);
-                }
                 break;
             default:
                 current_state = new_nfa.add_state(parse_single_char(ch));

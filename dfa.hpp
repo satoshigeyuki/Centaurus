@@ -250,12 +250,11 @@ public:
 template<typename TCHAR> class NFA
 {
     std::vector<NFAState<TCHAR> > m_states;
-    int m_final_state;
 public:
     /*!
      * @brief Concatenate another NFA to the final state
      */
-    int concat(const NFA<TCHAR>& nfa)
+    void concat(const NFA<TCHAR>& nfa)
     {
         int initial_size = m_states.size();
 
@@ -268,11 +267,12 @@ public:
         }
 
         //Rebase the transitions from the start state to the newly added states
-        m_states[m_final_state].rebase_transitions(nfa.m_states[0], initial_size - 1);
-        m_final_state = nfa.m_final_state + initial_size - 1;
-        return initial_size;
+        m_states[initial_size - 1].rebase_transitions(nfa.m_states[0], initial_size - 1);
     }
-    int select(const NFA<TCHAR>& nfa)
+    /*!
+     * @brief Form a selection with another NFA
+     */
+    void select(const NFA<TCHAR>& nfa)
     {
         int initial_size = m_states.size();
 
@@ -286,18 +286,15 @@ public:
 
         //Rebase the transitions from the start state to the newly added states
         m_states[0].rebase_transitions(nfa.m_states[0], initial_size - 1);
-        
+
         //Add the join state
         add_state(NFACharClass<TCHAR>());
-        
-        int join_state = m_states.size() - 1;
 
-        add_transition_from(
+        add_transition_from(NFACharClass<TCHAR>(), initial_size - 1);
     }
     NFA()
     {
         m_states.emplace_back(*this);
-        m_final_state = 0;
     }
     virtual ~NFA()
     {
@@ -307,47 +304,23 @@ public:
      */
     int add_state(const NFACharClass<TCHAR>& cc)
     {
-        int ret = m_final_state;
+        m_states.back().add_transition(cc, m_states.size() - 1);
         m_states.emplace_back();
-        m_states[m_final_state].add_transition(cc, m_states.size() - 1);
-        m_final_state = m_states.size() - 1;
         return ret;
-    }
-    /*!
-     * @brief Concatenate another NFA to the final state
-     */
-    int concat(const NFA<TCHAR>& nfa)
-    {
-        int start = append(nfa);
-        add_transition_to(NFACharClass<TCHAR>(), start);
-        m_final_state = m_states.size() - 1;
-        return start;
-    }
-    /*!
-     * @brief Form a selection with another NFA
-     */
-    int select(const NFA<TCHAR>& nfa, int from)
-    {
-        int start = append(nfa);
-        int end = m_states.size() - 1;
-        add_transition_from_to(NFACharClass<TCHAR>(), from, start);
-        add_state(NFACharClass<TCHAR>());
-        add_transition_from(NFACharClass<TCHAR>(), end);
-        return from;
     }
     /*!
      * @brief Add a transition from the final state to another state.
      */
     void add_transition_to(const NFACharClass<TCHAR>& cc, int dest)
     {
-        m_states[m_final_state].add_transition(cc, dest);
+        m_states.back().add_transition(cc, dest);
     }
     /*!
      * @brief Add a transition to the final state from another state.
      */
     void add_transition_from(const NFACharClass<TCHAR>& cc, int src)
     {
-        m_states[src].add_transition(cc, m_final_state);
+        m_states[src].add_transition(cc, m_states.size() - 1);
     }
     /*!
      * @brief Print out the graph structure into Graphviz file.
