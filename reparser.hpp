@@ -5,7 +5,7 @@
 #include <locale>
 #include <codecvt>
 
-#include "dfa.hpp"
+#include "nfa.hpp"
 #include "exception.hpp"
 
 #define EOF (-1)
@@ -208,19 +208,19 @@ private:
             new_nfa.add_transition_from(NFACharClass<TCHAR>(), 0);
             break;
         default:
-            stream.unget(ch);
+            stream.unget();
             break;
         }
 
         return new_nfa;
     }
-    NFA<TCHAR> parse_selection(std::wistream& stream)
+    NFA<TCHAR> parse_selection(std::wistream& stream, std::wistream::int_type ch)
     {
-        NFA<TCHAR> new_nfa;
+        NFA<TCHAR> new_nfa = parse_unit(stream, ch);
 
-        while (true)
+        for (ch = stream.get(); ch == L'|'; ch = stream.get())
         {
-            NFA<TCHAR> unit = parse_unit(stream);
+            new_nfa.select(parse_unit(stream, stream.get()));
         }
 
         return new_nfa;
@@ -229,23 +229,9 @@ private:
     {
         NFA<TCHAR> new_nfa;
 
-        std::wistream::int_type ch = stream.get();
-
-        for (; ch != L')' && ch != EOF; ch = stream.get())
+        for (std::wistream::int_type ch = stream.get(); ch != L')' && ch != EOF; ch = stream.get())
         {
-            NFA<TCHAR> part = parse_sub(stream, ch);
-
-            ch = stream.get();
-
-            switch (ch)
-            {
-            case L'|':
-                ch = stream.get();
-                break;
-            default:
-                current_state = new_nfa.add_state(parse_single_char(ch));
-                break;
-            }
+            new_nfa.concat(parse_selection(stream, ch));
         }
 
         return new_nfa;
@@ -255,9 +241,7 @@ public:
     {
         std::wistringstream stream(pattern);
 
-        std::wistringstream::int_type ch = stream.get();
-
-        m_nfa = parse(stream, ch);
+        m_nfa = parse(stream);
     }
     virtual ~REPattern()
     {
