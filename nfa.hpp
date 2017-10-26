@@ -209,19 +209,19 @@ public:
                 if (i->start() == wide_to_target<TCHAR>(L'"'))
                     os << "\\\"";
                 else
-                    os << i->start();
+                    os << os.narrow(i->start(), '@');
             }
             else
             {
                 if (i->start() == wide_to_target<TCHAR>(L'"'))
                     os << "\\\"";
                 else
-                    os << i->start();
+                    os << os.narrow(i->start(), '@');
                 os << '-';
                 if (i->end() == wide_to_target<TCHAR>(L'"'))
                     os << "\\\"";
                 else
-                    os << i->end();
+                    os << os.narrow(i->end(), '@');
             }
             i++;
         }
@@ -393,7 +393,7 @@ public:
      */
     void add_state(const NFACharClass<TCHAR>& cc)
     {
-        m_states.back().add_transition(cc, m_states.size() - 1);
+        m_states.back().add_transition(cc, m_states.size());
         m_states.emplace_back();
     }
     /*!
@@ -413,10 +413,8 @@ public:
     /*!
      * @brief Print out the graph structure into Graphviz file.
      */
-    void print_graph(const std::string& file_name, const std::string& graph_name)
+    void print_graph(std::ostream& of, const std::string& graph_name)
     {
-        std::ofstream of(file_name);
-
         of << "digraph " << graph_name << "{" << std::endl;
 
         of << "graph [ charset=\"UTF-8\", style=\"filled\" ];" << std::endl;

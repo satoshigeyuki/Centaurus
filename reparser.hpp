@@ -8,8 +8,6 @@
 #include "nfa.hpp"
 #include "exception.hpp"
 
-#define EOF (-1)
-
 namespace Centaur
 {
 template<typename TCHAR> class REPattern
@@ -186,7 +184,8 @@ private:
             new_nfa.concat(parse(stream));
             break;
         default:
-            throw UnexpectedException(ch);
+            new_nfa.add_state(parse_single_char(ch));
+            break;
         }
         ch = stream.get();
         switch (ch)
@@ -218,8 +217,13 @@ private:
     {
         NFA<TCHAR> new_nfa = parse_unit(stream, ch);
 
-        for (ch = stream.get(); ch == L'|'; ch = stream.get())
+        for (ch = stream.get(); ; ch = stream.get())
         {
+            if (ch != L'|')
+            {
+                stream.unget();
+                break;
+            }
             new_nfa.select(parse_unit(stream, stream.get()));
         }
 
@@ -245,6 +249,10 @@ public:
     }
     virtual ~REPattern()
     {
+    }
+    void print_nfa(std::ostream& os)
+    {
+        m_nfa.print_graph(os, "NFA");
     }
 };
 }
