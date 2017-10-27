@@ -35,7 +35,7 @@ private:
             CC_STATE_RANGE,
             CC_STATE_END
         } state = CC_STATE_START;
-        while (ch != L']')
+        for (; ch != L']'; ch = input.get())
         {
             bool escaped = false;
 
@@ -44,8 +44,8 @@ private:
                 throw ReservedCharException();
             }
 
-            if (ch == EOF)
-                throw UnexpectedException(ch);
+            if (input.fail())
+                throw UnexpectedException(EOF);
             if (ch == L'\\')
             {
                 ch = input.get();
@@ -152,7 +152,7 @@ private:
         {
         case L'\\':
             ch = stream.get();
-            if (ch == EOF)
+            if (stream.fail())
                 throw UnexpectedException(EOF);
             switch (ch)
             {
@@ -233,7 +233,7 @@ private:
     {
         NFA<TCHAR> new_nfa;
 
-        for (std::wistream::int_type ch = stream.get(); ch != L')' && ch != EOF; ch = stream.get())
+        for (std::wistream::int_type ch = stream.get(); ch != L')' && stream.good(); ch = stream.get())
         {
             new_nfa.concat(parse_selection(stream, ch));
         }

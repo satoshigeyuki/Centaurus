@@ -332,6 +332,10 @@ public:
 
         return ret;
     }
+    const std::vector<NFATransition<TCHAR> >& get_transitions() const
+    {
+        return m_transitions;
+    }
 };
 
 template<typename TCHAR> using NFAState = NFABaseState<TCHAR, int>;
@@ -423,12 +427,12 @@ public:
 
         of << "edge [ style=\"solid\" ];" << std::endl;
 
-        for (int i = 0; i < m_states.size(); i++)
+        for (unsigned int i = 0; i < m_states.size(); i++)
         {
             of << "S" << i << " [shape = circle];" << std::endl;
         }
 
-        for (int i = 0; i < m_states.size(); i++)
+        for (unsigned int i = 0; i < m_states.size(); i++)
         {
             m_states[i].print_transitions(of, i);
         }
@@ -457,6 +461,36 @@ public:
         std::sort(ret.begin(), ret.end());
         std::unique(ret.begin(), ret.end());
 
+        return ret;
+    }
+    std::vector<int> epsilon_closure(const std::vector<int>& indices)
+    {
+        std::vector<int> ret;
+
+        for (int index : indices)
+        {
+            std::vector<int> c1 = epsilon_closure(index);
+
+            ret.insert(ret.end(), c1.cbegin(), c1.cend());
+        }
+
+        std::sort(ret.begin(), ret.end());
+        std::unique(ret.begin(), ret.end());
+
+        return ret;
+    }
+    /*!
+     * @brief Collect all the transitions from the closure
+     */
+    std::vector<NFATransition<TCHAR>&> gather_transitions(const std::vector<int>& closure)
+    {
+        std::vector<NFATransition<TCHAR>&> ret;
+        for (int index : closure)
+        {
+            const std::vector<NFATransition<TCHAR> >& tr;
+
+            ret.insert(ret.end(), tr.cbegin(), tr.cend());
+        }
         return ret;
     }
 };
