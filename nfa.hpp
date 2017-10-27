@@ -13,6 +13,7 @@
 
 #include "util.hpp"
 #include "exception.hpp"
+#include "index_vector.hpp"
 
 namespace Centaur
 {
@@ -198,6 +199,21 @@ public:
     {
         return *this = *this | cc;
     }
+    /*!
+     * @brief Return a soup of all the boundaries in the class.
+     */
+    IndexVector collect_borders() const
+    {
+        IndexVector ret(2 * m_ranges.size(), true);
+
+        for (const auto& r : m_ranges)
+        {
+            ret.push_back(r.start());
+            ret.push_back(r.end());
+        }
+
+        return ret;
+    }
     void print(std::ostream& os) const
     {
         auto i = m_ranges.cbegin();
@@ -318,9 +334,9 @@ public:
             add_transition(i.offset(offset_value));
         }
     }
-    std::vector<int> epsilon_transitions() const
+    IndexVector epsilon_transitions() const
     {
-        std::vector<int> ret;
+        IndexVector ret;
 
         for (const auto& i : m_transitions)
         {
@@ -439,45 +455,41 @@ public:
 
         of << "}" << std::endl;
     }
-    /*!
-     * @brief Collect the epsilon closure around the state
-     */
-    std::vector<int> epsilon_closure(int index)
+    IndexVector epsilon_closure_sub(int index)
     {
-        std::vector<int> ret;
+        IndexVector ret;
 
         //Always include myself
         ret.push_back(index);
 
-        std::vector<int> etr = m_states[index].epsilon_transitions();
+        IndexVector etr = m_states[index].epsilon_transitions();
 
         for (int dest : etr)
         {
-            std::vector<int> etr_sub = epsilon_closure(dest);
-
-            ret.insert(ret.end(), etr_sub.cbegin(), etr_sub.cend());
+            ret += epsilon_closure_sub(dest);
         }
-
-        std::sort(ret.begin(), ret.end());
-        std::unique(ret.begin(), ret.end());
 
         return ret;
     }
-    std::vector<int> epsilon_closure(const std::vector<int>& indices)
+    /*!
+     * @brief Collect the epsilon closure around the state
+     */
+    IndexVector epsilon_closure(int index)
     {
-        std::vector<int> ret;
+        IndexVector ret = epsilon_closure_sub(index);
+
+        return ret.sort_and_unique_copy();
+    }
+    IndexVector epsilon_closure(const IndexVector& indices)
+    {
+        IndexVector ret;
 
         for (int index : indices)
         {
-            std::vector<int> c1 = epsilon_closure(index);
-
-            ret.insert(ret.end(), c1.cbegin(), c1.cend());
+            ret += epsilon_closure_sub(index);
         }
 
-        std::sort(ret.begin(), ret.end());
-        std::unique(ret.begin(), ret.end());
-
-        return ret;
+        return ret.sort_and_unique_copy();
     }
     /*!
      * @brief Collect all the transitions from the closure

@@ -4,15 +4,15 @@
 
 namespace Centaur
 {
-class Exception : public std::exception
+class SimpleException : public std::exception
 {
     std::string m_msg;
 public:
-    Exception(const std::string& msg) noexcept
+    SimpleException(const std::string& msg) noexcept
         : m_msg(msg)
     {
     }
-    virtual ~Exception()
+    virtual ~SimpleException()
     {
     }
     const char *what() const noexcept
