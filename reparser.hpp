@@ -194,19 +194,19 @@ private:
         {
         case L'+':
             //Add an epsilon transition to the last state
-            new_nfa.add_transition_to(CharClass<TCHAR>(), 0);
+            new_nfa.add_transition_to(CharClass<TCHAR>(), 1);
             break;
         case L'*':
             //Add an epsilon transition to the last state
-            new_nfa.add_transition_to(CharClass<TCHAR>(), 0);
+            new_nfa.add_transition_to(CharClass<TCHAR>(), 1);
             //Add a confluence
             new_nfa.add_state(CharClass<TCHAR>());
             //Add a skipping transition
-            new_nfa.add_transition_from(CharClass<TCHAR>(), 0);
+            new_nfa.add_transition_from(CharClass<TCHAR>(), 1);
             break;
         case L'?':
             //Add a skipping transition
-            new_nfa.add_transition_from(CharClass<TCHAR>(), 0);
+            new_nfa.add_transition_from(CharClass<TCHAR>(), 1);
             break;
         default:
             stream.unget();

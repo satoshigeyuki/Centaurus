@@ -89,12 +89,17 @@ template<typename TCHAR> class DFA : public NFABase<DFAState<TCHAR> >
             {
                 if (tr.label().includes(r))
                 {
+                    std::cout << r;
+
                     dests.insert(tr.dest());
                 }
             }
 
-            add_transition(table, r, dests);
+            if (!dests.empty())
+                add_transition(table, r, dests);
         }
+
+        std::cout << std::endl;
 
         int initial_index = m_states.size();
         for (const auto& item : table)
@@ -102,6 +107,8 @@ template<typename TCHAR> class DFA : public NFABase<DFAState<TCHAR> >
             std::set<int> ec = nfa.epsilon_closure(item.second);
 
             int new_index = add_state(ec);
+
+            std::cout << "S" << index << "->" << new_index << std::endl;
 
             m_states[index].add_transition(item.first, new_index);
         }
@@ -128,6 +135,10 @@ public:
     }
     virtual ~DFA()
     {
+    }
+    virtual void print_state(std::ostream& os, int index)
+    {
+        os << m_states[index].label();
     }
 };
 }

@@ -42,6 +42,10 @@ public:
     {
         return m_dest;
     }
+    void add_class(const CharClass<TCHAR>& cc)
+    {
+        m_label |= cc;
+    }
     NFATransition<TCHAR> offset(int value) const
     {
         return NFATransition<TCHAR>(m_label, m_dest + value);
@@ -79,6 +83,17 @@ public:
     }
     void add_transition(const CharClass<TCHAR>& cc, int dest)
     {
+        if (!cc.is_epsilon())
+        {
+            for (auto& tr : m_transitions)
+            {
+                if (tr.dest() == dest && !tr.label().is_epsilon())
+                {
+                    tr.add_class(cc);
+                    return;
+                }
+            }
+        }
         m_transitions.emplace_back(cc, dest);
     }
     NFABaseState<TCHAR, TLABEL> offset(int value) const
@@ -144,6 +159,10 @@ public:
     virtual ~NFABase()
     {
     }
+    virtual void print_state(std::ostream& os, int index)
+    {
+        os << index;
+    }
     void print(std::ostream& os, const std::string& graph_name)
     {
         os << "digraph " << graph_name << " {" << std::endl;
@@ -156,7 +175,9 @@ public:
 
         for (unsigned int i = 0; i < m_states.size(); i++)
         {
-            os << "S" << i << " [shape = circle];" << std::endl;
+            os << "S" << i << " [ label=\"";
+            print_state(os, i);
+            os << "\", shape=circle ];" << std::endl;
         }
 
         for (unsigned int i = 0; i < m_states.size(); i++)
@@ -183,11 +204,9 @@ public:
 
         for (; i != nfa.m_states.cend(); i++)
         {
-            //Copy all states except the initial state
             m_states.push_back(i->offset(initial_size - 1));
         }
 
-        //Rebase the transitions from the start state to the newly added states
         m_states[initial_size - 1].rebase_transitions(nfa.m_states[0], initial_size - 1);
     }
     /*!
@@ -197,15 +216,15 @@ public:
     {
         int initial_size = m_states.size();
 
+        m_states[0].add_transition(CharClass<TCHAR>(), initial_size);
+
         auto i = nfa.m_states.cbegin() + 1;
 
         for (; i != nfa.m_states.cend(); i++)
         {
-            //Copy all states except the initial state
             m_states.push_back(i->offset(initial_size - 1));
         }
 
-        //Rebase the transitions from the start state to the newly added states
         m_states[0].rebase_transitions(nfa.m_states[0], initial_size - 1);
 
         //Add the join state
@@ -216,6 +235,7 @@ public:
     NFA()
     {
         m_states.emplace_back();
+        add_state(CharClass<TCHAR>());
     }
     virtual ~NFA()
     {

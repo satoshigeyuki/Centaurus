@@ -24,6 +24,10 @@ public:
         : m_start(start), m_end(end)
     {
     }
+    Range()
+        : m_start(0), m_end(0)
+    {
+    }
     /*Range(wchar_t start, wchar_t end)
     {
         assert(start < end);
@@ -158,7 +162,7 @@ public:
     {
         return *this = *this | r;
     }
-    CharClass<TCHAR>& operator|(const CharClass<TCHAR>& cc) const
+    CharClass<TCHAR> operator|(const CharClass<TCHAR>& cc) const
     {
         CharClass<TCHAR> new_class;
 
@@ -200,6 +204,9 @@ public:
                 }
             }
         }
+
+        new_class.m_ranges.insert(new_class.m_ranges.end(), i, m_ranges.cend());
+        new_class.m_ranges.insert(new_class.m_ranges.end(), j, cc.m_ranges.cend());
 
         return new_class;
     }
