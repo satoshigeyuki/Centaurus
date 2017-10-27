@@ -7,7 +7,7 @@
 
 #include "nfa.hpp"
 
-namespace Centaur
+namespace Centaurus
 {
 template<typename TCHAR> using DFATransition = NFATransition<TCHAR>;
 template<typename TCHAR> using DFAState = NFABaseState<TCHAR, IndexVector>;

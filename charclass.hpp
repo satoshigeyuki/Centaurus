@@ -7,7 +7,7 @@
 #include <locale>
 #include <algorithm>
 
-namespace Centaur
+namespace Centaurus
 {
 /*!
  * @brief Represents an half-open range of type TCHAR.

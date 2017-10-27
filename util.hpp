@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <vector>
 
-namespace Centaur
+namespace Centaurus
 {
 template<typename TCHAR> TCHAR wide_to_target(wchar_t ch)
 {

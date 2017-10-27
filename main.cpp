@@ -4,7 +4,7 @@
 
 #include "reparser.hpp"
 
-using namespace Centaur;
+using namespace Centaurus;
 
 int main(int argc, const char *argv[])
 {

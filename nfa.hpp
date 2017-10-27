@@ -16,7 +16,7 @@
 #include "exception.hpp"
 #include "charclass.hpp"
 
-namespace Centaur
+namespace Centaurus
 {
 template<typename TCHAR> class NFATransition
 {

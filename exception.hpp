@@ -2,7 +2,7 @@
 
 #include <exception>
 
-namespace Centaur
+namespace Centaurus
 {
 class SimpleException : public std::exception
 {
