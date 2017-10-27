@@ -3,3 +3,4 @@
 !*.hpp
 !Makefile
 !.gitignore
+!CMakeLists.txt
