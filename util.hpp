@@ -10,6 +10,34 @@ template<typename TCHAR> TCHAR wide_to_target(wchar_t ch)
 {
     return static_cast<TCHAR>(ch);
 }
+template<typename TCHAR>
+class SentryStream
+{
+    std::basic_string<TCHAR> m_str;
+    std::basic_string<TCHAR>::iterator m_cur;
+public:
+    using Sentry = std::basic_string<TCHAR>::const_iterator;
+    SentryStream(std::basic_string<TCHAR>&& str)
+        : m_str(str)
+    {
+        m_cur = m_str.begin();
+    }
+    virtual ~SentryStream
+    {
+    }
+    TCHAR get()
+    {
+        if (m_cur == m_str.end())
+            return 0;
+        else
+            return *(m_cur++);
+    }
+    Sentry get_sentry()
+    {
+        return m_cur;
+    }
+};
+using WideSentryStream = SentryStream<wchar_t>;
 class IndexVector : public std::vector<int>
 {
 public:
