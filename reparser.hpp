@@ -6,6 +6,7 @@
 #include <codecvt>
 
 #include "nfa.hpp"
+#include "dfa.hpp"
 #include "exception.hpp"
 
 namespace Centaur
@@ -13,10 +14,11 @@ namespace Centaur
 template<typename TCHAR> class REPattern
 {
     NFA<TCHAR> m_nfa;
+    DFA<TCHAR> m_dfa;
 private:
-    NFACharClass<TCHAR> parse_char_class(std::wistream& input)
+    CharClass<TCHAR> parse_char_class(std::wistream& input)
     {
-        NFACharClass<TCHAR> cc;
+        CharClass<TCHAR> cc;
 
         std::wistream::int_type ch;
         bool invert_flag = false;
@@ -140,9 +142,9 @@ private:
             throw UnexpectedException(ch);
         }
     }
-    NFACharClass<TCHAR> parse_single_char(std::wistream::int_type ch)
+    CharClass<TCHAR> parse_single_char(std::wistream::int_type ch)
     {
-        return NFACharClass<TCHAR>(ch, ch + 1);
+        return CharClass<TCHAR>(ch, ch + 1);
     }
     NFA<TCHAR> parse_unit(std::wistream& stream, std::wistream::int_type ch)
     {
@@ -178,7 +180,7 @@ private:
             new_nfa.add_state(parse_char_class(stream));
             break;
         case L'.':
-            new_nfa.add_state(NFACharClass<TCHAR>::make_star());
+            new_nfa.add_state(CharClass<TCHAR>::make_star());
             break;
         case L'(':
             new_nfa.concat(parse(stream));
@@ -192,19 +194,19 @@ private:
         {
         case L'+':
             //Add an epsilon transition to the last state
-            new_nfa.add_transition_to(NFACharClass<TCHAR>(), 0);
+            new_nfa.add_transition_to(CharClass<TCHAR>(), 0);
             break;
         case L'*':
             //Add an epsilon transition to the last state
-            new_nfa.add_transition_to(NFACharClass<TCHAR>(), 0);
+            new_nfa.add_transition_to(CharClass<TCHAR>(), 0);
             //Add a confluence
-            new_nfa.add_state(NFACharClass<TCHAR>());
+            new_nfa.add_state(CharClass<TCHAR>());
             //Add a skipping transition
-            new_nfa.add_transition_from(NFACharClass<TCHAR>(), 0);
+            new_nfa.add_transition_from(CharClass<TCHAR>(), 0);
             break;
         case L'?':
             //Add a skipping transition
-            new_nfa.add_transition_from(NFACharClass<TCHAR>(), 0);
+            new_nfa.add_transition_from(CharClass<TCHAR>(), 0);
             break;
         default:
             stream.unget();
@@ -246,13 +248,19 @@ public:
         std::wistringstream stream(pattern);
 
         m_nfa = parse(stream);
+
+        m_dfa = DFA<TCHAR>(m_nfa);
     }
     virtual ~REPattern()
     {
     }
+    void print_dfa(std::ostream& os)
+    {
+        m_dfa.print(os, "DFA");
+    }
     void print_nfa(std::ostream& os)
     {
-        m_nfa.print_graph(os, "NFA");
+        m_nfa.print(os, "NFA");
     }
 };
 }

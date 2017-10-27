@@ -14,9 +14,11 @@ int main(int argc, const char *argv[])
 
     REPattern<wchar_t> re(pattern);
 
-    std::ofstream of("nfa.dot");
+    std::ofstream nfa_dump("nfa.dot");
+    std::ofstream dfa_dump("dfa.dot");
 
-    re.print_nfa(of);
+    re.print_nfa(nfa_dump);
+    re.print_dfa(dfa_dump);
 
     return 0;
 }
