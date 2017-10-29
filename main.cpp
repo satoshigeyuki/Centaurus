@@ -15,6 +15,8 @@ int main(int argc, const char *argv[])
         return -1;
     }
 
+    std::cout << "Centaurus parser generator v0.1" << std::endl;
+
     std::ifstream grammar_file(argv[1], std::ios::in);
 
     std::string raw_grammar(std::istreambuf_iterator<char>(grammar_file), {});
