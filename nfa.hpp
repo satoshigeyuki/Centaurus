@@ -429,5 +429,9 @@ public:
     {
         return m_states[index].get_transitions();
     }
+    const NFAState<TCHAR>& get_state(int index) const
+    {
+        return m_states[index];
+    }
 };
 }

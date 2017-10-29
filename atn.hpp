@@ -206,6 +206,10 @@ public:
     {
         return m_type;
     }
+    const std::vector<ATNTransition<TCHAR> >& get_transitions() const
+    {
+        return m_transitions;
+    }
     bool is_nonterminal() const
     {
         return m_type == ATNNodeType::Nonterminal;
