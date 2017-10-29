@@ -221,8 +221,9 @@ public:
 
         for (auto& i : m_ranges)
         {
-            last_end = i.end();
+            TCHAR new_end = i.end();
             i = Range<TCHAR>(last_end, i.start());
+            last_end = new_end;
         }
 
         if (last_end < std::numeric_limits<TCHAR>::max())
