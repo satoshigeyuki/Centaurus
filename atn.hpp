@@ -266,6 +266,10 @@ public:
     {
         m_nodes[src].add_transition(m_nodes.size() - 1);
     }
+    const ATNNode<TCHAR>& get_node(int index) const
+    {
+        return m_nodes[index];
+    }
     ATN(Stream& stream)
     {
         m_nodes.emplace_back();
