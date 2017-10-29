@@ -1,7 +1,29 @@
 #pragma once
 
+#include <string>
+#include <exception>
+
 namespace Centaurus
 {
+class StreamException : public std::exception
+{
+    std::string m_msg;
+public:
+    StreamException() noexcept
+    {
+    }
+    StreamException(const std::string& msg) noexcept
+        : m_msg(msg)
+    {
+    }
+    virtual ~StreamException()
+    {
+    }
+    const char *what() const noexcept
+    {
+        return m_msg.c_str();
+    }
+};
 class Stream
 {
     std::wstring m_str;
@@ -15,7 +37,7 @@ public:
     {
         m_cur = m_str.begin();
     }
-    virtual ~Stream
+    virtual ~Stream()
     {
     }
     void skip_multiline_comment()
@@ -79,16 +101,16 @@ public:
     {
         if (m_cur == m_str.end())
             return L'\0';
-        return *(m_cur + 1);
+        return *m_cur;
     }
     wchar_t peek(int n)
     {
-        for (int i = 0; i < n; i++)
+        for (int i = 0; i < n - 1; i++)
         {
             if (m_cur + i == m_str.end())
                 return L'\0';
         }
-        return *(m_cur + i);
+        return *(m_cur + (n - 1));
     }
     void discard()
     {
@@ -101,9 +123,10 @@ public:
     }
     wchar_t skip_whitespace()
     {
-        wchar_t ch;
-        for (ch = L' '; ; ch = peek())
+        while (true)
         {
+            wchar_t ch = peek();
+
             switch (ch)
             {
             case L' ':
@@ -133,7 +156,6 @@ public:
                 return ch;
             }
         }
-        return ch;
     }
     wchar_t after_whitespace()
     {
@@ -146,17 +168,15 @@ public:
     }
     std::wstring cut(const Sentry& sentry)
     {
-        return std::wstring(sentry, m_cur);
+        return std::wstring(static_cast<std::wstring::const_iterator>(sentry), static_cast<std::wstring::const_iterator>(m_cur));
     }
-    std::exception unexpected(wchar_t ch)
+    StreamException unexpected(wchar_t ch)
     {
         std::ostringstream stream;
 
         stream << "Line " << m_line << ", Pos " << m_pos << ": Unexpected character " << stream.narrow(ch, '@');
 
-        std::string msg = stream.str();
-
-        return std::exception(msg.c_str());
+        return StreamException(stream.str());
     }
 };
 }

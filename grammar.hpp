@@ -11,6 +11,7 @@ namespace Centaurus
 {
 class AlienCode
 {
+protected:
     std::wstring m_str;
 public:
     AlienCode()
@@ -47,7 +48,7 @@ private:
     {
         while (true)
         {
-            wchar_t ch = stream.get_next_char();
+            wchar_t ch = stream.after_whitespace();
 
             switch (ch)
             {
@@ -103,10 +104,10 @@ public:
     {
     }
 };*/
-template<TCHAR> class Grammar
+template<typename TCHAR> class Grammar
 {
     std::unordered_map<Identifier, ATN<TCHAR> > m_networks;
-private:
+public:
     void parse(Stream& stream)
     {
         while (1)
@@ -116,16 +117,29 @@ private:
             if (ch == L'\0')
                 break;
 
-            m_networks.emplace(Identifier(stream), ATN<TCHAR>(stream));
+            std::wcout << L"Parsing grammar entry" << std::endl;
+            Identifier id(stream);
+            ATN<TCHAR> atn(stream);
+            m_networks.insert(std::pair<Identifier, ATN<TCHAR> >(id, atn));
+            //m_networks.emplace(Identifier(stream), ATN<TCHAR>(stream));
         }
     }
-public:
     Grammar(Stream& stream)
     {
         parse(stream);
     }
+    Grammar()
+    {
+    }
     ~Grammar()
     {
+    }
+    void print(std::ostream& os)
+    {
+        if (!m_networks.empty())
+        {
+            m_networks.begin()->second.print(os, "ATN");
+        }
     }
 };
 }

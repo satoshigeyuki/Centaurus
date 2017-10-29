@@ -236,7 +236,9 @@ public:
     {
         for (wchar_t ch = stream.get(); ch != L')' && ch != L'/' && ch != L'\0'; ch = stream.get())
         {
-            concat(parse_selection(stream, ch));
+            NFA<TCHAR> nfa;
+            nfa.parse_selection(stream, ch);
+            concat(nfa);
         }
     }
     void parse_unit(Stream& stream, wchar_t ch)
@@ -259,23 +261,23 @@ public:
             case L'(':
             case L')':
             case L'.':
-                add_state(parse_single_char(ch));
+                add_state(CharClass<TCHAR>(ch));
                 break;
             default:
                 throw stream.unexpected(ch);
             }
             break;
         case L'[':
-            add_state(parse_char_class(stream));
+            add_state(CharClass<TCHAR>(stream));
             break;
         case L'.':
             add_state(CharClass<TCHAR>::make_star());
             break;
         case L'(':
-            concat(parse(stream));
+            concat(NFA<TCHAR>(stream));
             break;
         default:
-            add_state(parse_single_char(ch));
+            add_state(CharClass<TCHAR>(ch));
             break;
         }
         ch = stream.peek();

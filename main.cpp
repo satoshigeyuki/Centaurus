@@ -1,10 +1,11 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
+#include <locale>
+#include <codecvt>
 
-#include "atn.hpp"
-
-using namespace Centaurus;
+#include "stream.hpp"
+#include "grammar.hpp"
 
 int main(int argc, const char *argv[])
 {
@@ -20,11 +21,24 @@ int main(int argc, const char *argv[])
 
     std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> wide_converter;
 
-    std::wstring grammar = wide_converter.from_bytes(raw_grammar);
+    std::wstring wide_grammar = wide_converter.from_bytes(raw_grammar);
 
-    ATN atn(grammar);
+    Centaurus::Stream stream(std::move(wide_grammar));
 
-    atn.print(std::cout);
+    Centaurus::Grammar<char> grammar;
+
+    try
+    {
+        grammar.parse(stream);
+    }
+    catch (const std::exception& ex)
+    {
+        std::cerr << ex.what() << std::endl;
+        std::cerr << "ATN construction failed." << std::endl;
+        return -1;
+    }
+
+    grammar.print(std::cout);
 
     return 0;
 }

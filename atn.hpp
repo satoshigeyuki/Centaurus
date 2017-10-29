@@ -3,8 +3,9 @@
 #include "nfa.hpp"
 #include "identifier.hpp"
 #include "stream.hpp"
+#include "charclass.hpp"
 
-namespace Centaur
+namespace Centaurus
 {
 enum class ATNTransitionType
 {
@@ -64,6 +65,8 @@ std::ostream& operator<<(std::ostream& os, const ATNTransition<TCHAR>& tr)
     case ATNTransitionType::SingleCharLookup:
         os << tr.m_class;
         break;
+    case ATNTransitionType::LiteralLookup:
+        break;
     }
     return os;
 }
@@ -86,7 +89,7 @@ template<typename TCHAR> class ATNNode
 private:
     void parse_literal(Stream& stream)
     {
-        Stream::Sentry sentry = stream.get_sentry();
+        Stream::Sentry sentry = stream.sentry();
 
         wchar_t leader = stream.get();
 
@@ -138,7 +141,7 @@ public:
     }
     void add_transition(const ATNTransition<TCHAR>& transition)
     {
-        m_transiitons.push_back(transition);
+        m_transitions.push_back(transition);
     }
     void add_transition(const CharClass<TCHAR>& cc, int dest)
     {
@@ -224,7 +227,13 @@ public:
     }
     ATN(Stream& stream)
     {
+        m_nodes.emplace_back();
+
         parse(stream);
+    }
+    ATN()
+    {
+        m_nodes.emplace_back();
     }
     virtual ~ATN()
     {

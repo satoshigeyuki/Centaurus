@@ -103,7 +103,7 @@ public:
             ch = stream.get();
         }
 
-        wchar_t start = 0, end = 0;
+        wchar_t start = 0;
         enum
         {
             CC_STATE_START = 0,
@@ -187,6 +187,10 @@ public:
     CharClass(Stream& stream)
     {
         parse(stream);
+    }
+    CharClass(wchar_t ch)
+    {
+        m_ranges.push_back(Range<TCHAR>::make_from_wide(ch, ch + 1));
     }
     CharClass(wchar_t start, wchar_t end)
     {
