@@ -1,4 +1,5 @@
 *
+!*.cgr
 !*.cpp
 !*.hpp
 !.gitignore

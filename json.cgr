@@ -1,0 +1,10 @@
+Object : Number | String | List | Dictionary ;
+Number : /[0-9]+/ ;
+String : /"([^"]|\\["])*"/ ;
+List : '[' ListContent ']' ;
+ListContent : | Object ListItems ;
+ListItems : | ',' Object ListItems ;
+Dictionary : '{' DictionaryContent '}' ;
+DictionaryContent : | DictionaryEntry DictionaryEntries ;
+DictionaryEntry : String ':' Object ;
+DictionaryEntries : | ',' DictionaryEntry DictionaryEntries ;
