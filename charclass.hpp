@@ -81,7 +81,7 @@ public:
 template<typename TCHAR>
 std::ostream& operator<<(std::ostream& os, const Range<TCHAR>& r)
 {
-    os << '[' << r.start() << ", " << r.end() << ')';
+    os << '[' << r.start() << ", " << r.end() - 1 << ')';
     return os;
 }
 
@@ -350,6 +350,8 @@ std::ostream& operator<<(std::ostream& os, const CharClass<TCHAR>& cc)
         {
             if (i->start() == wide_to_target<TCHAR>(L'"'))
                 os << "\\\"";
+            else if (i->start() == wide_to_target<TCHAR>(L'\\'))
+                os << "\\\\";
             else
                 os << os.narrow(i->start(), '@');
         }
@@ -357,13 +359,17 @@ std::ostream& operator<<(std::ostream& os, const CharClass<TCHAR>& cc)
         {
             if (i->start() == wide_to_target<TCHAR>(L'"'))
                 os << "\\\"";
+            else if (i->start() == wide_to_target<TCHAR>(L'\\'))
+                os << "\\\\";
             else
                 os << os.narrow(i->start(), '@');
             os << '-';
-            if (i->end() == wide_to_target<TCHAR>(L'"'))
+            if (i->end() - 1 == wide_to_target<TCHAR>(L'"'))
                 os << "\\\"";
+            else if (i->end() - 1 == wide_to_target<TCHAR>(L'\\'))
+                os << "\\\\";
             else
-                os << os.narrow(i->end(), '@');
+                os << os.narrow(i->end() - 1, '@');
         }
         i++;
     }

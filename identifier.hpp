@@ -71,6 +71,10 @@ public:
 
         return converter.to_bytes(m_id);
     }
+    bool operator==(const Identifier& id) const
+    {
+        return m_id == id.m_id;
+    }
 };
 }
 

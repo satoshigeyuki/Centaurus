@@ -77,6 +77,7 @@ public:
 template<typename TCHAR> class Grammar
 {
     std::unordered_map<Identifier, ATN<TCHAR> > m_networks;
+    Identifier m_root_id;
 public:
     void parse(Stream& stream)
     {
@@ -89,6 +90,9 @@ public:
 
             Identifier id(stream);
             ATN<TCHAR> atn(stream);
+
+            if (m_root_id.str().empty())
+                m_root_id = id;
 
             m_networks.insert(std::pair<Identifier, ATN<TCHAR> >(id, std::move(atn)));
 
@@ -105,9 +109,19 @@ public:
     ~Grammar()
     {
     }
-    void print(std::ostream& os, const Identifier& key)
+    void print(std::ostream& os, const Identifier& key, int maxdepth = 3)
     {
-        m_networks[key].print(os, key.narrow());
+        os << "digraph " << key.narrow() << " {" << std::endl;
+        os << "rankdir=\"LR\";" << std::endl;
+        os << "graph [ charset=\"UTF-8\" ];" << std::endl;
+        os << "node [ style=\"solid,filled\" ];" << std::endl;
+        os << "edge [ style=\"solid\" ];" << std::endl;
+
+        ATNPrinter<TCHAR> printer(m_networks, maxdepth);
+
+        printer.print(os, key);
+
+        os << "}" << std::endl;
     }
 };
 }

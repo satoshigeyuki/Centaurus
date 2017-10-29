@@ -141,6 +141,15 @@ public:
             os << "\" ];" << std::endl;
         }
     }
+    void print_subgraph(std::ostream& os, int from, const std::string& prefix) const
+    {
+        for (const auto& t : m_transitions)
+        {
+            os << prefix << "_S" << from << " -> " << prefix << "_S" << t.dest() << " [ label=\"";
+            os << t.label();
+            os << "\" ];" << std::endl;
+        }
+    }
     const TLABEL& label() const
     {
         return m_label;
@@ -159,7 +168,7 @@ public:
     virtual ~NFABase()
     {
     }
-    virtual void print_state(std::ostream& os, int index)
+    virtual void print_state(std::ostream& os, int index) const
     {
         os << index;
     }
@@ -186,6 +195,29 @@ public:
         }
 
         os << "}" << std::endl;
+    }
+    void print_subgraph(std::ostream& os, const std::string& prefix) const
+    {
+        os << "subgraph cluster_" << prefix << " {" << std::endl;
+        for (unsigned int i = 0; i < m_states.size(); i++)
+        {
+            os << prefix << "_S" << i << " [ label=\"";
+            print_state(os, i);
+            os << "\", shape=circle ];" << std::endl;
+        }
+        for (unsigned int i = 0; i < m_states.size(); i++)
+        {
+            m_states[i].print_subgraph(os, i, prefix);
+        }
+        os << "}" << std::endl;
+    }
+    std::string get_entry(const std::string& prefix) const
+    {
+        return prefix + "_S0";
+    }
+    std::string get_exit(const std::string& prefix) const
+    {
+        return prefix + "_S" + std::to_string(m_states.size() - 1);
     }
 };
 
