@@ -7,6 +7,8 @@
 #include <locale>
 #include <algorithm>
 
+#include "stream.hpp"
+
 namespace Centaurus
 {
 /*!
@@ -89,8 +91,102 @@ template<typename TCHAR> class CharClass
 
     template<typename T> friend std::ostream& operator<<(std::ostream& os, const CharClass<T>& cc);
 public:
+    void parse(Stream& stream)
+    {
+        wchar_t ch;
+        bool invert_flag = false;
+
+        ch = stream.get();
+        if (ch == L'^')
+        {
+            invert_flag = true;
+            ch = stream.get();
+        }
+
+        wchar_t start = 0, end = 0;
+        enum
+        {
+            CC_STATE_START = 0,
+            CC_STATE_RANGE,
+            CC_STATE_END
+        } state = CC_STATE_START;
+        for (; ch != L']'; ch = stream.get())
+        {
+            bool escaped = false;
+
+            if (ch == 0xFFFF)
+            {
+                throw ReservedCharException();
+            }
+
+            if (ch == L'\0')
+                throw stream.unexpected(ch);
+
+            if (ch == L'\\')
+            {
+                ch = stream.get();
+                switch (ch)
+                {
+                case L'\\':
+                    ch = L'\\';
+                    break;
+                case L'-':
+                    ch = L'-';
+                    break;
+                default:
+                    throw stream.unexpected(ch);
+                }
+                escaped = true;
+            }
+            switch (state)
+            {
+            case CC_STATE_START:
+                if (!escaped && ch == L'-')
+                    throw stream.unexpected(ch);
+                start = ch;
+                state = CC_STATE_RANGE;
+                break;
+            case CC_STATE_RANGE:
+                if (!escaped && ch == L'-')
+                {
+                    state = CC_STATE_END;
+                }
+                else
+                {
+                    *this |= Range<TCHAR>(start, start + 1);
+                    start = ch;
+                    state = CC_STATE_RANGE;
+                }
+                break;
+            case CC_STATE_END:
+                if (!escaped && ch == L'-')
+                {
+                    throw stream.unexpected(ch);
+                }
+                else
+                {
+                    *this |= Range<TCHAR>(start, ch + 1);
+                    state = CC_STATE_START;
+                }
+                break;
+            }
+        }
+        if (state == CC_STATE_RANGE)
+        {
+            *this |= Range<TCHAR>(start, start + 1);
+        }
+        else if (state == CC_STATE_END)
+        {
+            throw stream.unexpected(L']');
+        }
+        if (invert_flag) invert();
+    }
     CharClass()
     {
+    }
+    CharClass(Stream& stream)
+    {
+        parse(stream);
     }
     CharClass(wchar_t start, wchar_t end)
     {

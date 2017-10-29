@@ -176,18 +176,43 @@ template<typename TCHAR> class ATN
 public:
     void parse(Stream& stream)
     {
-        for (; ch != L';'; ch = stream.after_whitespace())
+        std::vector<int> terminal_states;
+
+        wchar_t ch = stream.skip_whitespace();
+
+        for (; ch != L';'; ch = stream.skip_whitespace())
         {
+            if (ch == L'\0')
+                throw stream.unexpected(ch);
+
             if (ch == L':' || ch == L'|')
             {
-                add_node
+                stream.discard();
+                terminal_states.push_back(add_node(0));
+            }
+            else
+            {
+                if (terminal_states.empty())
+                    throw stream.unexpected(ch);
+                m_nodes.back().add_transition(m_nodes.size());
+                m_nodes.emplace_back(stream);
+                terminal_states.back() = m_nodes.size() - 1;
             }
         }
-    }
-    void add_node()
-    {
-        m_nodes.back().add_transition(m_nodes.size());
+        stream.discard();
+
         m_nodes.emplace_back();
+        int final_node = m_nodes.size() - 1;
+        for (int from : terminal_states)
+        {
+            m_nodes[from].add_transition(final_node);
+        }
+    }
+    int add_node(int from)
+    {
+        m_nodes[from].add_transition(m_nodes.size());
+        m_nodes.emplace_back();
+        return m_nodes.size() - 1;
     }
     void add_transition_to(int dest)
     {
@@ -198,7 +223,6 @@ public:
         m_nodes[src].add_transition(m_nodes.size() - 1);
     }
     ATN(Stream& stream)
-        : m_final_state(0)
     {
         parse(stream);
     }

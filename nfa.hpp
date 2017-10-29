@@ -232,6 +232,103 @@ public:
 
         add_transition_from(CharClass<TCHAR>(), initial_size - 1);
     }
+    void parse(Stream& stream)
+    {
+        for (wchar_t ch = stream.get(); ch != L')' && ch != L'/' && ch != L'\0'; ch = stream.get())
+        {
+            concat(parse_selection(stream, ch));
+        }
+    }
+    void parse_unit(Stream& stream, wchar_t ch)
+    {
+        switch (ch)
+        {
+        case L'\\':
+            ch = stream.get();
+            switch (ch)
+            {
+            case L'[':
+            case L']':
+            case L'+':
+            case L'*':
+            case L'{':
+            case L'}':
+            case L'?':
+            case L'\\':
+            case L'|':
+            case L'(':
+            case L')':
+            case L'.':
+                add_state(parse_single_char(ch));
+                break;
+            default:
+                throw stream.unexpected(ch);
+            }
+            break;
+        case L'[':
+            add_state(parse_char_class(stream));
+            break;
+        case L'.':
+            add_state(CharClass<TCHAR>::make_star());
+            break;
+        case L'(':
+            concat(parse(stream));
+            break;
+        default:
+            add_state(parse_single_char(ch));
+            break;
+        }
+        ch = stream.peek();
+        switch (ch)
+        {
+        case L'+':
+            stream.discard();
+            //Add an epsilon transition to the last state
+            add_transition_to(CharClass<TCHAR>(), 1);
+            break;
+        case L'*':
+            stream.discard();
+            //Add an epsilon transition to the last state
+            add_transition_to(CharClass<TCHAR>(), 1);
+            //Add a confluence
+            add_state(CharClass<TCHAR>());
+            //Add a skipping transition
+            add_transition_from(CharClass<TCHAR>(), 1);
+            break;
+        case L'?':
+            stream.discard();
+            //Add a skipping transition
+            add_transition_from(CharClass<TCHAR>(), 1);
+            break;
+        }
+    }
+    void parse_selection(Stream& stream, wchar_t ch)
+    {
+        parse_unit(stream, ch);
+
+        while (true)
+        {
+            ch = stream.peek();
+
+            if (ch != L'|')
+            {
+                break;
+            }
+
+            stream.discard();
+
+            NFA<TCHAR> nfa;
+            nfa.parse_unit(stream, stream.get());
+            select(nfa);
+        }
+    }
+    NFA(Stream& stream)
+    {
+        m_states.emplace_back();
+        add_state(CharClass<TCHAR>());
+        
+        parse(stream);
+    }
     NFA()
     {
         m_states.emplace_back();

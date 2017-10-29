@@ -2,23 +2,29 @@
 #include <sstream>
 #include <fstream>
 
-#include "reparser.hpp"
+#include "atn.hpp"
 
 using namespace Centaurus;
 
 int main(int argc, const char *argv[])
 {
-    std::wstring pattern;
+    if (argc < 2)
+    {
+        std::cerr << "Please specify a grammar file." << std::endl;
+        return -1;
+    }
 
-    std::wcin >> pattern;
+    std::ifstream grammar_file(argv[1], std::ios::in);
 
-    REPattern<wchar_t> re(pattern);
+    std::string raw_grammar(std::istreambuf_iterator<char>(grammar_file), {});
 
-    std::ofstream nfa_dump("nfa.dot");
-    std::ofstream dfa_dump("dfa.dot");
+    std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> wide_converter;
 
-    re.print_nfa(nfa_dump);
-    re.print_dfa(dfa_dump);
+    std::wstring grammar = wide_converter.from_bytes(raw_grammar);
+
+    ATN atn(grammar);
+
+    atn.print(std::cout);
 
     return 0;
 }
