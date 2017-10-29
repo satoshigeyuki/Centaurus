@@ -38,7 +38,9 @@ int main(int argc, const char *argv[])
         return -1;
     }
 
-    grammar.print(std::cout);
+    std::ofstream graph("atn.dot");
+
+    grammar.print(graph, L"Object");
 
     return 0;
 }

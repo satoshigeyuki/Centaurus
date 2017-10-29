@@ -74,36 +74,6 @@ public:
     {
     }
 };
-/* class Production
-{
-    Identifier m_lhs;
-
-private:
-    void parse(Stream& stream)
-    {
-        m_lhs = Identifier(stream);
-
-        wchar_t sep = stream.after_whitespace();
-
-        if (sep != L':')
-            stream.unexpected(sep);
-
-        wchar_t ch;
-
-        for (ch = skip_whitespace(); ;)
-        {
-            if (
-        }
-    }
-public:
-    Production(Stream& stream)
-    {
-        parse(stream);
-    }
-    virtual ~Production()
-    {
-    }
-};*/
 template<typename TCHAR> class Grammar
 {
     std::unordered_map<Identifier, ATN<TCHAR> > m_networks;
@@ -117,10 +87,11 @@ public:
             if (ch == L'\0')
                 break;
 
-            std::wcout << L"Parsing grammar entry" << std::endl;
             Identifier id(stream);
             ATN<TCHAR> atn(stream);
-            m_networks.insert(std::pair<Identifier, ATN<TCHAR> >(id, atn));
+
+            m_networks.insert(std::pair<Identifier, ATN<TCHAR> >(id, std::move(atn)));
+
             //m_networks.emplace(Identifier(stream), ATN<TCHAR>(stream));
         }
     }
@@ -134,12 +105,9 @@ public:
     ~Grammar()
     {
     }
-    void print(std::ostream& os)
+    void print(std::ostream& os, const Identifier& key)
     {
-        if (!m_networks.empty())
-        {
-            m_networks.begin()->second.print(os, "ATN");
-        }
+        m_networks[key].print(os, key.narrow());
     }
 };
 }

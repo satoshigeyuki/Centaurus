@@ -2,6 +2,8 @@
 
 #include <string>
 #include <cwctype>
+#include <locale>
+#include <codecvt>
 
 #include "stream.hpp"
 
@@ -23,8 +25,6 @@ public:
     {
         Stream::Sentry sentry = stream.sentry();
 
-        std::wcout << L"Parsing Identifier" << std::endl;
-
         wchar_t ch = stream.get();
         if (!is_symbol_leader(ch))
         {
@@ -38,8 +38,6 @@ public:
         }
 
         m_id = stream.cut(sentry);
-
-        std::wcout << L"Identifier [" << m_id << L"]" << std::endl;
     }
     Identifier(Stream& stream)
     {
@@ -52,12 +50,26 @@ public:
     Identifier()
     {
     }
+    Identifier(const std::wstring& str)
+        : m_id (str)
+    {
+    }
+    Identifier(const wchar_t *str)
+        : m_id (str)
+    {
+    }
     const std::wstring& str() const
     {
         return m_id;
     }
     virtual ~Identifier()
     {
+    }
+    std::string narrow() const
+    {
+        std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> converter;
+
+        return converter.to_bytes(m_id);
     }
 };
 }

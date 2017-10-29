@@ -114,6 +114,7 @@ private:
         }
         else if (ch == L'/')
         {
+            stream.discard();
             m_nfa.parse(stream);
             m_type = ATNNodeType::RegularTerminal;
         }
@@ -234,6 +235,10 @@ public:
     ATN()
     {
         m_nodes.emplace_back();
+    }
+    ATN(ATN&& atn)
+        : m_nodes(std::move(atn.m_nodes))
+    {
     }
     virtual ~ATN()
     {
