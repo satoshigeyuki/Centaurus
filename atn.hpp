@@ -222,6 +222,10 @@ public:
     {
         return m_nfa;
     }
+    const std::basic_string<TCHAR>& get_literal() const
+    {
+        return m_literal;
+    }
 };
 
 template<typename TCHAR> class ATN
