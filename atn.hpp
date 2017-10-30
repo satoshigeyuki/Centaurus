@@ -81,7 +81,7 @@ std::ostream& operator<<(std::ostream& os, const ATNTransition<TCHAR>& tr)
 
 enum class ATNNodeType
 {
-    Epsilon,
+    Blank,
     Nonterminal,
     LiteralTerminal,
     RegularTerminal
@@ -140,7 +140,7 @@ private:
     }
 public:
     ATNNode()
-        : m_type(ATNNodeType::Epsilon)
+        : m_type(ATNNodeType::Blank)
     {
     }
     ATNNode(Stream& stream)
@@ -188,7 +188,7 @@ public:
     {
         switch (m_type)
         {
-        case ATNNodeType::Epsilon:
+        case ATNNodeType::Blank:
             os << prefix << " [ label=\"\" ];" << std::endl;
             break;
         case ATNNodeType::Nonterminal:
@@ -213,6 +213,14 @@ public:
     bool is_nonterminal() const
     {
         return m_type == ATNNodeType::Nonterminal;
+    }
+    bool is_blank() const
+    {
+        return m_type == ATNNodeType::Blank;
+    }
+    const NFA<TCHAR>& get_nfa() const
+    {
+        return m_nfa;
     }
 };
 
