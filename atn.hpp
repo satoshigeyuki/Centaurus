@@ -35,7 +35,7 @@ public:
     {
     }
     ATNTransition(const std::basic_string<TCHAR>& literal, int dest)
-        : m_type(ATNTransition::LiteralLookup), m_literal(literal), m_dest(dest)
+        : m_type(ATNTransitionType::LiteralLookup), m_literal(literal), m_dest(dest)
     {
     }
     virtual ~ATNTransition()

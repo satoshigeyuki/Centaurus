@@ -80,18 +80,16 @@ public:
 
 namespace std
 {
-template<> class hash<Centaurus::Identifier>
+template<> struct hash<Centaurus::Identifier>
 {
     hash<wstring> hasher;
-public:
     size_t operator()(const Centaurus::Identifier& id) const
     {
         return hasher(id.str());
     }
 };
-template<> class equal_to<Centaurus::Identifier>
+template<> struct equal_to<Centaurus::Identifier>
 {
-public:
     bool operator()(const Centaurus::Identifier& x, const Centaurus::Identifier& y) const
     {
         return x.str() == y.str();
