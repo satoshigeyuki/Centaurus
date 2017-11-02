@@ -99,20 +99,7 @@ template<typename TCHAR> class ATNNode
     NFA<TCHAR> m_nfa;
     std::basic_string<TCHAR> m_literal;
 private:
-    void parse_literal(Stream& stream)
-    {
-        wchar_t leader = stream.get();
-
-        wchar_t ch = stream.get();
-
-        for (; ch != L'\0' && ch != L'\'' && ch != L'"'; ch = stream.get())
-        {
-            m_literal.push_back(wide_to_target<TCHAR>(ch));
-        }
-
-        if (leader != ch)
-            throw stream.unexpected(ch);
-    }
+    void parse_literal(Stream& stream);
     void parse(Stream& stream)
     {
         wchar_t ch = stream.peek();
