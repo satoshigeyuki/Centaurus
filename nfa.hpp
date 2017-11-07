@@ -433,5 +433,9 @@ public:
     {
         return m_states[index];
     }
+    int get_state_num() const
+    {
+        return m_states.size();
+    }
 };
 }

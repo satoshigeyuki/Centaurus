@@ -213,6 +213,10 @@ public:
     {
         return m_literal;
     }
+    const std::string& get_invoke() const
+    {
+        return m_invoke;
+    }
 };
 
 template<typename TCHAR> class ATN
@@ -272,6 +276,10 @@ public:
     const ATNNode<TCHAR>& get_node(int index) const
     {
         return m_nodes[index];
+    }
+    int get_node_num() const
+    {
+        return m_nodes.size();
     }
     ATN(Stream& stream)
     {
