@@ -7,6 +7,8 @@
 #include "stream.hpp"
 #include "grammar.hpp"
 
+#include "catn.hpp"
+
 int main(int argc, const char *argv[])
 {
     if (argc < 2)
@@ -43,6 +45,12 @@ int main(int argc, const char *argv[])
     std::ofstream graph("atn.dot");
 
     grammar.print(graph, L"Object");
+
+    Centaurus::CompositeATN<char> catn = grammar.build_catn();
+
+    std::ofstream catn_graph("catn.dot");
+
+    catn.print_flat(catn_graph, "CATN");
 
     return 0;
 }

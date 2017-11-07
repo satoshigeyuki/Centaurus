@@ -213,7 +213,7 @@ public:
     {
         return m_literal;
     }
-    const std::string& get_invoke() const
+    const Identifier& get_invoke() const
     {
         return m_invoke;
     }

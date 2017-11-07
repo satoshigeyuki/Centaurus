@@ -1,6 +1,6 @@
 Object : Number | String | List | Dictionary ;
 Number : /[0-9]+/ ;
-String : /"([^"]|(\\["]))*"/ ;
+String : /"([a-z]|(\\["]))*"/ ;
 List : '[' ListContent ']' ;
 ListContent : | Object ListItems ;
 ListItems : | ',' Object ListItems ;

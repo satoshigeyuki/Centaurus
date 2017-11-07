@@ -4,9 +4,11 @@
 #include <vector>
 #include <utility>
 #include <string>
+#include <algorithm>
 
 #include "atn.hpp"
 #include "nfa.hpp"
+#include "identifier.hpp"
 
 namespace Centaurus
 {
@@ -41,10 +43,14 @@ public:
     }
     void import_transitions(const NFAState<TCHAR>& state, int offset)
     {
-        for (const auto& tr : state.transitions())
+        for (const auto& tr : state.get_transitions())
         {
             m_transitions.push_back(tr.offset(offset));
         }
+    }
+    const std::vector<CATNTransition<TCHAR> >& get_transitions() const
+    {
+        return m_transitions;
     }
     void print(std::ostream& os, int from) const
     {
@@ -56,22 +62,44 @@ public:
         }
     }
 };
+
+template<typename TCHAR>
+class CATNMarker
+{
+    int m_start, m_end;
+    std::string m_name;
+    std::vector<CATNMarker<TCHAR> > m_children;
+public:
+    CATNMarker()
+    {
+    }
+    CATNMarker(const std::string& name, int start, int end)
+        : m_name(name), m_start(start), m_end(end)
+    {
+    }
+    virtual ~CATNMarker()
+    {
+    }
+};
 template<typename TCHAR>
 class CompositeATN
 {
     std::vector<std::pair<Identifier, int> > m_stack;
     const std::unordered_map<Identifier, ATN<TCHAR> >& m_networks;
     std::vector<CATNNode<TCHAR> > m_nodes;
+    CATNMarker<TCHAR> m_marker;
 private:
     int add_node(const CharClass<TCHAR>& cc, int origin)
     {
         if (!m_nodes.empty() && origin >= 0)
-            m_nodes[origin].add_transition(CharClass<TCHAR>(), m_nodes.size());
+            m_nodes[origin].add_transition(cc, m_nodes.size());
         m_nodes.emplace_back();
         return m_nodes.size() - 1;
     }
-    int add_node(const CATNNode<TCHAR>& node)
+    int add_node(const CATNNode<TCHAR>& node, int origin)
     {
+        if (!m_nodes.empty() && origin >= 0)
+            m_nodes[origin].add_transition(CharClass<TCHAR>(), m_nodes.size());
         m_nodes.push_back(node);
         return m_nodes.size() - 1;
     }
@@ -79,7 +107,7 @@ private:
     {
         for (TCHAR ch : literal)
         {
-            origin = add_node(CharClass<TCHAR>(ch, ch + 1));
+            origin = add_node(CharClass<TCHAR>(ch, ch + 1), origin);
         }
         return origin;
     }
@@ -97,9 +125,9 @@ private:
     }
     int import_atn_node(const Identifier& id, int index, int origin, std::vector<int>& node_map)
     {
-        const ATNNode<TCHAR>& node = m_networks[id].get_node(index);
+        const ATNNode<TCHAR>& node = m_networks.at(id).get_node(index);
         node_map[index] = m_nodes.size();
-        switch (node.get_type())
+        switch (node.type())
         {
         case ATNNodeType::Blank:
             origin = add_node(CharClass<TCHAR>(), origin);
@@ -113,15 +141,15 @@ private:
         case ATNNodeType::Nonterminal:
             if (std::find_if(m_stack.begin(), m_stack.end(), [&](const std::pair<Identifier, int>& p) -> bool
                 {
-                    return p.first == node.get_invoke() && p.second == index;
-                }) == m_stack.end())
+                    return p.first == id && p.second == index;
+                }) != m_stack.end())
             {
-                origin = add_node(CATNNode(CATNNodeType::Barrier));
+                origin = add_node(CATNNode<TCHAR>(CATNNodeType::Barrier), origin);
             }
             else
             {
                 m_stack.emplace_back(id, index);
-                origin = import_atn(node.get_invoke());
+                origin = import_atn(node.get_invoke(), origin);
                 m_stack.pop_back();
             }
             break;
@@ -132,27 +160,50 @@ private:
         {
             if (node_map[tr.dest()] < 0)
                 next = import_atn_node(id, tr.dest(), origin, node_map);
+            else
+                m_nodes[origin].add_transition(CharClass<TCHAR>(), node_map[tr.dest()]);
         }
         return next;
     }
-    int import_atn(const Identifier& id)
+    int import_atn(const Identifier& id, int origin)
     {
-        const ATN<TCHAR>& atn = m_networks[id];
+        const ATN<TCHAR>& atn = m_networks.at(id);
 
-        std::vector<int> node_map(atn.m_nodes.size(), -1);
+        std::vector<int> node_map(atn.get_node_num(), -1);
 
-        return import_atn_node(atn, 0, -1, node_map);
+        int end = import_atn_node(id, 0, origin, node_map);
+
+        return node_map.back();
     }
 public:
     CompositeATN(const std::unordered_map<Identifier, ATN<TCHAR> >& networks, const Identifier& root)
         : m_networks(networks)
     {
-        import_atn(root);
+        import_atn(root, -1);
 
         m_stack.clear();
     }
     virtual ~CompositeATN()
     {
+    }
+    void epsilon_closure_sub(std::set<int>& closure, int origin) const
+    {
+        closure.insert(origin);
+        for (const auto& t : m_nodes[origin].get_transitions())
+        {
+            if (t.is_epsilon())
+            {
+                epsilon_closure_sub(closure, t.dest());
+            }
+        }
+    }
+    std::set<int> epsilon_closure(int origin) const
+    {
+        std::set<int> closure;
+
+        epsilon_closure_sub(closure, origin);
+
+        return closure;
     }
     void print_flat(std::ostream& os, const std::string& name) const
     {
