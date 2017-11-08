@@ -61,26 +61,12 @@ public:
             os << "\" ];" << std::endl;
         }
     }
+    CATNNodeType get_type() const
+    {
+        return m_type;
+    }
 };
 
-template<typename TCHAR>
-class CATNMarker
-{
-    int m_start, m_end;
-    std::string m_name;
-    std::vector<CATNMarker<TCHAR> > m_children;
-public:
-    CATNMarker()
-    {
-    }
-    CATNMarker(const std::string& name, int start, int end)
-        : m_name(name), m_start(start), m_end(end)
-    {
-    }
-    virtual ~CATNMarker()
-    {
-    }
-};
 template<typename TCHAR>
 class CompositeATN
 {
@@ -116,7 +102,7 @@ private:
         int offset = m_nodes.size();
         add_node(CharClass<TCHAR>(), origin);
         m_nodes.back().import_transitions(nfa.get_state(0), offset);
-        for (unsigned int i = 1; i < nfa.get_state_num(); i++)
+        for (int i = 1; i < nfa.get_state_num(); i++)
         {
             m_nodes.emplace_back();
             m_nodes.back().import_transitions(nfa.get_state(i), offset);
@@ -171,7 +157,7 @@ private:
 
         std::vector<int> node_map(atn.get_node_num(), -1);
 
-        int end = import_atn_node(id, 0, origin, node_map);
+        import_atn_node(id, 0, origin, node_map);
 
         return node_map.back();
     }
@@ -205,20 +191,39 @@ public:
 
         return closure;
     }
+    std::set<int> epsilon_closure(const std::set<int>& origins) const
+    {
+        std::set<int> closure;
+
+        for (int origin : origins)
+        {
+            epsilon_closure_sub(closure, origin);
+        }
+
+        return closure;
+    }
     void print_flat(std::ostream& os, const std::string& name) const
     {
         os << "digraph " << name << " {" << std::endl;
         os << "rankdir=\"LR\";" << std::endl;
         os << "graph [ charset=\"UTF-8\" ];" << std::endl;
-        os << "node [ style=\"solid,filled\" ];" << std::endl;
+        os << "node [ style=\"solid,filled\", color=\"black\" ];" << std::endl;
         os << "edge [ style=\"solid\" ];" << std::endl;
 
-        for (int i = 0; i < m_nodes.size(); i++)
+        for (unsigned int i = 0; i < m_nodes.size(); i++)
         {
-            os << "N" << i << " [ label=\"" << i << "\" ];" << std::endl;
+            switch (m_nodes[i].get_type())
+            {
+            case CATNNodeType::Normal:
+                os << "N" << i << " [ fillcolor=\"white\", label=\"" << i << "\" ];" << std::endl;
+                break;
+            case CATNNodeType::Barrier:
+                os << "N" << i << " [ fillcolor=\"grey\", label=\"" << i << "\" ];" << std::endl;
+                break;
+            }
         }
 
-        for (int i = 0; i < m_nodes.size(); i++)
+        for (unsigned int i = 0; i < m_nodes.size(); i++)
         {
             m_nodes[i].print(os, i);
         }

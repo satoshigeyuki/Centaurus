@@ -3,6 +3,9 @@
 #include <iostream>
 #include <algorithm>
 #include <vector>
+#include <utility>
+
+#include "identifier.hpp"
 
 namespace Centaurus
 {
@@ -10,6 +13,35 @@ template<typename TCHAR> TCHAR wide_to_target(wchar_t ch)
 {
     return static_cast<TCHAR>(ch);
 }
+class ATNPath
+{
+    friend std::ostream& operator<<(std::ostream& os, const ATNPath& path);
+
+    std::vector<std::pair<Identifier, int> > m_path;
+public:
+    ATNPath()
+    {
+    }
+    virtual ~ATNPath()
+    {
+    }
+    void push(const Identifier& id, int index)
+    {
+        m_path.emplace_back(id, index);
+    }
+    void pop()
+    {
+        m_path.pop_back();
+    }
+    ATNPath add(const Identifier& id, int index) const
+    {
+        ATNPath new_path(*this);
+
+        new_path.push(id, index);
+
+        return new_path;
+    }
+};
 class IndexVector : public std::vector<int>
 {
 public:
@@ -72,5 +104,6 @@ public:
         return ret;
     }
 };
+std::ostream& operator<<(std::ostream& os, const ATNPath& path);
 std::ostream& operator<<(std::ostream& os, const IndexVector& v);
 }
