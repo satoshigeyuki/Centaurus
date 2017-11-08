@@ -1,5 +1,7 @@
 #include "charclass.hpp"
 
+#include <cctype>
+
 namespace Centaurus
 {
 template class CharClass<char>;
@@ -72,7 +74,10 @@ std::ostream& operator<<(std::ostream& os, const CharClass<TCHAR>& cc)
             else if (i->start() == wide_to_target<TCHAR>(L'\\'))
                 os << "\\\\";
             else
-                os << os.narrow(i->start(), '@');
+            {
+                char ch = os.narrow(i->start(), '@');
+                os << (std::isprint(ch) ? ch : '@');
+            }
         }
         else
         {
@@ -81,14 +86,20 @@ std::ostream& operator<<(std::ostream& os, const CharClass<TCHAR>& cc)
             else if (i->start() == wide_to_target<TCHAR>(L'\\'))
                 os << "\\\\";
             else
-                os << os.narrow(i->start(), '@');
+            {
+                char ch = os.narrow(i->start(), '@');
+                os << (std::isprint(ch) ? ch : '@');
+            }
             os << '-';
             if (i->end() - 1 == wide_to_target<TCHAR>(L'"'))
                 os << "\\\"";
             else if (i->end() - 1 == wide_to_target<TCHAR>(L'\\'))
                 os << "\\\\";
             else
-                os << os.narrow(i->end() - 1, '@');
+            {
+                char ch = os.narrow(i->end(), '@');
+                os << (std::isprint(ch) ? ch : '@');
+            }
         }
         i++;
     }

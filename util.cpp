@@ -2,6 +2,11 @@
 
 namespace Centaurus
 {
+std::ostream& operator<<(std::ostream& os, const Identifier& id)
+{
+    os << id.str();
+    return os;
+}
 std::ostream& operator<<(std::ostream& os, const ATNPath& path)
 {
     for (unsigned int i = 0; i < path.m_path.size() - 1; i++)

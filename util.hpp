@@ -104,6 +104,7 @@ public:
         return ret;
     }
 };
+std::ostream& operator<<(std::ostream& os, const Identifier& id);
 std::ostream& operator<<(std::ostream& os, const ATNPath& path);
 std::ostream& operator<<(std::ostream& os, const IndexVector& v);
 }

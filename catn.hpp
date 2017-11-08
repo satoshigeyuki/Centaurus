@@ -9,6 +9,7 @@
 #include "atn.hpp"
 #include "nfa.hpp"
 #include "identifier.hpp"
+#include "util.hpp"
 
 namespace Centaurus
 {
@@ -25,6 +26,7 @@ class CATNNode
 {
     CATNNodeType m_type;
     std::vector<CATNTransition<TCHAR> > m_transitions;
+    ATNPath m_path;
 public:
     CATNNode()
         : m_type(CATNNodeType::Normal)
@@ -73,7 +75,6 @@ class CompositeATN
     std::vector<std::pair<Identifier, int> > m_stack;
     const std::unordered_map<Identifier, ATN<TCHAR> >& m_networks;
     std::vector<CATNNode<TCHAR> > m_nodes;
-    CATNMarker<TCHAR> m_marker;
 private:
     int add_node(const CharClass<TCHAR>& cc, int origin)
     {

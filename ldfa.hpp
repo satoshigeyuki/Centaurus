@@ -6,6 +6,7 @@
 #include "catn.hpp"
 #include "dfa.hpp"
 #include "nfa.hpp"
+#include "util.hpp"
 
 namespace Centaurus
 {
@@ -13,7 +14,7 @@ template<typename TCHAR> using LDFATransition = NFATransition<TCHAR>;
 template<typename TCHAR>
 class LDFAState
 {
-    std::vector<LDFATransition<TCHAR> > m_states;
+    std::vector<LDFATransition<TCHAR> > m_transitions;
 public:
     LDFAState()
     {
