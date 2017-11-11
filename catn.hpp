@@ -173,35 +173,9 @@ public:
     virtual ~CompositeATN()
     {
     }
-    void epsilon_closure_sub(std::set<int>& closure, int origin) const
+    const std::vector<CATNTransition<TCHAR> >& get_transitions(int index) const
     {
-        closure.insert(origin);
-        for (const auto& t : m_nodes[origin].get_transitions())
-        {
-            if (t.is_epsilon())
-            {
-                epsilon_closure_sub(closure, t.dest());
-            }
-        }
-    }
-    std::set<int> epsilon_closure(int origin) const
-    {
-        std::set<int> closure;
-
-        epsilon_closure_sub(closure, origin);
-
-        return closure;
-    }
-    std::set<int> epsilon_closure(const std::set<int>& origins) const
-    {
-        std::set<int> closure;
-
-        for (int origin : origins)
-        {
-            epsilon_closure_sub(closure, origin);
-        }
-
-        return closure;
+        return m_nodes[index].get_transitions();
     }
     void print_flat(std::ostream& os, const std::string& name) const
     {
