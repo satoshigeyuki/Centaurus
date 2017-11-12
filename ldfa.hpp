@@ -42,7 +42,7 @@ private:
     void fork_closures(const CompositeATN<TCHAR>& catn, int index)
     {
         //States reached from the current LDFA state (epsilon closure) via non-epsilon transitions
-        std::vector<CATNTransition<TCHAR> > outbound_transitions;
+        std::vector<std::pair<int, CATNTransition<TCHAR> > > outbound_transitions;
 
         //Collect all outbound transitions
         for (std::pair<int, int> p : m_states[index].label())
@@ -51,16 +51,16 @@ private:
             {
                 if (!tr.is_epsilon())
                 {
-                    outbound_transitions.push_back(tr);
+                    outbound_transitions.emplace_back(p.second, tr);
                 }
             }
         }
 
         //Divide the entire character space into equivalent sets
         std::set<int> borders;
-        for (const auto& tr : outbound_transitions)
+        for (const auto& p : outbound_transitions)
         {
-            IndexVector mb = tr.label().collect_borders();
+            IndexVector mb = p.second.label().collect_borders();
 
             borders.insert(mb.cbegin(), mb.cend());
         }
@@ -76,13 +76,13 @@ private:
             TCHAR range_end = *i;
 
             Range<TCHAR> r(range_start, range_end);
-            std::set<int> dests;
+            std::set<std::pair<int, int> > dests;
 
-            for (const auto& tr : outbound_transitions)
+            for (const auto& p : outbound_transitions)
             {
-                if (tr.label().includes(r))
+                if (p.second.label().includes(r))
                 {
-                    dests.insert(tr.dest());
+                    dests.emplace(tr.dest(), p.first);
                 }
             }
 
