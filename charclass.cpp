@@ -57,9 +57,6 @@ CharClass<TCHAR> CharClass<TCHAR>::operator|(const CharClass<TCHAR>& cc) const
     return new_class;
 }
 
-template std::ostream& operator<<(std::ostream& os, const CharClass<char>& cc);
-template std::ostream& operator<<(std::ostream& os, const CharClass<wchar_t>& cc);
-
 template<typename TCHAR>
 std::ostream& operator<<(std::ostream& os, const CharClass<TCHAR>& cc)
 {
@@ -105,4 +102,6 @@ std::ostream& operator<<(std::ostream& os, const CharClass<TCHAR>& cc)
     }
     return os;
 }
+template std::ostream& operator<<(std::ostream& os, const CharClass<char>& cc);
+template std::ostream& operator<<(std::ostream& os, const CharClass<wchar_t>& cc);
 }
