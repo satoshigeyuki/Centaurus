@@ -1,11 +1,11 @@
 #pragma once
 
+#include <iostream>
 #include <vector>
 #include <set>
 #include <utility>
 
 #include "catn.hpp"
-#include "dfa.hpp"
 #include "nfa.hpp"
 #include "util.hpp"
 
@@ -31,14 +31,79 @@ namespace Centaurus
 {
 template<typename TCHAR> using LDFATransition = NFATransition<TCHAR>;
 using LDFAStateLabel = std::set<std::pair<int, int> >;
-template<typename TCHAR> using LDFAState = NFABaseState<TCHAR, LDFAStateLabel>;
 template<typename TCHAR>
-class LookaheadDFA
+class LDFAState : public NFABaseState<TCHAR, LDFAStateLabel>
+{
+    using NFABaseState<TCHAR, LDFAStateLabel>::m_label;
+
+    int m_decision;
+private:
+    int compute_color() const
+    {
+        int color = 0;
+        for (const auto& p : m_label)
+        {
+            if (color == 0)
+            {
+                color = p.second;
+            }
+            else
+            {
+                if (color != p.second && p.second != 0)
+                    return -1;
+            }
+        }
+        return color;
+    }
+public:
+    LDFAState()
+    {
+        //State color is set to WHITE
+    }
+    LDFAState(const LDFAStateLabel& label)
+        : NFABaseState<TCHAR, LDFAStateLabel>(label)
+    {
+        m_decision = compute_color();
+    }
+    virtual ~LDFAState()
+    {
+    }
+    int get_color() const
+    {
+        return m_decision;
+    }
+};
+template<typename TCHAR>
+class LookaheadDFA : public NFABase<TCHAR>
 {
     using LDFAEquivalenceTable = std::vector<std::pair<CharClass<TCHAR>, LDFAStateLabel> >;
 
     std::vector<LDFAState<TCHAR> > m_states;
 private:
+    void add_transition(LDFAEquivalenceTable& table, const Range<TCHAR>& r, const LDFAStateLabel& dests) const
+    {
+        for (auto& item : table)
+        {
+            if (std::equal(item.second.cbegin(), item.second.cend(), dests.cbegin()))
+            {
+                item.first |= r;
+                return;
+            }
+        }
+        table.emplace_back(CharClass<TCHAR>(r), dests);
+    }
+    int add_state(const LDFAStateLabel& label)
+    {
+        for (unsigned int i = 0; i < m_states.size(); i++)
+        {
+            if (std::equal(label.cbegin(), label.cend(), m_states[i].label().cbegin()))
+            {
+                return i;
+            }
+        }
+        m_states.emplace_back(label);
+        return m_states.size() - 1;
+    }
     void fork_closures(const CompositeATN<TCHAR>& catn, int index)
     {
         //States reached from the current LDFA state (epsilon closure) via non-epsilon transitions
@@ -51,6 +116,7 @@ private:
             {
                 if (!tr.is_epsilon())
                 {
+                    //Mark the outbound transition with the color of the origin node
                     outbound_transitions.emplace_back(p.second, tr);
                 }
             }
@@ -68,7 +134,7 @@ private:
         LDFAEquivalenceTable table;
 
         //Contract equivalent transitions using the equivalence table
-        for (auto i = borders.cbegin(); i != borders.cend(); i++)
+        for (auto i = borders.cbegin(); i != borders.cend(); )
         {
             //Iterate over all equivalent ranges
             TCHAR range_start = *i;
@@ -76,7 +142,11 @@ private:
             TCHAR range_end = *i;
 
             Range<TCHAR> r(range_start, range_end);
-            std::set<std::pair<int, int> > dests;
+
+            //Label of the new destination LDFA state,
+            //which is equivalent to the set of CATN nodes reached from 
+            //the closure, marked with their respective colors
+            LDFAStateLabel dests;
 
             for (const auto& p : outbound_transitions)
             {
@@ -125,7 +195,7 @@ private:
     {
         LDFAStateLabel label;
 
-        for (std::set<int, int> p : src)
+        for (std::pair<int, int> p : src)
         {
             build_closure_sub(catn, label, p.first, p.second);
         }
@@ -136,7 +206,7 @@ private:
     {
         LDFAStateLabel label;
 
-        label.emplace(origin, WHITE);
+        label.emplace(origin, 0);
 
         const std::vector<CATNTransition<TCHAR> >& transitions = catn.get_transitions(origin);
 
@@ -153,9 +223,16 @@ private:
 public:
     LookaheadDFA(const CompositeATN<TCHAR>& catn, int origin)
     {
+        m_states.emplace_back(build_root_closure(catn, origin));
+
+        fork_closures(catn, 0);
     }
     virtual ~LookaheadDFA()
     {
+    }
+    virtual void print_state(std::ostream& os, int index)
+    {
+        os << m_states[index].label();
     }
 };
 }
