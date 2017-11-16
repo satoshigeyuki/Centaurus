@@ -47,18 +47,16 @@ public:
 };
 class ReservedCharException : public std::exception
 {
-    std::string msg;
 public:
     ReservedCharException() noexcept
     {
-        msg = "Reserved character U+FFFF is not allowed here.";
     }
     virtual ~ReservedCharException()
     {
     }
     const char *what() const noexcept
     {
-        return msg.c_str();
+        return "Reserved character U+FFFF is not allowed here.";
     }
 };
 }

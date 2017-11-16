@@ -8,6 +8,7 @@
 #include "catn.hpp"
 #include "nfa.hpp"
 #include "util.hpp"
+#include "exception.hpp"
 
 namespace std
 {
@@ -35,10 +36,10 @@ template<typename TCHAR>
 class LDFAState : public NFABaseState<TCHAR, LDFAStateLabel>
 {
     using NFABaseState<TCHAR, LDFAStateLabel>::m_label;
+    using NFABaseState<TCHAR, LDFAStateLabel>::m_transitions;
 
-    int m_decision;
 private:
-    int compute_color() const
+    int get_color() const
     {
         int color = 0;
         for (const auto& p : m_label)
@@ -63,14 +64,9 @@ public:
     LDFAState(const LDFAStateLabel& label)
         : NFABaseState<TCHAR, LDFAStateLabel>(label)
     {
-        m_decision = compute_color();
     }
     virtual ~LDFAState()
     {
-    }
-    int get_color() const
-    {
-        return m_decision;
     }
 };
 template<typename TCHAR>
@@ -106,6 +102,12 @@ private:
     }
     void fork_closures(const CompositeATN<TCHAR>& catn, int index)
     {
+        //First, check if the state in question is already single-colored
+        if (m_states[index].get_color() > 0)
+        {
+            return;
+        }
+
         //States reached from the current LDFA state (epsilon closure) via non-epsilon transitions
         std::vector<std::pair<int, CATNTransition<TCHAR> > > outbound_transitions;
 
@@ -118,8 +120,22 @@ private:
                 {
                     //Mark the outbound transition with the color of the origin node
                     outbound_transitions.emplace_back(p.second, tr);
+
+                    if (catn.get_node(tr.dest()).get_type() == CATNNodeType::Barrier)
+                    {
+                        throw SimpleException("Barrier node reached during LDFA construction.");
+                    }
                 }
             }
+        }
+
+        int color = m_states[index].get_color();
+
+        if (outbound_transitions.empty() && color < 0)
+        {
+            //If the color is BLACK and there is no transitions outbound,
+            //we throw an exception because the decision is impossible
+            throw SimpleException("LDFA construction failed.");
         }
 
         //Divide the entire character space into equivalent sets

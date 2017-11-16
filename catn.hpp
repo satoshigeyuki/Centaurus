@@ -150,12 +150,19 @@ private:
             else
                 m_nodes[origin].add_transition(CharClass<TCHAR>(), node_map[tr.dest()]);
         }
+
+        if (node.get_transitions().size() > 1)
+        {
+            m_nodes[origin].set_path(m_stack);
+        }
         return next;
     }
     int import_atn(const Identifier& id, int origin)
     {
         const ATN<TCHAR>& atn = m_networks.at(id);
 
+        //Node map tracks the correspondence between the CATN node and ATN node,
+        //within a single recursion level
         std::vector<int> node_map(atn.get_node_num(), -1);
 
         import_atn_node(id, 0, origin, node_map);
@@ -176,6 +183,10 @@ public:
     const std::vector<CATNTransition<TCHAR> >& get_transitions(int index) const
     {
         return m_nodes[index].get_transitions();
+    }
+    const CATNNode<TCHAR>& get_node(int index) const
+    {
+        return m_nodes[index];
     }
     void print_flat(std::ostream& os, const std::string& name) const
     {
