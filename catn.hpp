@@ -26,7 +26,6 @@ class CATNNode
 {
     CATNNodeType m_type;
     std::vector<CATNTransition<TCHAR> > m_transitions;
-    ATNPath m_path;
 public:
     CATNNode()
         : m_type(CATNNodeType::Normal)
@@ -72,7 +71,7 @@ public:
 template<typename TCHAR>
 class CompositeATN
 {
-    std::vector<std::pair<Identifier, int> > m_stack;
+    ATNPath m_path;
     const std::unordered_map<Identifier, ATN<TCHAR> >& m_networks;
     std::vector<CATNNode<TCHAR> > m_nodes;
 private:
@@ -126,18 +125,15 @@ private:
             origin = import_regular_terminal(node.get_nfa(), origin);
             break;
         case ATNNodeType::Nonterminal:
-            if (std::find_if(m_stack.begin(), m_stack.end(), [&](const std::pair<Identifier, int>& p) -> bool
-                {
-                    return p.first == id && p.second == index;
-                }) != m_stack.end())
+            if (m_path.count(id, index) > 0)
             {
                 origin = add_node(CATNNode<TCHAR>(CATNNodeType::Barrier), origin);
             }
             else
             {
-                m_stack.emplace_back(id, index);
+                m_path.push(id, index);
                 origin = import_atn(node.get_invoke(), origin);
-                m_stack.pop_back();
+                m_path.pop();
             }
             break;
         }
@@ -153,7 +149,7 @@ private:
 
         if (node.get_transitions().size() > 1)
         {
-            m_nodes[origin].set_path(m_stack);
+            std::wcout << m_path << std::endl;
         }
         return next;
     }
@@ -174,8 +170,6 @@ public:
         : m_networks(networks)
     {
         import_atn(root, -1);
-
-        m_stack.clear();
     }
     virtual ~CompositeATN()
     {

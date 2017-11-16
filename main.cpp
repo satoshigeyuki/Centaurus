@@ -17,7 +17,7 @@ int main(int argc, const char *argv[])
         return -1;
     }
 
-    std::cout << "Centaurus parser generator v0.1" << std::endl;
+    //std::cout << "Centaurus parser generator v0.1" << std::endl;
 
     std::ifstream grammar_file(argv[1], std::ios::in);
 
@@ -50,7 +50,7 @@ int main(int argc, const char *argv[])
 
     std::ofstream catn_graph("catn.dot");
 
-    catn.print_flat(catn_graph, "CATN");
+    //catn.print_flat(catn_graph, "CATN");
 
     return 0;
 }
