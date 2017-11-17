@@ -9,13 +9,13 @@
 
 namespace Centaurus
 {
-template<typename TCHAR> TCHAR wide_to_target(wchar_t ch)
+template<typename TCHAR> TCHAR wide_to_target(char16_t ch)
 {
     return static_cast<TCHAR>(ch);
 }
 class ATNPath
 {
-    friend std::wostream& operator<<(std::wostream& os, const ATNPath& path);
+    friend std::ostream& operator<<(std::ostream& os, const ATNPath& path);
 
     std::vector<std::pair<Identifier, int> > m_path;
 public:
@@ -112,7 +112,7 @@ public:
         return ret;
     }
 };
-std::wostream& operator<<(std::wostream& os, const Identifier& id);
-std::wostream& operator<<(std::wostream& os, const ATNPath& path);
+std::ostream& operator<<(std::ostream& os, const Identifier& id);
+std::ostream& operator<<(std::ostream& os, const ATNPath& path);
 std::ostream& operator<<(std::ostream& os, const IndexVector& v);
 }

@@ -149,7 +149,7 @@ private:
 
         if (node.get_transitions().size() > 1)
         {
-            std::wcout << m_path << std::endl;
+            std::cout << m_path.add(id, index) << std::endl;
         }
         return next;
     }

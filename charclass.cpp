@@ -5,7 +5,7 @@
 namespace Centaurus
 {
 template class CharClass<char>;
-template class CharClass<wchar_t>;
+template class CharClass<char16_t>;
 
 template<typename TCHAR>
 CharClass<TCHAR> CharClass<TCHAR>::operator|(const CharClass<TCHAR>& cc) const
@@ -66,9 +66,9 @@ std::ostream& operator<<(std::ostream& os, const CharClass<TCHAR>& cc)
     {
         if (i->end() == i->start() + 1)
         {
-            if (i->start() == wide_to_target<TCHAR>(L'"'))
+            if (i->start() == wide_to_target<TCHAR>(u'"'))
                 os << "\\\"";
-            else if (i->start() == wide_to_target<TCHAR>(L'\\'))
+            else if (i->start() == wide_to_target<TCHAR>(u'\\'))
                 os << "\\\\";
             else
             {
@@ -78,9 +78,9 @@ std::ostream& operator<<(std::ostream& os, const CharClass<TCHAR>& cc)
         }
         else
         {
-            if (i->start() == wide_to_target<TCHAR>(L'"'))
+            if (i->start() == wide_to_target<TCHAR>(u'"'))
                 os << "\\\"";
-            else if (i->start() == wide_to_target<TCHAR>(L'\\'))
+            else if (i->start() == wide_to_target<TCHAR>(u'\\'))
                 os << "\\\\";
             else
             {
@@ -88,9 +88,9 @@ std::ostream& operator<<(std::ostream& os, const CharClass<TCHAR>& cc)
                 os << (std::isprint(ch) ? ch : '@');
             }
             os << '-';
-            if (i->end() - 1 == wide_to_target<TCHAR>(L'"'))
+            if (i->end() - 1 == wide_to_target<TCHAR>(u'"'))
                 os << "\\\"";
-            else if (i->end() - 1 == wide_to_target<TCHAR>(L'\\'))
+            else if (i->end() - 1 == wide_to_target<TCHAR>(u'\\'))
                 os << "\\\\";
             else
             {
@@ -103,5 +103,5 @@ std::ostream& operator<<(std::ostream& os, const CharClass<TCHAR>& cc)
     return os;
 }
 template std::ostream& operator<<(std::ostream& os, const CharClass<char>& cc);
-template std::ostream& operator<<(std::ostream& os, const CharClass<wchar_t>& cc);
+template std::ostream& operator<<(std::ostream& os, const CharClass<char16_t>& cc);
 }

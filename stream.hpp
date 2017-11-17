@@ -4,6 +4,7 @@
 #include <exception>
 #include <iostream>
 #include <sstream>
+#include <cwctype>
 
 namespace Centaurus
 {
@@ -28,13 +29,13 @@ public:
 };
 class Stream
 {
-    std::wstring m_str;
-    std::wstring::iterator m_cur;
+    std::u16string m_str;
+    std::u16string::iterator m_cur;
     int m_line, m_pos;
     bool m_newline_flag;
 public:
-    using Sentry = std::wstring::const_iterator;
-    Stream(std::wstring&& str)
+    using Sentry = std::u16string::const_iterator;
+    Stream(std::u16string&& str)
         : m_str(str), m_line(1), m_pos(0), m_newline_flag(false)
     {
         m_cur = m_str.begin();
@@ -44,13 +45,13 @@ public:
     }
     void skip_multiline_comment()
     {
-        wchar_t ch = get();
-        for (; ch != L'\0'; ch = get())
+        char16_t ch = get();
+        for (; ch != u'\0'; ch = get())
         {
-            if (ch == L'*')
+            if (ch == u'*')
             {
                 ch = peek();
-                if (ch == L'/')
+                if (ch == u'/')
                 {
                     get();
                     return;
@@ -61,16 +62,16 @@ public:
     }
     void skip_oneline_comment()
     {
-        for (wchar_t ch = get(); ch != L'\0' && ch != L'\n'; ch = get())
+        for (char16_t ch = get(); ch != u'\0' && ch != u'\n'; ch = get())
             ;
     }
-    wchar_t get()
+    char16_t get()
     {
         if (m_cur == m_str.end())
             return 0;
         else
         {
-            wchar_t ch = *(m_cur++);
+            char16_t ch = *(m_cur++);
             if (m_newline_flag)
             {
                 m_newline_flag = false;
@@ -81,36 +82,36 @@ public:
             {
                 m_pos++;
             }
-            if (ch == L'\r')
+            if (ch == u'\r')
             {
                 if (m_cur == m_str.end())
-                    return L'\n';
-                if (*m_cur == L'\n')
+                    return u'\n';
+                if (*m_cur == u'\n')
                 {
                     m_newline_flag = true;
                     m_pos++;
                     m_cur++;
                 }
             }
-            else if (ch == L'\n')
+            else if (ch == u'\n' || ch == u'\u0085' || ch == u'\u2028' || ch == u'\u2029')
             {
                 m_newline_flag = true;
             }
             return ch;
         }
     }
-    wchar_t peek()
+    char16_t peek()
     {
         if (m_cur == m_str.end())
-            return L'\0';
+            return u'\0';
         return *m_cur;
     }
-    wchar_t peek(int n)
+    char16_t peek(int n)
     {
         for (int i = 0; i < n - 1; i++)
         {
             if (m_cur + i == m_str.end())
-                return L'\0';
+                return u'\0';
         }
         return *(m_cur + (n - 1));
     }
@@ -123,43 +124,44 @@ public:
         for (int i = 0; i < n; i++)
             get();
     }
-    wchar_t skip_whitespace()
+    char16_t skip_whitespace()
     {
+        char16_t ch;
+
         while (true)
         {
-            wchar_t ch = peek();
+            ch = peek();
 
-            switch (ch)
+            if (std::iswspace(ch))
             {
-            case L' ':
-            case L'\t':
-            case L'\r':
-            case L'\n':
                 discard();
-                break;
-            case L'/':
+            }
+            else if (ch == u'/')
+            {
                 ch = peek(2);
-                if (ch == L'*')
+                if (ch == u'*')
                 {
                     discard(2);
                     skip_multiline_comment();
                 }
-                else if (ch == L'/')
+                else if (ch == u'/')
                 {
                     discard(2);
                     skip_oneline_comment();
                 }
                 else
                 {
-                    return L'/';
+                    return u'/';
                 }
+            }
+            else
+            {
                 break;
-            default:
-                return ch;
             }
         }
+        return ch;
     }
-    wchar_t after_whitespace()
+    char16_t after_whitespace()
     {
         skip_whitespace();
         return get();
@@ -168,15 +170,15 @@ public:
     {
         return m_cur;
     }
-    std::wstring cut(const Sentry& sentry)
+    std::u16string cut(const Sentry& sentry)
     {
-        return std::wstring(static_cast<std::wstring::const_iterator>(sentry), static_cast<std::wstring::const_iterator>(m_cur));
+        return std::u16string(static_cast<std::u16string::const_iterator>(sentry), static_cast<std::u16string::const_iterator>(m_cur));
     }
-    StreamException unexpected(wchar_t ch)
+    StreamException unexpected(char16_t ch)
     {
         std::ostringstream stream;
 
-        stream << "Line " << m_line << ", Pos " << m_pos << ": Unexpected character " << stream.narrow(ch, '@');
+        stream << "Line " << m_line << ", Pos " << m_pos << ": Unexpected character " << std::hex << (int)ch << std::dec;
 
         return StreamException(stream.str());
     }

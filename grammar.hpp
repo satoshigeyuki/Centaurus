@@ -13,7 +13,7 @@ namespace Centaurus
 class AlienCode
 {
 protected:
-    std::wstring m_str;
+    std::u16string m_str;
 public:
     AlienCode()
     {
@@ -28,17 +28,17 @@ class CppAlienCode : public AlienCode
 private:
     void parse_literal_string(Stream& stream)
     {
-        wchar_t ch = stream.get();
-        for (; ch != L'\0'; ch = stream.get())
+        char16_t ch = stream.get();
+        for (; ch != u'\0'; ch = stream.get())
         {
-            if (ch == L'"')
+            if (ch == u'"')
                 return;
         }
         throw stream.unexpected(EOF);
     }
     void parse_literal_character(Stream& stream)
     {
-        wchar_t ch = stream.get();
+        char16_t ch = stream.get();
         if (ch == '\\')
             ch = stream.get();
         ch = stream.get();
@@ -49,14 +49,14 @@ private:
     {
         while (true)
         {
-            wchar_t ch = stream.after_whitespace();
+            char16_t ch = stream.after_whitespace();
 
             switch (ch)
             {
-            case L'"':
+            case u'"':
                 parse_literal_string(stream);
                 break;
-            case L'\'':
+            case u'\'':
                 parse_literal_character(stream);
                 break;
             }
@@ -84,9 +84,9 @@ public:
     {
         while (1)
         {
-            wchar_t ch = stream.skip_whitespace();
+            char16_t ch = stream.skip_whitespace();
 
-            if (ch == L'\0')
+            if (ch == u'\0')
                 break;
 
             Identifier id(stream);

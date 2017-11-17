@@ -102,20 +102,20 @@ private:
     void parse_literal(Stream& stream);
     void parse(Stream& stream)
     {
-        wchar_t ch = stream.peek();
+        char16_t ch = stream.peek();
 
         if (Identifier::is_symbol_leader(ch))
         {
             m_invoke.parse(stream);
             m_type = ATNNodeType::Nonterminal;
         }
-        else if (ch == L'/')
+        else if (ch == u'/')
         {
             stream.discard();
             m_nfa.parse(stream);
             m_type = ATNNodeType::RegularTerminal;
         }
-        else if (ch == L'\'' || ch == L'"')
+        else if (ch == u'\'' || ch == u'"')
         {
             parse_literal(stream);
             m_type = ATNNodeType::LiteralTerminal;
@@ -229,14 +229,14 @@ public:
     {
         std::vector<int> terminal_states;
 
-        wchar_t ch = stream.skip_whitespace();
+        char16_t ch = stream.skip_whitespace();
 
-        for (; ch != L';'; ch = stream.skip_whitespace())
+        for (; ch != u';'; ch = stream.skip_whitespace())
         {
-            if (ch == L'\0')
+            if (ch == u'\0')
                 throw stream.unexpected(ch);
 
-            if (ch == L':' || ch == L'|')
+            if (ch == u':' || ch == u'|')
             {
                 stream.discard();
                 terminal_states.push_back(add_node(0));

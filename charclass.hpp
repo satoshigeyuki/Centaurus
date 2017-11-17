@@ -31,14 +31,14 @@ public:
         : m_start(0), m_end(0)
     {
     }
-    /*Range(wchar_t start, wchar_t end)
+    /*Range(char16_t start, char16_t end)
     {
         assert(start < end);
 
         m_start = wide_to_target<TCHAR>(start);
         m_end = wide_to_target<TCHAR>(end);
     }*/
-    static Range<TCHAR> make_from_wide(wchar_t start, wchar_t end)
+    static Range<TCHAR> make_from_wide(char16_t start, char16_t end)
     {
         return Range<TCHAR>(wide_to_target<TCHAR>(start), wide_to_target<TCHAR>(end));
     }
@@ -94,40 +94,40 @@ template<typename TCHAR> class CharClass
 public:
     void parse(Stream& stream)
     {
-        wchar_t ch;
+        char16_t ch;
         bool invert_flag = false;
 
         ch = stream.get();
-        if (ch == L'^')
+        if (ch == u'^')
         {
             invert_flag = true;
             ch = stream.get();
         }
 
-        wchar_t start = 0;
+        char16_t start = 0;
         enum
         {
             CC_STATE_START = 0,
             CC_STATE_RANGE,
             CC_STATE_END
         } state = CC_STATE_START;
-        for (; ch != L']'; ch = stream.get())
+        for (; ch != u']'; ch = stream.get())
         {
             bool escaped = false;
 
-            if (ch == L'\0' || ch == 0xFFFF)
+            if (ch == u'\0' || ch == 0xFFFF)
                 throw stream.unexpected(ch);
 
-            if (ch == L'\\')
+            if (ch == u'\\')
             {
                 ch = stream.get();
                 switch (ch)
                 {
-                case L'\\':
-                    ch = L'\\';
+                case u'\\':
+                    ch = u'\\';
                     break;
-                case L'-':
-                    ch = L'-';
+                case u'-':
+                    ch = u'-';
                     break;
                 default:
                     throw stream.unexpected(ch);
@@ -137,13 +137,13 @@ public:
             switch (state)
             {
             case CC_STATE_START:
-                if (!escaped && ch == L'-')
+                if (!escaped && ch == u'-')
                     throw stream.unexpected(ch);
                 start = ch;
                 state = CC_STATE_RANGE;
                 break;
             case CC_STATE_RANGE:
-                if (!escaped && ch == L'-')
+                if (!escaped && ch == u'-')
                 {
                     state = CC_STATE_END;
                 }
@@ -155,7 +155,7 @@ public:
                 }
                 break;
             case CC_STATE_END:
-                if (!escaped && ch == L'-')
+                if (!escaped && ch == u'-')
                 {
                     throw stream.unexpected(ch);
                 }
@@ -173,7 +173,7 @@ public:
         }
         else if (state == CC_STATE_END)
         {
-            throw stream.unexpected(L']');
+            throw stream.unexpected(u']');
         }
         if (invert_flag) invert();
     }
@@ -184,11 +184,11 @@ public:
     {
         parse(stream);
     }
-    CharClass(wchar_t ch)
+    CharClass(char16_t ch)
     {
         m_ranges.push_back(Range<TCHAR>::make_from_wide(ch, ch + 1));
     }
-    CharClass(wchar_t start, wchar_t end)
+    CharClass(char16_t start, char16_t end)
     {
         m_ranges.push_back(Range<TCHAR>::make_from_wide(start, end));
     }

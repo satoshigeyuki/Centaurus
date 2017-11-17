@@ -2,20 +2,20 @@
 
 namespace Centaurus
 {
-std::wostream& operator<<(std::wostream& os, const Identifier& id)
+std::ostream& operator<<(std::ostream& os, const Identifier& id)
 {
-    os << id.str();
+    os << id.narrow();
     return os;
 }
-std::wostream& operator<<(std::wostream& os, const ATNPath& path)
+std::ostream& operator<<(std::ostream& os, const ATNPath& path)
 {
-    for (unsigned int i = 0; i < path.m_path.size() - 1; i++)
-    {
-        //os << path.m_path[i].first << L"." << path.m_path[i].second << L"/";
-    }
     if (!path.m_path.empty())
     {
-        //os << path.m_path.back().first << L"." << path.m_path.back().second;
+        for (unsigned int i = 0; i < path.m_path.size() - 1; i++)
+        {
+            os << path.m_path[i].first << '.' << path.m_path[i].second << '/';
+        }
+        os << path.m_path.back().first << '.' << path.m_path.back().second;
     }
     return os;
 }

@@ -23,9 +23,9 @@ int main(int argc, const char *argv[])
 
     std::string raw_grammar(std::istreambuf_iterator<char>(grammar_file), {});
 
-    std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> wide_converter;
+    std::wstring_convert<std::codecvt_utf8<char16_t>, char16_t> wide_converter;
 
-    std::wstring wide_grammar = wide_converter.from_bytes(raw_grammar);
+    std::u16string wide_grammar = wide_converter.from_bytes(raw_grammar);
 
     Centaurus::Stream stream(std::move(wide_grammar));
 
@@ -44,7 +44,7 @@ int main(int argc, const char *argv[])
 
     std::ofstream graph("atn.dot");
 
-    grammar.print(graph, L"Object");
+    grammar.print(graph, u"Object");
 
     Centaurus::CompositeATN<char> catn = grammar.build_catn();
 

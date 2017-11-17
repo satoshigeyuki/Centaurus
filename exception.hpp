@@ -24,16 +24,16 @@ class UnexpectedException : public std::exception
 {
     std::string msg;
 public:
-    UnexpectedException(wchar_t ch) noexcept
+    UnexpectedException(char16_t ch) noexcept
     {
-        std::wostringstream stream;
+        std::basic_ostringstream<char16_t> stream;
 
         if (ch == EOF)
-            stream << L"Unexpected EOF" << std::endl;
+            stream << u"Unexpected EOF" << std::endl;
         else
-            stream << L"Unexpected character " << ch << std::endl;
+            stream << u"Unexpected character " << ch << std::endl;
 
-        std::wstring_convert<std::codecvt_utf8_utf16<wchar_t> > converter;
+        std::wstring_convert<std::codecvt_utf8<char16_t>, char16_t > converter;
 
         msg = converter.to_bytes(stream.str());
     }
