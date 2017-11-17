@@ -217,6 +217,10 @@ public:
     {
         return m_invoke;
     }
+    const Identifier& get_submachine() const
+    {
+        return m_invoke;
+    }
 };
 
 template<typename TCHAR> class ATN

@@ -49,6 +49,10 @@ public:
 
         return new_path;
     }
+    bool operator==(const ATNPath& path) const
+    {
+        return std::equal(m_path.cbegin(), m_path.cend(), path.cbegin());
+    }
 };
 class IndexVector : public std::vector<int>
 {
