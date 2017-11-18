@@ -51,7 +51,7 @@ public:
     }
     bool operator==(const ATNPath& path) const
     {
-        return std::equal(m_path.cbegin(), m_path.cend(), path.cbegin());
+        return std::equal(m_path.cbegin(), m_path.cend(), path.m_path.cbegin());
     }
     size_t hash() const
     {
@@ -133,17 +133,17 @@ std::ostream& operator<<(std::ostream& os, const IndexVector& v);
 
 namespace std
 {
-template<> struct hash<ATNPath>
+template<> struct hash<Centaurus::ATNPath>
 {
-    size_t operator()(const ATNPath& path) const
+    size_t operator()(const Centaurus::ATNPath& path) const
     {
         return path.hash();
     }
 private:
 };
-template<> struct equal_to<ATNPath>
+template<> struct equal_to<Centaurus::ATNPath>
 {
-    bool operator()(const ATNPath& x, const ATNPath& y) const
+    bool operator()(const Centaurus::ATNPath& x, const Centaurus::ATNPath& y) const
     {
         return x == y;
     }

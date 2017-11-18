@@ -6,7 +6,6 @@
 
 #include "identifier.hpp"
 #include "atn.hpp"
-#include "catn.hpp"
 
 namespace Centaurus
 {
@@ -124,11 +123,15 @@ public:
 
         os << "}" << std::endl;
     }
-    CompositeATN<TCHAR> build_catn() const
+    /*CompositeATN<TCHAR> build_catn() const
     {
         CompositeATN<TCHAR> catn(m_networks, m_root_id);
 
         return catn;
+    }*/
+    const ATN<TCHAR>& operator[](const Identifier& id) const
+    {
+        return m_networks.at(id);
     }
 };
 }

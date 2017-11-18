@@ -75,6 +75,10 @@ public:
     {
         return m_id == id.m_id;
     }
+    operator bool() const
+    {
+        return !m_id.empty();
+    }
 };
 }
 

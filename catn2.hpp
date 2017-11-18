@@ -42,6 +42,15 @@ public:
     }
     void print(std::ostream& os, int from) const
     {
+        if (m_submachine)
+        {
+            os << "N" << from << " [ label=\"" << m_submachine.narrow() << "\" ];" << std::endl;
+        }
+        else
+        {
+            os << "N" << from << " [ label=\"" << from << "\" ];" << std::endl;
+        }
+
         for (const auto& t : m_transitions)
         {
             os << "N" << from << " -> N" << t.dest() << " [ label=\"";
@@ -120,7 +129,7 @@ private:
         for (const auto& tr : node.get_transitions())
         {
             if (node_map[tr.dest()] < 0)
-                next = import_atn_node(id, tr.dest(), origin, node_map);
+                next = import_atn_node(atn, tr.dest(), origin, node_map);
             else
                 m_nodes[origin].add_transition(CharClass<TCHAR>(), node_map[tr.dest()]);
         }
@@ -134,6 +143,34 @@ public:
         import_atn_node(atn, 0, -1, node_map);
     }
     virtual ~CompositeATN()
+    {
+    }
+    void print(std::ostream& os, const std::string& name) const
+    {
+        os << "digraph " << name << " {" << std::endl;
+        os << "rankdir=\"LR\";" << std::endl;
+        os << "graph [ charset=\"UTF-8\" ];" << std::endl;
+        os << "node [ style=\"solid,filled\" ];" << std::endl;
+        os << "edge [ style=\"solid\" ];" << std::endl;
+
+        for (unsigned int i = 0; i < m_nodes.size(); i++)
+        {
+            m_nodes[i].print(os, i);
+        }
+
+        os << "}" << std::endl;
+    }
+};
+
+template<typename TCHAR>
+class CATNRepository
+{
+    std::unordered_map<Identifier, CompositeATN<TCHAR> > m_dict;
+public:
+    CATNRepository(const Grammar<TCHAR>& grammar)
+    {
+    }
+    virtual ~CATNRepository()
     {
     }
 };

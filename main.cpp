@@ -7,7 +7,7 @@
 #include "stream.hpp"
 #include "grammar.hpp"
 
-#include "catn.hpp"
+#include "catn2.hpp"
 
 int main(int argc, const char *argv[])
 {
@@ -45,12 +45,14 @@ int main(int argc, const char *argv[])
     std::ofstream graph("atn.dot");
 
     grammar.print(graph, u"Object");
+ 
+    //Centaurus::CompositeATN<char> catn = grammar.build_catn();
 
-    Centaurus::CompositeATN<char> catn = grammar.build_catn();
+    Centaurus::CompositeATN<char> catn(grammar[u"Dictionary"]);
 
     std::ofstream catn_graph("catn.dot");
 
-    //catn.print_flat(catn_graph, "CATN");
+    catn.print(catn_graph, "CATN");
 
     return 0;
 }
