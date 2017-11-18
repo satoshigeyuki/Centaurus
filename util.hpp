@@ -53,6 +53,16 @@ public:
     {
         return std::equal(m_path.cbegin(), m_path.cend(), path.cbegin());
     }
+    size_t hash() const
+    {
+        size_t ret = 0;
+        std::hash<Identifier> hasher;
+        for (const auto& p : m_path)
+        {
+            ret += hasher(p.first) + static_cast<size_t>(p.second);
+        }
+        return ret;
+    }
 };
 class IndexVector : public std::vector<int>
 {
@@ -119,4 +129,23 @@ public:
 std::ostream& operator<<(std::ostream& os, const Identifier& id);
 std::ostream& operator<<(std::ostream& os, const ATNPath& path);
 std::ostream& operator<<(std::ostream& os, const IndexVector& v);
+}
+
+namespace std
+{
+template<> struct hash<ATNPath>
+{
+    size_t operator()(const ATNPath& path) const
+    {
+        return path.hash();
+    }
+private:
+};
+template<> struct equal_to<ATNPath>
+{
+    bool operator()(const ATNPath& x, const ATNPath& y) const
+    {
+        return x == y;
+    }
+};
 }

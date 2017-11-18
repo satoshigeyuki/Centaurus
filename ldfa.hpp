@@ -5,23 +5,23 @@
 #include <set>
 #include <utility>
 
-#include "catn.hpp"
+#include "catn2.hpp"
 #include "nfa.hpp"
 #include "util.hpp"
 #include "exception.hpp"
 
 namespace std
 {
-template<> struct hash<std::pair<int, int> >
+template<> struct hash<std::pair<ATNPath, int> >
 {
-    size_t operator()(const std::pair<int, int>& p) const
+    size_t operator()(const std::pair<ATNPath, int>& p) const
     {
-        return p.first + p.second;
+        return p.first.hash() + p.second;
     }
 };
-template<> struct equal_to<std::pair<int, int> >
+template<> struct equal_to<std::pair<ATNPath, int> >
 {
-    bool operator()(const std::pair<int, int>& x, const std::pair<int, int>& y) const
+    bool operator()(const std::pair<ATNPath, int>& x, const std::pair<ATNPath, int>& y) const
     {
         return x.first == y.first && x.second == y.second;
     }
@@ -31,7 +31,7 @@ template<> struct equal_to<std::pair<int, int> >
 namespace Centaurus
 {
 template<typename TCHAR> using LDFATransition = NFATransition<TCHAR>;
-using LDFAStateLabel = std::set<std::pair<int, int> >;
+using LDFAStateLabel = std::set<std::pair<ATNPath, int> >;
 template<typename TCHAR>
 class LDFAState : public NFABaseState<TCHAR, LDFAStateLabel>
 {
@@ -112,7 +112,7 @@ private:
         std::vector<std::pair<int, CATNTransition<TCHAR> > > outbound_transitions;
 
         //Collect all outbound transitions
-        for (std::pair<int, int> p : m_states[index].label())
+        for (std::pair<ATNPath, int> p : m_states[index].label())
         {
             for (const auto& tr : catn.get_transitions(p.first))
             {

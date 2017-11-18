@@ -1,6 +1,10 @@
 #pragma once
 
 #include <unordered_map>
+#include <vector>
+#include "identifier.hpp"
+#include "nfa.hpp"
+#include "atn.hpp"
 
 namespace Centaurus
 {
