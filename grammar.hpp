@@ -76,7 +76,7 @@ public:
 };
 template<typename TCHAR> class Grammar
 {
-    std::unordered_map<Identifier, ATN<TCHAR> > m_networks;
+    std::unordered_map<Identifier, ATNMachine<TCHAR> > m_networks;
     Identifier m_root_id;
 public:
     void parse(Stream& stream)
@@ -89,16 +89,17 @@ public:
                 break;
 
             Identifier id(stream);
-            ATN<TCHAR> atn(stream);
+            ATNMachine<TCHAR> atn(stream);
 
             if (m_root_id.str().empty())
                 m_root_id = id;
 
-            m_networks.insert(std::pair<Identifier, ATN<TCHAR> >(id, std::move(atn)));
+            m_networks.insert(std::pair<Identifier, ATNMachine<TCHAR> >(id, std::move(atn)));
 
             //m_networks.emplace(Identifier(stream), ATN<TCHAR>(stream));
         }
     }
+public:
     Grammar(Stream& stream)
     {
         parse(stream);
@@ -129,9 +130,13 @@ public:
 
         return catn;
     }*/
-    const ATN<TCHAR>& operator[](const Identifier& id) const
+    const ATNMachine<TCHAR>& operator[](const Identifier& id) const
     {
         return m_networks.at(id);
+    }
+    const std::unordered_map<Identifier, ATNMachine<TCHAR> >& get_machines() const
+    {
+        return m_networks;
     }
 };
 }

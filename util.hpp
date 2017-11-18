@@ -63,6 +63,18 @@ public:
         }
         return ret;
     }
+    const std::pair<Identifier, int>& leaf() const
+    {
+        return m_path.back();
+    }
+    int leaf_index() const
+    {
+        return m_path.back().second;
+    }
+    int leaf_id() const
+    {
+        return m_path.back().first;
+    }
 };
 class IndexVector : public std::vector<int>
 {

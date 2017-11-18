@@ -48,11 +48,11 @@ int main(int argc, const char *argv[])
  
     //Centaurus::CompositeATN<char> catn = grammar.build_catn();
 
-    Centaurus::CompositeATN<char> catn(grammar[u"Dictionary"]);
+    Centaurus::CompositeATN<char> catn(grammar);
 
     std::ofstream catn_graph("catn.dot");
 
-    catn.print(catn_graph, "CATN");
+    catn[u"Dictionary"].print(catn_graph, "CATN");
 
     return 0;
 }

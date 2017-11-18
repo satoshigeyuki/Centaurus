@@ -31,7 +31,9 @@ template<> struct equal_to<std::pair<ATNPath, int> >
 namespace Centaurus
 {
 template<typename TCHAR> using LDFATransition = NFATransition<TCHAR>;
+
 using LDFAStateLabel = std::set<std::pair<ATNPath, int> >;
+
 template<typename TCHAR>
 class LDFAState : public NFABaseState<TCHAR, LDFAStateLabel>
 {
@@ -69,6 +71,7 @@ public:
     {
     }
 };
+
 template<typename TCHAR>
 class LookaheadDFA : public NFABase<TCHAR>
 {
@@ -195,7 +198,7 @@ private:
             fork_closures(catn, i);
         }
     }
-    void build_closure_sub(const CompositeATN<TCHAR>& catn, LDFAStateLabel& label, int origin, int color)
+    void build_closure_sub(const CompositeATN<TCHAR>& catn, LDFAStateLabel& label, const ATNPath& origin, int color)
     {
         label.emplace(origin, color);
 
@@ -218,10 +221,11 @@ private:
 
         return label;
     }
-    LDFAStateLabel build_root_closure(const CompositeATN<TCHAR>& catn, int origin)
+    LDFAStateLabel build_root_closure(const CompositeATN<TCHAR>& catn, const ATNPath& origin)
     {
         LDFAStateLabel label;
 
+        //Add the root state (which is colored WHITE)
         label.emplace(origin, 0);
 
         const std::vector<CATNTransition<TCHAR> >& transitions = catn.get_transitions(origin);
@@ -237,7 +241,7 @@ private:
         return label;
     }
 public:
-    LookaheadDFA(const CompositeATN<TCHAR>& catn, int origin)
+    LookaheadDFA(const CompositeATN<TCHAR>& catn, const ATNPath& origin)
     {
         m_states.emplace_back(build_root_closure(catn, origin));
 
@@ -245,10 +249,6 @@ public:
     }
     virtual ~LookaheadDFA()
     {
-    }
-    virtual void print_state(std::ostream& os, int index)
-    {
-        os << m_states[index].label();
     }
 };
 }

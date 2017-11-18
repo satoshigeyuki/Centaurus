@@ -223,7 +223,7 @@ public:
     }
 };
 
-template<typename TCHAR> class ATN
+template<typename TCHAR> class ATNMachine
 {
     friend class ATNPrinter<TCHAR>;
 
@@ -285,21 +285,21 @@ public:
     {
         return m_nodes.size();
     }
-    ATN(Stream& stream)
+    ATNMachine(Stream& stream)
     {
         m_nodes.emplace_back();
 
         parse(stream);
     }
-    ATN()
+    ATNMachine()
     {
         m_nodes.emplace_back();
     }
-    ATN(ATN&& atn)
+    ATNMachine(ATNMachine&& atn)
         : m_nodes(std::move(atn.m_nodes))
     {
     }
-    virtual ~ATN()
+    virtual ~ATNMachine()
     {
     }
 };
@@ -307,7 +307,7 @@ public:
 template<typename TCHAR>
 class ATNPrinter
 {
-    const std::unordered_map<Identifier, ATN<TCHAR> >& m_networks;
+    const std::unordered_map<Identifier, ATNMachine<TCHAR> >& m_networks;
     std::vector<Identifier> m_stack;
     int m_counter, m_maxdepth;
 private:
@@ -317,7 +317,7 @@ private:
 
         os << "subgraph cluster_" << prefix << " {" << std::endl;
 
-        const ATN<TCHAR>& atn = m_networks.at(key);
+        const ATNMachine<TCHAR>& atn = m_networks.at(key);
 
         std::vector<std::pair<std::string, std::string> > entry_exit_nodes(atn.m_nodes.size());
 
@@ -370,7 +370,7 @@ private:
         return std::pair<std::string, std::string>(entry_node, exit_node);
     }
 public:
-    ATNPrinter(const std::unordered_map<Identifier, ATN<TCHAR> >& networks, int maxdepth)
+    ATNPrinter(const std::unordered_map<Identifier, ATNMachine<TCHAR> >& networks, int maxdepth)
         : m_networks(networks), m_counter(0), m_maxdepth(maxdepth)
     {
     }

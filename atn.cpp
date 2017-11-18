@@ -2,8 +2,8 @@
 
 namespace Centaurus
 {
-template class ATN<char>;
-template class ATN<char16_t>;
+template class ATNMachine<char>;
+template class ATNMachine<char16_t>;
 
 template<typename TCHAR>
 void ATNNode<TCHAR>::parse_literal(Stream& stream)

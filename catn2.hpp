@@ -61,7 +61,7 @@ public:
 };
 
 template<typename TCHAR>
-class CompositeATN
+class CATNMachine
 {
     std::vector<CATNNode<TCHAR> > m_nodes;
 private:
@@ -103,7 +103,7 @@ private:
     {
         return add_node(CATNNode<TCHAR>(id), origin);
     }
-    int import_atn_node(const ATN<TCHAR>& atn, int index, int origin, std::vector<int>& node_map)
+    int import_atn_node(const ATNMachine<TCHAR>& atn, int index, int origin, std::vector<int>& node_map)
     {
         const ATNNode<TCHAR>& node = atn.get_node(index);
 
@@ -136,13 +136,13 @@ private:
         return next;
     }
 public:
-    CompositeATN(const ATN<TCHAR>& atn)
+    CATNMachine(const ATNMachine<TCHAR>& atn)
     {
         std::vector<int> node_map(atn.get_node_num(), -1);
 
         import_atn_node(atn, 0, -1, node_map);
     }
-    virtual ~CompositeATN()
+    virtual ~CATNMachine()
     {
     }
     void print(std::ostream& os, const std::string& name) const
@@ -163,15 +163,27 @@ public:
 };
 
 template<typename TCHAR>
-class CATNRepository
+class CompositeATN
 {
-    std::unordered_map<Identifier, CompositeATN<TCHAR> > m_dict;
+    std::unordered_map<Identifier, CATNMachine<TCHAR> > m_dict;
 public:
-    CATNRepository(const Grammar<TCHAR>& grammar)
+    CompositeATN(const Grammar<TCHAR>& grammar)
+    {
+        for (const auto& p : grammar.get_machines())
+        {
+            m_dict.emplace(p.first, CATNMachine<TCHAR>(p.second));
+        }
+    }
+    virtual ~CompositeATN()
     {
     }
-    virtual ~CATNRepository()
+    const CATNMachine<TCHAR>& operator[](const Identifier& id) const
     {
+        return m_dict.at(id);
+    }
+    const CATNNode<TCHAR>& operator[](const ATNPath& path) const
+    {
+        return m_dict.at(path.leaf_id()).get_node(path.leaf_index());
     }
 };
 }
