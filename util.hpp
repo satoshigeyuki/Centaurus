@@ -49,6 +49,14 @@ public:
 
         return new_path;
     }
+    ATNPath parent_path() const
+    {
+        ATNPath new_path(*this);
+
+        new_path.pop();
+
+        return new_path;
+    }
     bool operator==(const ATNPath& path) const
     {
         return std::equal(m_path.cbegin(), m_path.cend(), path.m_path.cbegin());
@@ -74,6 +82,10 @@ public:
     int leaf_id() const
     {
         return m_path.back().first;
+    }
+    int depth() const
+    {
+        return m_path.size();
     }
 };
 class IndexVector : public std::vector<int>
