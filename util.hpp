@@ -87,6 +87,14 @@ public:
     {
         return m_path.size();
     }
+    ATNPath replace_index(int index) const
+    {
+        ATNPath path(*this);
+
+        path.back().second = index;
+
+        return path;
+    }
 };
 class IndexVector : public std::vector<int>
 {

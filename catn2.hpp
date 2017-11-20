@@ -44,6 +44,14 @@ public:
     {
         return m_transitions.empty();
     }
+    bool is_terminal() const
+    {
+        return m_submachine;
+    }
+    const Identifier& get_submachine() const
+    {
+        return m_submachine;
+    }
     void print(std::ostream& os, int from) const
     {
         if (m_submachine)
@@ -225,7 +233,20 @@ private:
             {
                 if (tr.is_epsilon())
                 {
-                    
+                    ATNPath dest_path = path.replace_index(tr.dest());
+
+                    const CATNNode<TCHAR>& dest_node = get_node(dest_path);
+
+                    if (dest_node.is_terminal())
+                    {
+                        closure.emplace(dest_path, color);
+
+                        build_closure_sub(closure, dest_path, color);
+                    }
+                    else
+                    {
+                        build_closure_sub(closure, dest_path.add(dest_node.get_submachine(), 0), color);
+                    }
                 }
             }
         }
@@ -252,6 +273,10 @@ public:
     const CATNNode<TCHAR>& get_node(const ATNPath& path) const
     {
         return m_dict.at(path.leaf_id()).get_node(path.leaf_index());
+    }
+    const CATNNode<TCHAR>& get_node(const Identifier& id, int index) const
+    {
+        return m_dict.at(id).get_node(index);
     }
     CATNClosure build_closure(const CATNClosure& closure) const
     {
