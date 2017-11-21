@@ -12,16 +12,16 @@
 
 namespace std
 {
-template<> struct hash<std::pair<ATNPath, int> >
+template<> struct hash<std::pair<Centaurus::ATNPath, int> >
 {
-    size_t operator()(const std::pair<ATNPath, int>& p) const
+    size_t operator()(const std::pair<Centaurus::ATNPath, int>& p) const
     {
         return p.first.hash() + p.second;
     }
 };
-template<> struct equal_to<std::pair<ATNPath, int> >
+template<> struct equal_to<std::pair<Centaurus::ATNPath, int> >
 {
-    bool operator()(const std::pair<ATNPath, int>& x, const std::pair<ATNPath, int>& y) const
+    bool operator()(const std::pair<Centaurus::ATNPath, int>& x, const std::pair<Centaurus::ATNPath, int>& y) const
     {
         return x.first == y.first && x.second == y.second;
     }
@@ -32,15 +32,13 @@ namespace Centaurus
 {
 template<typename TCHAR> using LDFATransition = NFATransition<TCHAR>;
 
-using LDFAStateLabel = std::set<std::pair<ATNPath, int> >;
-
 template<typename TCHAR>
-class LDFAState : public NFABaseState<TCHAR, LDFAStateLabel>
+class LDFAState : public NFABaseState<TCHAR, CATNClosure>
 {
-    using NFABaseState<TCHAR, LDFAStateLabel>::m_label;
-    using NFABaseState<TCHAR, LDFAStateLabel>::m_transitions;
+    using NFABaseState<TCHAR, CATNClosure>::m_label;
+    using NFABaseState<TCHAR, CATNClosure>::m_transitions;
 
-private:
+public:
     int get_color() const
     {
         int color = 0;
@@ -58,13 +56,12 @@ private:
         }
         return color;
     }
-public:
     LDFAState()
     {
         //State color is set to WHITE
     }
-    LDFAState(const LDFAStateLabel& label)
-        : NFABaseState<TCHAR, LDFAStateLabel>(label)
+    LDFAState(const CATNClosure& label)
+        : NFABaseState<TCHAR, CATNClosure>(label)
     {
     }
     virtual ~LDFAState()
@@ -75,11 +72,11 @@ public:
 template<typename TCHAR>
 class LookaheadDFA : public NFABase<TCHAR>
 {
-    using LDFAEquivalenceTable = std::vector<std::pair<CharClass<TCHAR>, LDFAStateLabel> >;
+    using LDFAEquivalenceTable = std::vector<std::pair<CharClass<TCHAR>, CATNClosure> >;
 
     std::vector<LDFAState<TCHAR> > m_states;
 private:
-    void add_transition(LDFAEquivalenceTable& table, const Range<TCHAR>& r, const LDFAStateLabel& dests) const
+    void add_transition(LDFAEquivalenceTable& table, const Range<TCHAR>& r, const CATNClosure& dests) const
     {
         for (auto& item : table)
         {
@@ -91,7 +88,7 @@ private:
         }
         table.emplace_back(CharClass<TCHAR>(r), dests);
     }
-    int add_state(const LDFAStateLabel& label)
+    int add_state(const CATNClosure& label)
     {
         for (unsigned int i = 0; i < m_states.size(); i++)
         {
@@ -115,7 +112,7 @@ private:
         std::vector<std::pair<int, CATNTransition<TCHAR> > > outbound_transitions;
 
         //Collect all outbound transitions
-        for (std::pair<ATNPath, int> p : m_states[index].label())
+        for (const std::pair<ATNPath, int>& p : m_states[index].label())
         {
             for (const auto& tr : catn.get_transitions(p.first))
             {
@@ -124,10 +121,10 @@ private:
                     //Mark the outbound transition with the color of the origin node
                     outbound_transitions.emplace_back(p.second, tr);
 
-                    if (catn.get_node(tr.dest()).get_type() == CATNNodeType::Barrier)
+                    /*if (catn.get_node(tr.dest()).get_type() == CATNNodeType::Barrier)
                     {
                         throw SimpleException("Barrier node reached during LDFA construction.");
-                    }
+                    }*/
                 }
             }
         }
@@ -165,13 +162,13 @@ private:
             //Label of the new destination LDFA state,
             //which is equivalent to the set of CATN nodes reached from 
             //the closure, marked with their respective colors
-            LDFAStateLabel dests;
+            CATNClosure dests;
 
             for (const auto& p : outbound_transitions)
             {
                 if (p.second.label().includes(r))
                 {
-                    dests.emplace(tr.dest(), p.first);
+                    dests.emplace(p.second.dest(), p.first);
                 }
             }
 
@@ -186,7 +183,7 @@ private:
 
         for (const auto& item : table)
         {
-            LDFAStateLabel ec = build_closure(catn, item.second);
+            CATNClosure ec = catn.build_closure(item.second);
 
             int new_index = add_state(ec);
 
@@ -198,52 +195,10 @@ private:
             fork_closures(catn, i);
         }
     }
-    void build_closure_sub(const CompositeATN<TCHAR>& catn, LDFAStateLabel& label, const ATNPath& origin, int color)
-    {
-        label.emplace(origin, color);
-
-        for (const auto& tr : catn.get_transitions(origin))
-        {
-            if (tr.is_epsilon())
-            {
-                build_closure_sub(catn, label, tr.dest(), color);
-            }
-        }
-    }
-    LDFAStateLabel build_closure(const CompositeATN<TCHAR>& catn, const LDFAStateLabel& src)
-    {
-        LDFAStateLabel label;
-
-        for (std::pair<int, int> p : src)
-        {
-            build_closure_sub(catn, label, p.first, p.second);
-        }
-
-        return label;
-    }
-    LDFAStateLabel build_root_closure(const CompositeATN<TCHAR>& catn, const ATNPath& origin)
-    {
-        LDFAStateLabel label;
-
-        //Add the root state (which is colored WHITE)
-        label.emplace(origin, 0);
-
-        const std::vector<CATNTransition<TCHAR> >& transitions = catn.get_transitions(origin);
-
-        for (unsigned int i = 0; i < transitions.size(); i++)
-        {
-            //All transitions from the decision point must be epsilon transitions
-            assert(transitions[i].is_epsilon());
-
-            build_closure_sub(catn, label, transitions[i].dest(), i + 1);
-        }
-
-        return label;
-    }
 public:
     LookaheadDFA(const CompositeATN<TCHAR>& catn, const ATNPath& origin)
     {
-        m_states.emplace_back(build_root_closure(catn, origin));
+        m_states.emplace_back(catn.build_root_closure(origin));
 
         fork_closures(catn, 0);
     }

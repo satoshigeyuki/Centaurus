@@ -60,6 +60,7 @@ template<typename TCHAR> class NFA;
 
 template<typename TCHAR, typename TLABEL> class NFABaseState
 {
+protected:
     std::vector<NFATransition<TCHAR> > m_transitions;
     TLABEL m_label;
 public:

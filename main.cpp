@@ -8,6 +8,7 @@
 #include "grammar.hpp"
 
 #include "catn2.hpp"
+#include "ldfa.hpp"
 
 int main(int argc, const char *argv[])
 {
@@ -53,6 +54,8 @@ int main(int argc, const char *argv[])
     std::ofstream catn_graph("catn.dot");
 
     catn[u"Dictionary"].print(catn_graph, "CATN");
+
+    Centaurus::LookaheadDFA<char> ldfa(catn, Centaurus::ATNPath(u"Object", 0));
 
     return 0;
 }

@@ -6,6 +6,19 @@
 #include "nfa.hpp"
 #include "atn.hpp"
 
+namespace std
+{
+template<> struct less<std::pair<Centaurus::ATNPath, int> >
+{
+    bool operator()(const std::pair<Centaurus::ATNPath, int>& x, const std::pair<Centaurus::ATNPath, int>& y) const
+    {
+        int path_cmp = x.first.compare(y.first);
+
+        return path_cmp != 0 ? path_cmp < 0 : x.second < y.second;
+    }
+};
+}
+
 namespace Centaurus
 {
 template<typename TCHAR> using CATNTransition = NFATransition<TCHAR>;
@@ -157,7 +170,7 @@ public:
     virtual ~CATNMachine()
     {
     }
-    const CATNNode& operator[](int index) const
+    const CATNNode<TCHAR>& operator[](int index) const
     {
         return m_nodes.at(index);
     }
@@ -202,7 +215,7 @@ private:
 
                 if (node.get_submachine() == id)
                 {
-                    build_closure_sub(closure, path.add(p.first, i), color);
+                    build_closure_exclusive(closure, ATNPath(p.first, i), color);
                 }
             }
         }
@@ -210,7 +223,7 @@ private:
     /*!
      * @brief Add all the CATN nodes reachable from a path
      */
-    void build_closure_sub(CATNClosure& closure, const ATNPath& path, int color) const
+    void build_closure_exclusive(CATNClosure& closure, const ATNPath& path, int color) const
     {
         const CATNNode<TCHAR>& node = get_node(path);
 
@@ -224,7 +237,7 @@ private:
             }
             else
             {
-                build_closure_sub(closure, parent, color);
+                build_closure_exclusive(closure, parent, color);
             }
         }
         else
@@ -241,14 +254,29 @@ private:
                     {
                         closure.emplace(dest_path, color);
 
-                        build_closure_sub(closure, dest_path, color);
+                        build_closure_exclusive(closure, dest_path, color);
                     }
                     else
                     {
-                        build_closure_sub(closure, dest_path.add(dest_node.get_submachine(), 0), color);
+                        build_closure_inclusive(closure, dest_path.add(dest_node.get_submachine(), 0), color);
                     }
                 }
             }
+        }
+    }
+    void build_closure_inclusive(CATNClosure& closure, const ATNPath& path, int color) const
+    {
+        const CATNNode<TCHAR>& node = get_node(path);
+
+        if (node.is_terminal())
+        {
+            closure.emplace(path, color);
+
+            build_closure_exclusive(closure, path, color);
+        }
+        else
+        {
+            build_closure_inclusive(closure, path.add(node.get_submachine(), 0), color);
         }
     }
 public:
@@ -268,22 +296,59 @@ public:
     }
     const CATNNode<TCHAR>& operator[](const ATNPath& path) const
     {
-        return m_dict.at(path.leaf_id()).get_node(path.leaf_index());
+        return m_dict.at(path.leaf_id())[path.leaf_index()];
     }
     const CATNNode<TCHAR>& get_node(const ATNPath& path) const
     {
-        return m_dict.at(path.leaf_id()).get_node(path.leaf_index());
+        return m_dict.at(path.leaf_id())[path.leaf_index()];
     }
     const CATNNode<TCHAR>& get_node(const Identifier& id, int index) const
     {
-        return m_dict.at(id).get_node(index);
+        return m_dict.at(id)[index];
+    }
+    const std::vector<CATNTransition<TCHAR> >& get_transitions(const ATNPath& path) const
+    {
+        return get_node(path).get_transitions();
     }
     CATNClosure build_closure(const CATNClosure& closure) const
     {
+        CATNClosure ret;
+
+        for (const auto& p : closure)
+        {
+            build_closure_inclusive(ret, p.first, p.second);
+        }
+
+        return ret;
     }
     CATNClosure build_closure(const ATNPath& path, int color) const
     {
+        CATNClosure closure;
 
+        build_closure_inclusive(closure, path, color);
+
+        return closure;
+    }
+    /*!
+     * @brief Construct a closure around the root path (decision point)
+     */
+    CATNClosure build_root_closure(const ATNPath& path) const
+    {
+        CATNClosure closure;
+
+        const CATNNode<TCHAR>& root_node = get_node(path);
+
+        const std::vector<CATNTransition<TCHAR> >& transitions = root_node.get_transitions();
+
+        for (unsigned int i = 0; i < transitions.size(); i++)
+        {
+            //All transitions originating from the root node must be epsilon transitions
+            assert(transitions[i].is_epsilon());
+
+            build_closure_inclusive(closure, path.replace_index(transitions[i].dest()), i + 1);
+        }
+
+        return closure;
     }
 };
 }

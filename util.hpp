@@ -22,6 +22,10 @@ public:
     ATNPath()
     {
     }
+    ATNPath(const Identifier& id, int index)
+    {
+        m_path.emplace_back(id, index);
+    }
     ATNPath(const ATNPath& path)
         : m_path(path.m_path)
     {
@@ -79,7 +83,7 @@ public:
     {
         return m_path.back().second;
     }
-    int leaf_id() const
+    const Identifier& leaf_id() const
     {
         return m_path.back().first;
     }
@@ -91,9 +95,35 @@ public:
     {
         ATNPath path(*this);
 
-        path.back().second = index;
+        path.m_path.back().second = index;
 
         return path;
+    }
+    int compare(const ATNPath& p) const
+    {
+        if (depth() < p.depth())
+        {
+            return -1;
+        }
+        else if (depth() > p.depth())
+        {
+            return +1;
+        }
+        else
+        {
+            for (unsigned int i = 0; i < depth(); i++)
+            {
+                int id_cmp = m_path[i].first.str().compare(p.m_path[i].first.str());
+
+                if (id_cmp != 0) return id_cmp;
+
+                if (m_path[i].second < p.m_path[i].second)
+                    return -1;
+                else if (m_path[i].second > p.m_path[i].second)
+                    return +1;
+            }
+        }
+        return 0;
     }
 };
 class IndexVector : public std::vector<int>
