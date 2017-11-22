@@ -70,15 +70,18 @@ public:
 };
 
 template<typename TCHAR>
-class LookaheadDFA : public NFABase<TCHAR>
+class LDFAEquivalenceTable : public std::vector<std::pair<CharClass<TCHAR>, CATNClosure> >
 {
-    using LDFAEquivalenceTable = std::vector<std::pair<CharClass<TCHAR>, CATNClosure> >;
-
-    std::vector<LDFAState<TCHAR> > m_states;
-private:
-    void add_transition(LDFAEquivalenceTable& table, const Range<TCHAR>& r, const CATNClosure& dests) const
+public:
+    LDFAEquivalenceTable()
     {
-        for (auto& item : table)
+    }
+    virtual ~LDFAEquivalenceTable()
+    {
+    }
+    void add_transition(const Range<TCHAR>& r, const CATNClosure& dests) const
+    {
+        for (auto& item : *this)
         {
             if (std::equal(item.second.cbegin(), item.second.cend(), dests.cbegin()))
             {
@@ -86,8 +89,15 @@ private:
                 return;
             }
         }
-        table.emplace_back(CharClass<TCHAR>(r), dests);
+        emplace_back(CharClass<TCHAR>(r), dests);
     }
+};
+
+template<typename TCHAR>
+class LookaheadDFA : public NFABase<TCHAR>
+{
+    std::vector<LDFAState<TCHAR> > m_states;
+private:
     int add_state(const CATNClosure& label)
     {
         for (unsigned int i = 0; i < m_states.size(); i++)
@@ -111,7 +121,8 @@ private:
         //States reached from the current LDFA state (epsilon closure) via non-epsilon transitions
         std::vector<std::pair<int, CATNTransition<TCHAR> > > outbound_transitions;
 
-        //Collect all outbound transitions
+        //Collect all outbound (non-epsilon) transitions
+        // originating from the closure associated with the current LDFA state.
         for (const std::pair<ATNPath, int>& p : m_states[index].label())
         {
             for (const auto& tr : catn.get_transitions(p.first))
@@ -174,7 +185,7 @@ private:
 
             if (!dests.empty())
             {
-                add_transition(table, r, dests);
+                table.add_transition(r, dests);
             }
         }
 
@@ -190,6 +201,7 @@ private:
             m_states[index].add_transition(item.first, new_index);
         }
 
+        //Recursively construct the closures for all the newly added DFA states
         for (int i = initial_index; i < m_states.size(); i++)
         {
             fork_closures(catn, i);
