@@ -110,6 +110,9 @@ private:
         m_states.emplace_back(label);
         return m_states.size() - 1;
     }
+    /*!
+     * @brief Construct LDFA states around the current state
+     */
     void fork_closures(const CompositeATN<TCHAR>& catn, int index)
     {
         //First, check if the state in question is already single-colored
@@ -118,8 +121,9 @@ private:
             return;
         }
 
-        //States reached from the current LDFA state (epsilon closure) via non-epsilon transitions
-        std::vector<std::pair<int, CATNTransition<TCHAR> > > outbound_transitions;
+        //Divide the entire character space into equivalent sets
+        // borders is the sorted set of characters at the beginning of each set
+        std::set<TCHAR> borders;
 
         //Collect all outbound (non-epsilon) transitions
         // originating from the closure associated with the current LDFA state.
@@ -129,8 +133,21 @@ private:
             {
                 if (!tr.is_epsilon())
                 {
+                    //Add all the borders to the set
+                    tr.label().collect_borders(borders);
+                }
+            }
+        }
+
+#if 0
+        for (const std::pair<ATNPath, int>& p : m_states[index].label())
+        {
+            for (const auto& tr : catn.get_transitions(p.first))
+            {
+                if (!tr.is_epsilon())
+                {
                     //Mark the outbound transition with the color of the origin node
-                    outbound_transitions.emplace_back(p.second, tr);
+                    //outbound_transitions.emplace_back(p.second, tr);
 
                     /*if (catn.get_node(tr.dest()).get_type() == CATNNodeType::Barrier)
                     {
@@ -148,16 +165,9 @@ private:
             //we throw an exception because the decision is impossible
             throw SimpleException("LDFA construction failed.");
         }
+#endif
 
-        //Divide the entire character space into equivalent sets
-        std::set<int> borders;
-        for (const auto& p : outbound_transitions)
-        {
-            IndexVector mb = p.second.label().collect_borders();
-
-            borders.insert(mb.cbegin(), mb.cend());
-        }
-
+        //EquivalenceTable holds the mapping from an equivalent set to a CATN state.
         LDFAEquivalenceTable table;
 
         //Contract equivalent transitions using the equivalence table
@@ -174,6 +184,16 @@ private:
             //which is equivalent to the set of CATN nodes reached from 
             //the closure, marked with their respective colors
             CATNClosure dests;
+
+            for (const std::pair<ATNPath, int>& p : m_states[index].label())
+            {
+                const CATNNode<TCHAR>& node = catn.get_node(p.first);
+
+                if (node.is_stop_node())
+                {
+
+                }
+            }
 
             for (const auto& p : outbound_transitions)
             {

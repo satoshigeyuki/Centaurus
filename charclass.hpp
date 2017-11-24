@@ -279,6 +279,14 @@ public:
 
         return ret;
     }
+    void collect_borders(std::set<TCHAR>& dest) const
+    {
+        for (const auto& r : m_ranges)
+        {
+            dest.insert(r.start());
+            dest.insert(r.end());
+        }
+    }
     bool includes(const Range<TCHAR>& r) const
     {
         for (const auto& mr : m_ranges)

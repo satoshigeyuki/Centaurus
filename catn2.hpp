@@ -198,6 +198,18 @@ public:
 using CATNClosure = std::set<std::pair<ATNPath, int> >;
 
 template<typename TCHAR>
+class CATNTransitionSet : public std::vector<std::pair<CharClass<TCHAR>, >
+{
+public:
+    CATNTransitionSet()
+    {
+    }
+    virtual ~CATNTransitionSet()
+    {
+    }
+};
+
+template<typename TCHAR>
 class CompositeATN
 {
     std::unordered_map<Identifier, CATNMachine<TCHAR> > m_dict;
@@ -205,7 +217,7 @@ private:
     /*!
      * @brief Add all the CATN nodes reachable from all the invocation sites of a machine
      */
-    void build_wildcard_closure(CATNClosure& closure, const Identifier& id, int color) const
+    void build_wildcard_closure(CATNClosure& closure, const Identifier& id, int color, bool epsilon_flag) const
     {
         for (const auto& p : m_dict)
         {
@@ -215,7 +227,7 @@ private:
 
                 if (node.get_submachine() == id)
                 {
-                    build_closure_exclusive(closure, ATNPath(p.first, i), color);
+                    build_closure_exclusive(closure, ATNPath(p.first, i), color, epsilon_flag);
                 }
             }
         }
@@ -223,7 +235,7 @@ private:
     /*!
      * @brief Add all the CATN nodes reachable from a path
      */
-    void build_closure_exclusive(CATNClosure& closure, const ATNPath& path, int color) const
+    void build_closure_exclusive(CATNClosure& closure, const ATNPath& path, int color, bool epsilon_flag) const
     {
         const CATNNode<TCHAR>& node = get_node(path);
 
@@ -233,18 +245,18 @@ private:
 
             if (parent.depth() == 0)
             {
-                build_wildcard_closure(closure, path.leaf_id(), color);
+                build_wildcard_closure(closure, path.leaf_id(), color, epsilon_flag);
             }
             else
             {
-                build_closure_exclusive(closure, parent, color);
+                build_closure_exclusive(closure, parent, color, epsilon_flag);
             }
         }
         else
         {
             for (const auto& tr : node.get_transitions())
             {
-                if (tr.is_epsilon())
+                if (tr.is_epsilon() == epsilon_flag)
                 {
                     ATNPath dest_path = path.replace_index(tr.dest());
 
@@ -254,17 +266,17 @@ private:
                     {
                         closure.emplace(dest_path, color);
 
-                        build_closure_exclusive(closure, dest_path, color);
+                        build_closure_exclusive(closure, dest_path, color, epsilon_flag);
                     }
                     else
                     {
-                        build_closure_inclusive(closure, dest_path.add(dest_node.get_submachine(), 0), color);
+                        build_closure_inclusive(closure, dest_path.add(dest_node.get_submachine(), 0), color, epsilon_flag);
                     }
                 }
             }
         }
     }
-    void build_closure_inclusive(CATNClosure& closure, const ATNPath& path, int color) const
+    void build_closure_inclusive(CATNClosure& closure, const ATNPath& path, int color, bool epsilon_flag) const
     {
         const CATNNode<TCHAR>& node = get_node(path);
 
@@ -272,11 +284,11 @@ private:
         {
             closure.emplace(path, color);
 
-            build_closure_exclusive(closure, path, color);
+            build_closure_exclusive(closure, path, color, epsilon_flag);
         }
         else
         {
-            build_closure_inclusive(closure, path.add(node.get_submachine(), 0), color);
+            build_closure_inclusive(closure, path.add(node.get_submachine(), 0), color, epsilon_flag);
         }
     }
 public:
