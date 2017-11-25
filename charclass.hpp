@@ -50,6 +50,10 @@ public:
     {
         return r.m_end < m_start;
     }
+    bool operator==(const Range<TCHAR>& r) const
+    {
+        return m_start == r.m_start && m_end == r.m_end;
+    }
     bool overlaps(const Range<TCHAR>& r) const
     {
         return m_start <= r.m_end && r.m_start <= m_end;
@@ -61,6 +65,10 @@ public:
     Range<TCHAR> merge(const Range<TCHAR>& r) const
     {
         return Range<TCHAR>(std::min(m_start, r.m_start), std::max(m_end, r.m_end));
+    }
+    Range<TCHAR> intersect(const Range<TCHAR>& r) const
+    {
+        return Range<TCHAR>(std::max(m_start, r.m_start), std::min(m_emd, r.m_end));
     }
     TCHAR start() const
     {
@@ -174,6 +182,11 @@ public:
     {
         return *this = *this | cc;
     }
+    bool operator==(const CharClass<TCHAR>& cc) const
+    {
+        return std::equal(m_ranges.cbegin(), m_ranges.cend(), cc.m_ranges.cbegin());
+    }
+    CharClass<TCHAR> operator&(const CharClass<TCHAR>& cc) const;
     /*!
      * @brief Return a soup of all the boundaries in the class.
      */

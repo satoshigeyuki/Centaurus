@@ -145,6 +145,50 @@ CharClass<TCHAR> CharClass<TCHAR>::operator|(const CharClass<TCHAR>& cc) const
 }
 
 template<typename TCHAR>
+CharClass<TCHAR> CharClass<TCHAR>::operator&(const CharClass<TCHAR>& cc) const
+{
+    CharClass<TCHAR> new_class;
+
+    auto i = m_ranges.cbegin();
+    auto j = cc.m_ranges.cbegin();
+
+    Range<TCHAR> ri, rj;
+
+    if (i != m_ranges.cend()) ri = *i;
+    if (j != cc.m_ranges.cend()) rj = *j;
+
+    while (i != m_ranges.cend() && j != cc.m_ranges.cend())
+    {
+        if (ri < rj)
+        {
+            if (++i != m_ranges.cend())
+                ri = *i;
+        }
+        else if (ri > rj)
+        {
+            if (++j != cc.m_ranges.cend())
+                rj = *j;
+        }
+        else
+        {
+            new_class.m_ranges.push_back(ri.intersect(rj));
+            if (ri.end() < rj.end())
+            {
+                if (++i != m_ranges.cend())
+                    ri = *i;
+            }
+            else
+            {
+                if (++j != cc.m_ranges.cend())
+                    rj = *j;
+            }
+        }
+    }
+
+    return new_class;
+}
+
+template<typename TCHAR>
 std::ostream& operator<<(std::ostream& os, const CharClass<TCHAR>& cc)
 {
     auto i = cc.m_ranges.cbegin();

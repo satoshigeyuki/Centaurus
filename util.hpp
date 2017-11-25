@@ -160,33 +160,6 @@ public:
     {
         std::sort(begin(), end());
     }
-    /*!
-     * @brief Perform destructive sort and copy removing duplicate values
-     */
-    IndexVector sort_and_unique_copy()
-    {
-        IndexVector ret;
-
-        std::sort(begin(), end());
-
-        if (!empty())
-        {
-            ret.push_back(front());
-
-            int prev_value = front();
-
-            for (auto i = begin() + 1; i != end(); i++)
-            {
-                if (*i != prev_value)
-                {
-                    ret.push_back(*i);
-                    prev_value = *i;
-                }
-            }
-        }
-
-        return ret;
-    }
 };
 std::ostream& operator<<(std::ostream& os, const Identifier& id);
 std::ostream& operator<<(std::ostream& os, const ATNPath& path);
