@@ -31,13 +31,6 @@ public:
         : m_start(0), m_end(0)
     {
     }
-    /*Range(char16_t start, char16_t end)
-    {
-        assert(start < end);
-
-        m_start = wide_to_target<TCHAR>(start);
-        m_end = wide_to_target<TCHAR>(end);
-    }*/
     static Range<TCHAR> make_from_wide(char16_t start, char16_t end)
     {
         return Range<TCHAR>(wide_to_target<TCHAR>(start), wide_to_target<TCHAR>(end));
@@ -91,92 +84,9 @@ template<typename TCHAR> class CharClass
     std::vector<Range<TCHAR> > m_ranges;
 
     template<typename T> friend std::ostream& operator<<(std::ostream& os, const CharClass<T>& cc);
+
+    void parse(Stream& stream);
 public:
-    void parse(Stream& stream)
-    {
-        char16_t ch;
-        bool invert_flag = false;
-
-        ch = stream.get();
-        if (ch == u'^')
-        {
-            invert_flag = true;
-            ch = stream.get();
-        }
-
-        char16_t start = 0;
-        enum
-        {
-            CC_STATE_START = 0,
-            CC_STATE_RANGE,
-            CC_STATE_END
-        } state = CC_STATE_START;
-        for (; ch != u']'; ch = stream.get())
-        {
-            bool escaped = false;
-
-            if (ch == u'\0' || ch == 0xFFFF)
-                throw stream.unexpected(ch);
-
-            if (ch == u'\\')
-            {
-                ch = stream.get();
-                switch (ch)
-                {
-                case u'\\':
-                    ch = u'\\';
-                    break;
-                case u'-':
-                    ch = u'-';
-                    break;
-                default:
-                    throw stream.unexpected(ch);
-                }
-                escaped = true;
-            }
-            switch (state)
-            {
-            case CC_STATE_START:
-                if (!escaped && ch == u'-')
-                    throw stream.unexpected(ch);
-                start = ch;
-                state = CC_STATE_RANGE;
-                break;
-            case CC_STATE_RANGE:
-                if (!escaped && ch == u'-')
-                {
-                    state = CC_STATE_END;
-                }
-                else
-                {
-                    *this |= Range<TCHAR>(start, start + 1);
-                    start = ch;
-                    state = CC_STATE_RANGE;
-                }
-                break;
-            case CC_STATE_END:
-                if (!escaped && ch == u'-')
-                {
-                    throw stream.unexpected(ch);
-                }
-                else
-                {
-                    *this |= Range<TCHAR>(start, ch + 1);
-                    state = CC_STATE_START;
-                }
-                break;
-            }
-        }
-        if (state == CC_STATE_RANGE)
-        {
-            *this |= Range<TCHAR>(start, start + 1);
-        }
-        else if (state == CC_STATE_END)
-        {
-            throw stream.unexpected(u']');
-        }
-        if (invert_flag) invert();
-    }
     CharClass()
     {
     }

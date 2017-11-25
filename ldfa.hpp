@@ -115,11 +115,15 @@ private:
      */
     void fork_closures(const CompositeATN<TCHAR>& catn, int index)
     {
+        const LDFAState<TCHAR>& state = m_states[index];
+
         //First, check if the state in question is already single-colored
-        if (m_states[index].get_color() > 0)
+        if (state.get_color() > 0)
         {
             return;
         }
+
+        CATNDepartureSet deptset = catn.build_departure_set(state.label());
 
         //Divide the entire character space into equivalent sets
         // borders is the sorted set of characters at the beginning of each set

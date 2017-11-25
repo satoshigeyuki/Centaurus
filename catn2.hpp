@@ -198,14 +198,20 @@ public:
 using CATNClosure = std::set<std::pair<ATNPath, int> >;
 
 template<typename TCHAR>
-class CATNTransitionSet : public std::vector<std::pair<CharClass<TCHAR>, >
+class CATNDepartureSet : public std::vector<std::pair<CharClass<TCHAR>, CATNClosure> >
 {
 public:
-    CATNTransitionSet()
+    CATNDepartureSet()
     {
     }
-    virtual ~CATNTransitionSet()
+    virtual ~CATNDepartureSet()
     {
+    }
+    void add(const CharClass<TCHAR>& cc, const ATNPath& path, int color)
+    {
+        for (auto& p : *this)
+        {
+        }
     }
 };
 
@@ -291,6 +297,47 @@ private:
             build_closure_inclusive(closure, path.add(node.get_submachine(), 0), color);
         }
     }
+    void build_wildcard_departure_set(CATNDepartureSet& deptset, const Identifier& id, int color) const
+    {
+        for (const auto& p : m_dict)
+        {
+            for (unsigned int i = 0; i < p.second.get_num_nodes(); i++)
+            {
+                if (p.second[i].get_submachine() == id)
+                {
+                    build_departure_set_r(deptset, ATNPath(p.first, i), color);
+                }
+            }
+        }
+    }
+    void build_departure_set_r(CATNDepartureSet& deptset, const ATNPath& path, int color) const
+    {
+        const CATNNode<TCHAR>& node = get_node(path);
+
+        if (node.is_stop_node())
+        {
+            ATNPath parent_path = path.parent_path();
+
+            if (parent_path.depth() == 0)
+            {
+                build_wildcard_departure_set(deptset, path.leaf_id(), color);
+            }
+            else
+            {
+                build_departure_set_r(deptset, parent_path, color);
+            }
+        }
+        else
+        {
+            for (const auto& tr : node.get_transitions())
+            {
+                if (!tr.is_epsilon())
+                {
+                    deptset.add(tr.label(), path.replace_index(tr.dest()), color);
+                }
+            }
+        }
+    }
 public:
     CompositeATN(const Grammar<TCHAR>& grammar)
     {
@@ -361,6 +408,20 @@ public:
         }
 
         return closure;
+    }
+    /*!
+     * @brief Collect all the outbound transitions from the closure
+     */
+    CATNDepartureSet build_departure_set(const CATNClosure& closure) const
+    {
+        CATNDepartureSet deptset;
+
+        for (const auto& p : closure)
+        {
+            build_departure_set_r(deptset, p.first, p.second);
+        }
+
+        return deptset;
     }
 };
 }
