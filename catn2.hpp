@@ -59,10 +59,12 @@ public:
     }
     bool is_terminal() const
     {
+        //operator Identifier::bool() returns true if the identifier has non-zero length
         return m_submachine;
     }
     const Identifier& get_submachine() const
     {
+        //Returns an empty Identifier if the node is terminal
         return m_submachine;
     }
     void print(std::ostream& os, int from) const

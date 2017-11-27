@@ -218,5 +218,30 @@ public:
         }
         return false;
     }
+    bool overlaps(const CharClass<TCHAR>& cc) const
+    {
+        auto i = m_ranges.cbegin();
+        auto j = cc.m_ranges.cbegin();
+
+        while (i != m_ranges.cend() && j != cc.m_ranges.cend())
+        {
+            const Range<TCHAR>& ri = *i;
+            const Range<TCHAR>& rj = *j;
+
+            if (ri < rj)
+            {
+                i++;
+            }
+            else if (rj < ri)
+            {
+                j++;
+            }
+            else
+            {
+                return true;
+            }
+        }
+        return false;
+    }
 };
 }
