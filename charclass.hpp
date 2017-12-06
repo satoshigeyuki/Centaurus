@@ -225,14 +225,11 @@ public:
 
         while (i != m_ranges.cend() && j != cc.m_ranges.cend())
         {
-            const Range<TCHAR>& ri = *i;
-            const Range<TCHAR>& rj = *j;
-
-            if (ri < rj)
+            if (*i < *j)
             {
                 i++;
             }
-            else if (rj < ri)
+            else if (*j < *i)
             {
                 j++;
             }
@@ -242,6 +239,47 @@ public:
             }
         }
         return false;
+    }
+    CharClass<TCHAR> exclude(const CharClass<TCHAR>& cc) const
+    {
+        CharClass<TCHAR> ret;
+
+        auto i = m_ranges.cbegin();
+        auto j = cc.m_ranges.cbegin();
+
+        while (i != m_ranges.cend() && j != cc.m_ranges.cend())
+        {
+            if (*i < *j)
+            {
+                //*i is not included in any of cc.m_ranges
+                ret.m_ranges.push_back(*i);
+                i++;
+            }
+            else if (*i > *j)
+            {
+                //*j has been already excluded from any overlapping *i
+                j++;
+            }
+            else
+            {
+                //*i and *j overlaps
+                if (i->start() < j->start())
+                {
+                    ret.m_ranges.push_back(i->start(), j->start());
+                }
+                if (i->end() > j->end())
+                {
+                    //*j has been already excluded from any overlapping *i
+                    ret.m_ranges.push_back(j->end(), i->start());
+                    j++;
+                }
+                else
+                {
+                    
+                }
+            }
+        }
+        return ret;
     }
 };
 }

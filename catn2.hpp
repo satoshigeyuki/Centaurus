@@ -211,8 +211,12 @@ public:
     }
     void add(const CharClass<TCHAR>& cc, const ATNPath& path, int color)
     {
-        for (auto& p : *this)
+        for (const auto& p : *this)
         {
+            if (p.first.overlaps(cc))
+            {
+                CharClass<TCHAR> cc_new1 = 
+            }
         }
     }
 };
