@@ -6,6 +6,7 @@
 #include <string>
 #include <locale>
 #include <algorithm>
+#include <tuple>
 
 #include "stream.hpp"
 #include "util.hpp"
@@ -77,6 +78,14 @@ public:
     TCHAR end() const
     {
         return m_end;
+    }
+    void start(TCHAR ch)
+    {
+        m_start = ch;
+    }
+    void end(TCHAR ch)
+    {
+        m_end = ch;
     }
 };
 
@@ -240,7 +249,86 @@ public:
         }
         return false;
     }
-    CharClass<TCHAR> exclude(const CharClass<TCHAR>& cc) const
+    /*!
+     * @brief Take the differences and the intersection between the character classes in one pass
+     */
+    std::tuple<CharClass<TCHAR>, CharClass<TCHAR>, CharClass<TCHAR> > diff_and_int(const CharClass<TCHAR>& cc) const
+    {
+        CharClass<TCHAR> diff1, diff2, intersection;
+
+        auto i = m_ranges.cbegin();
+        auto j = cc.m_ranges.cbegin();
+        
+        Range<TCHAR> ri, rj;
+
+        if (i != m_ranges.cend())
+            ri = *i;
+        if (j != cc.m_ranges.cend())
+            rj = *j;
+
+        while (i != m_ranges.cend() && j != cc.m_ranges.cend())
+        {
+            if (ri < rj)
+            {
+                diff1.m_ranges.push_back(ri);
+                if (++i != diff1.m_ranges.cend())
+                    ri = *i;
+            }
+            else if (ri > rj)
+            {
+                diff2.m_ranges.push_back(rj);
+                if (++j != diff2.m_ranges.cend())
+                    rj = *j;
+            }
+            else
+            {
+                if (ri.start() < rj.start())
+                {
+                    //When ri begins earlier than rj
+                    diff1.m_ranges.emplace_back(ri.start(), rj.start());
+                    ri.start(rj.start());
+                }
+                else if (rj.start() < ri.start())
+                {
+                    //When rj begins earlier than ri
+                    diff2.m_ranges.emplace_back(rj.start(), ri.start());
+                    rj.start(ri.start());
+                }
+                else
+                {
+                    //ri.start() == rj.start()
+                    if (ri.end() > rj.end())
+                    {
+                        //When ri ends later than rj
+                        intersection.m_ranges.emplace_back(rj.start(), rj.end());
+                        ri.start(rj.end());
+                        if (++j != cc.m_ranges.cend())
+                            rj = *j;
+                    }
+                    else if (ri.end() < rj.end())
+                    {
+                        //When rj ends later than ri
+                        intersection.m_ranges.emplace_back(ri.start(), ri.end());
+                        rj.start(ri.end());
+                        if (++i != m_ranges.cend())
+                            ri = *i;
+                    }
+                    else
+                    {
+                        //When ri equals to rj
+                        intersection.m_ranges.emplace_back(ri.start(), rj.end());
+                        if (++i != m_ranges.cend())
+                            ri = *i;
+                        if (++j != cc.m_ranges.cend())
+                            rj = *j;
+                    }
+                }
+            }
+        }
+
+        return std::make_tuple(diff1, diff2, intersection);
+    }
+    /*CharClass<TCHAR> exclude(const CharClass<TCHAR>& cc) const
     {
         CharClass<TCHAR> ret;
 
@@ -251,35 +339,35 @@ public:
         {
             if (*i < *j)
             {
-                //*i is not included in any of cc.m_ranges
+                // *i is not included in any of cc.m_ranges
                 ret.m_ranges.push_back(*i);
                 i++;
             }
             else if (*i > *j)
             {
-                //*j has been already excluded from any overlapping *i
+                // *j has been already excluded from any overlapping *i
                 j++;
             }
             else
             {
-                //*i and *j overlaps
+                // *i and *j overlaps
                 if (i->start() < j->start())
                 {
                     ret.m_ranges.push_back(i->start(), j->start());
                 }
                 if (i->end() > j->end())
                 {
-                    //*j has been already excluded from any overlapping *i
+                    // *j has been already excluded from any overlapping *i
                     ret.m_ranges.push_back(j->end(), i->start());
                     j++;
                 }
                 else
                 {
-                    
+                    ret.m_ranges.
                 }
             }
         }
         return ret;
-    }
+    }*/
 };
 }
