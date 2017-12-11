@@ -298,6 +298,8 @@ private:
      */
     void build_wildcard_closure(CATNClosure& closure, const Identifier& id, int color) const
     {
+        std::cout << "Wildcard " << id.narrow() << ":" << color << std::endl;
+
         for (const auto& p : m_dict)
         {
             for (int i = 0; i < p.second.get_num_nodes(); i++)
@@ -318,8 +320,12 @@ private:
     {
         const CATNNode<TCHAR>& node = get_node(path);
 
+        std::cout << "Exclusive " << path << ":" << color << std::endl;
+
         if (node.is_stop_node())
         {
+            std::cout << "Stop node " << path << std::endl;
+
             ATNPath parent = path.parent_path();
 
             if (parent.depth() == 0)
@@ -333,6 +339,8 @@ private:
         }
         else
         {
+            std::cout << "Intermediate node " << path << std::endl;
+
             for (const auto& tr : node.get_transitions())
             {
                 if (tr.is_epsilon())

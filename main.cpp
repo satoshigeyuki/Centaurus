@@ -53,9 +53,9 @@ int main(int argc, const char *argv[])
 
     std::ofstream catn_graph("catn.dot");
 
-    catn[u"Dictionary"].print(catn_graph, "CATN");
+    catn[u"List"].print(catn_graph, "CATN");
 
-    Centaurus::LookaheadDFA<char> ldfa(catn, Centaurus::ATNPath(u"Object", 0));
+    Centaurus::LookaheadDFA<char> ldfa(catn, Centaurus::ATNPath(u"ListItems", 0));
 
     return 0;
 }
