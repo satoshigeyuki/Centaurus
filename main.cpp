@@ -10,6 +10,8 @@
 #include "catn2.hpp"
 #include "ldfa.hpp"
 
+#include "codegen.hpp"
+
 int main(int argc, const char *argv[])
 {
     if (argc < 2)
