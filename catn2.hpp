@@ -60,7 +60,7 @@ public:
     bool is_terminal() const
     {
         //operator Identifier::bool() returns true if the identifier has non-zero length
-        return m_submachine;
+        return !m_submachine;
     }
     const Identifier& get_submachine() const
     {
@@ -199,6 +199,15 @@ public:
 
 using CATNClosure = std::set<std::pair<ATNPath, int> >;
 
+std::ostream& operator<<(std::ostream& os, const CATNClosure& closure)
+{
+    for (const auto& p : closure)
+    {
+        std::cout << p.first << ":" << p.second << std::endl;
+    }
+    return os;
+}
+
 template<typename TCHAR>
 class CATNDepartureSet : public std::vector<std::pair<CharClass<TCHAR>, CATNClosure> >
 {
@@ -215,7 +224,7 @@ public:
         {
             if (p.first.overlaps(cc))
             {
-                CharClass<TCHAR> cc_new1 = 
+                //CharClass<TCHAR> cc_new1 = 
             }
         }
     }
@@ -303,7 +312,7 @@ private:
             build_closure_inclusive(closure, path.add(node.get_submachine(), 0), color);
         }
     }
-    void build_wildcard_departure_set(CATNDepartureSet& deptset, const Identifier& id, int color) const
+    void build_wildcard_departure_set(CATNDepartureSet<TCHAR>& deptset, const Identifier& id, int color) const
     {
         for (const auto& p : m_dict)
         {
@@ -316,7 +325,7 @@ private:
             }
         }
     }
-    void build_departure_set_r(CATNDepartureSet& deptset, const ATNPath& path, int color) const
+    void build_departure_set_r(CATNDepartureSet<TCHAR>& deptset, const ATNPath& path, int color) const
     {
         const CATNNode<TCHAR>& node = get_node(path);
 
@@ -418,9 +427,9 @@ public:
     /*!
      * @brief Collect all the outbound transitions from the closure
      */
-    CATNDepartureSet build_departure_set(const CATNClosure& closure) const
+    CATNDepartureSet<TCHAR> build_departure_set(const CATNClosure& closure) const
     {
-        CATNDepartureSet deptset;
+        CATNDepartureSet<TCHAR> deptset;
 
         for (const auto& p : closure)
         {

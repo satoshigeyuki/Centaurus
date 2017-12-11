@@ -7,6 +7,7 @@
 #include <locale>
 #include <algorithm>
 #include <tuple>
+#include <set>
 
 #include "stream.hpp"
 #include "util.hpp"
@@ -69,7 +70,7 @@ public:
     }
     Range<TCHAR> intersect(const Range<TCHAR>& r) const
     {
-        return Range<TCHAR>(std::max(m_start, r.m_start), std::min(m_emd, r.m_end));
+        return Range<TCHAR>(std::max(m_start, r.m_start), std::min(m_end, r.m_end));
     }
     TCHAR start() const
     {

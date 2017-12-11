@@ -123,7 +123,7 @@ private:
             return;
         }
 
-        CATNDepartureSet deptset = catn.build_departure_set(state.label());
+        CATNDepartureSet<TCHAR> deptset = catn.build_departure_set(state.label());
 
         //Divide the entire character space into equivalent sets
         // borders is the sorted set of characters at the beginning of each set
@@ -169,7 +169,6 @@ private:
             //we throw an exception because the decision is impossible
             throw SimpleException("LDFA construction failed.");
         }
-#endif
 
         //EquivalenceTable holds the mapping from an equivalent set to a CATN state.
         LDFAEquivalenceTable table;
@@ -230,11 +229,14 @@ private:
         {
             fork_closures(catn, i);
         }
+#endif
     }
 public:
     LookaheadDFA(const CompositeATN<TCHAR>& catn, const ATNPath& origin)
     {
         m_states.emplace_back(catn.build_root_closure(origin));
+
+        std::cout << m_states[0].label() << std::endl;
 
         fork_closures(catn, 0);
     }
