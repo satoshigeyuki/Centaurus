@@ -218,6 +218,28 @@ public:
     virtual ~CATNDepartureSet()
     {
     }
+    /*!
+     * @brief Check if this Departure Set is considered resolved.
+     *
+     * The check is performed by searching for duplicate colors in a single element.
+     */
+    bool is_resolved() const
+    {
+        for (const auto& p : *this)
+        {
+            int prev = 0;
+
+            for (const auto& q : p.second)
+            {
+                if (q.second != prev)
+                {
+                    if (prev > 0) return false;
+                    prev = q.second;
+                }
+            }
+        }
+        return true;
+    }
     void add(const CharClass<TCHAR>& cc, const ATNPath& path, int color)
     {
         for (auto i = this->begin(); i != this->end(); i++)

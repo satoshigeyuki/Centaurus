@@ -118,14 +118,21 @@ private:
         const LDFAState<TCHAR>& state = m_states[index];
 
         //First, check if the state in question is already single-colored
-        if (state.get_color() > 0)
+        /*if (state.get_color() > 0)
         {
+            std::cout << "Monochromatic " << index << std::endl;
             return;
-        }
+        }*/
 
         CATNDepartureSet<TCHAR> deptset = catn.build_departure_set(state.label());
 
         std::cout << deptset << std::endl;
+
+        if (deptset.is_resolved())
+        {
+            std::cout << "Resolved " << index << std::endl;
+            return;
+        }
 
         //Add new states to the LDFA
         int initial_index = m_states.size();
