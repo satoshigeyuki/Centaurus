@@ -28,7 +28,7 @@ public:
     {
         std::basic_ostringstream<char16_t> stream;
 
-        if (ch == EOF)
+        if (ch == std::char_traits<char16_t>::eof())
             stream << u"Unexpected EOF" << std::endl;
         else
             stream << u"Unexpected character " << ch << std::endl;

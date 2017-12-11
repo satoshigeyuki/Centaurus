@@ -203,7 +203,7 @@ std::ostream& operator<<(std::ostream& os, const CATNClosure& closure)
 {
     for (const auto& p : closure)
     {
-        std::cout << p.first << ":" << p.second << std::endl;
+        os << p.first << ":" << p.second << std::endl;
     }
     return os;
 }
@@ -220,15 +220,51 @@ public:
     }
     void add(const CharClass<TCHAR>& cc, const ATNPath& path, int color)
     {
-        for (const auto& p : *this)
+        for (auto i = this->begin(); i != this->end(); i++)
         {
-            if (p.first.overlaps(cc))
+            if (i->first.overlaps(cc))
             {
-                //CharClass<TCHAR> cc_new1 = 
+                std::array<CharClass<TCHAR>, 3> diset = i->first.diff_and_int(cc);
+
+                if (diset[0])
+                {
+                    this->emplace_back(diset[0], i->second);
+                }
+                if (diset[2])
+                {
+                    CATNClosure new_closure = i->second;
+                    new_closure.emplace(path, color);
+                    this->emplace_back(diset[2], new_closure);
+                }
+
+                i = this->erase(i);
+                if (diset[1])
+                {
+                    this->add(cc, path, color);
+                }
+                return;
             }
         }
+        CATNClosure closure;
+        closure.emplace(path, color);
+        this->emplace_back(cc, closure);
     }
 };
+
+template<typename TCHAR>
+std::ostream& operator<<(std::ostream& os, const CATNDepartureSet<TCHAR>& deptset)
+{
+    for (const auto& p : deptset)
+    {
+        os << p.first << " -> ";
+        for (const auto& q : p.second)
+        {
+            os << q.first << ":" << q.second << " ";
+        }
+        os << std::endl;
+    }
+    return os;
+}
 
 template<typename TCHAR>
 class CompositeATN
@@ -242,7 +278,7 @@ private:
     {
         for (const auto& p : m_dict)
         {
-            for (unsigned int i = 0; i < p.second.get_num_nodes(); i++)
+            for (int i = 0; i < p.second.get_num_nodes(); i++)
             {
                 const CATNNode<TCHAR>& node = p.second[i];
 
@@ -316,7 +352,7 @@ private:
     {
         for (const auto& p : m_dict)
         {
-            for (unsigned int i = 0; i < p.second.get_num_nodes(); i++)
+            for (int i = 0; i < p.second.get_num_nodes(); i++)
             {
                 if (p.second[i].get_submachine() == id)
                 {

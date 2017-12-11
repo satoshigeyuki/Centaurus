@@ -250,12 +250,34 @@ public:
         }
         return false;
     }
+    void append(const Range<TCHAR>& r)
+    {
+        if (m_ranges.empty())
+        {
+            m_ranges.push_back(r);
+        }
+        else
+        {
+            if (m_ranges.back().end() == r.start())
+            {
+                m_ranges.back().end(r.end());
+            }
+            else
+            {
+                m_ranges.push_back(r);
+            }
+        }
+    }
     /*!
      * @brief Take the differences and the intersection between the character classes in one pass
      */
-    std::tuple<CharClass<TCHAR>, CharClass<TCHAR>, CharClass<TCHAR> > diff_and_int(const CharClass<TCHAR>& cc) const
+    std::array<CharClass<TCHAR>, 3> diff_and_int(const CharClass<TCHAR>& cc) const
     {
-        CharClass<TCHAR> diff1, diff2, intersection;
+        //Returns 3 character classes
+        //ret[0] => *this & ~cc
+        //ret[1] => ~(*this) & cc
+        //ret[2] => *this & cc
+        std::array<CharClass<TCHAR>, 3> ret;
 
         auto i = m_ranges.cbegin();
         auto j = cc.m_ranges.cbegin();
@@ -271,14 +293,14 @@ public:
         {
             if (ri < rj)
             {
-                diff1.m_ranges.push_back(ri);
-                if (++i != diff1.m_ranges.cend())
+                ret[0].append(ri);
+                if (++i != m_ranges.cend())
                     ri = *i;
             }
             else if (ri > rj)
             {
-                diff2.m_ranges.push_back(rj);
-                if (++j != diff2.m_ranges.cend())
+                ret[1].append(rj);
+                if (++j != cc.m_ranges.cend())
                     rj = *j;
             }
             else
@@ -286,13 +308,13 @@ public:
                 if (ri.start() < rj.start())
                 {
                     //When ri begins earlier than rj
-                    diff1.m_ranges.emplace_back(ri.start(), rj.start());
+                    ret[0].append(Range<TCHAR>(ri.start(), rj.start()));
                     ri.start(rj.start());
                 }
                 else if (rj.start() < ri.start())
                 {
                     //When rj begins earlier than ri
-                    diff2.m_ranges.emplace_back(rj.start(), ri.start());
+                    ret[1].append(Range<TCHAR>(rj.start(), ri.start()));
                     rj.start(ri.start());
                 }
                 else
@@ -301,7 +323,7 @@ public:
                     if (ri.end() > rj.end())
                     {
                         //When ri ends later than rj
-                        intersection.m_ranges.emplace_back(rj.start(), rj.end());
+                        ret[2].append(Range<TCHAR>(rj.start(), rj.end()));
                         ri.start(rj.end());
                         if (++j != cc.m_ranges.cend())
                             rj = *j;
@@ -309,7 +331,7 @@ public:
                     else if (ri.end() < rj.end())
                     {
                         //When rj ends later than ri
-                        intersection.m_ranges.emplace_back(ri.start(), ri.end());
+                        ret[2].append(Range<TCHAR>(ri.start(), ri.end()));
                         rj.start(ri.end());
                         if (++i != m_ranges.cend())
                             ri = *i;
@@ -317,7 +339,7 @@ public:
                     else
                     {
                         //When ri equals to rj
-                        intersection.m_ranges.emplace_back(ri.start(), rj.end());
+                        ret[2].append(Range<TCHAR>(ri.start(), rj.end()));
                         if (++i != m_ranges.cend())
                             ri = *i;
                         if (++j != cc.m_ranges.cend())
@@ -327,7 +349,24 @@ public:
             }
         }
 
-        return std::make_tuple(diff1, diff2, intersection);
+        while (i != m_ranges.cend())
+        {
+            ret[0].append(ri);
+            if (++i != m_ranges.cend())
+                ri = *i;
+        }
+        while (j != cc.m_ranges.cend())
+        {
+            ret[1].append(rj);
+            if (++j != cc.m_ranges.cend())
+                rj = *j;
+        }
+
+        std::cout << ret[0] << std::endl;
+        std::cout << ret[1] << std::endl;
+        std::cout << ret[2] << std::endl;
+
+        return ret;
     }
     /*CharClass<TCHAR> exclude(const CharClass<TCHAR>& cc) const
     {
@@ -370,5 +409,9 @@ public:
         }
         return ret;
     }*/
+    operator bool() const
+    {
+        return !m_ranges.empty();
+    }
 };
 }

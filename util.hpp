@@ -111,7 +111,7 @@ public:
         }
         else
         {
-            for (unsigned int i = 0; i < depth(); i++)
+            for (int i = 0; i < depth(); i++)
             {
                 int id_cmp = m_path[i].first.str().compare(p.m_path[i].first.str());
 
