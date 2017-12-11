@@ -37,6 +37,10 @@ public:
     {
         m_path.emplace_back(id, index);
     }
+    void push(const std::pair<Identifier, int>& p)
+    {
+        m_path.push_back(p);
+    }
     void pop()
     {
         m_path.pop_back();
@@ -125,6 +129,13 @@ public:
         }
         return 0;
     }
+    bool find(const Identifier& id, int index) const
+    {
+        return std::find_if(m_path.cbegin(), m_path.cend(), [&](const std::pair<Identifier, int>& p) -> bool
+        {
+            return p.first == id && p.second == index;
+        }) != m_path.cend();
+    }
 };
 class IndexVector : public std::vector<int>
 {
@@ -164,6 +175,8 @@ public:
 std::ostream& operator<<(std::ostream& os, const Identifier& id);
 std::ostream& operator<<(std::ostream& os, const ATNPath& path);
 std::ostream& operator<<(std::ostream& os, const IndexVector& v);
+
+using ATNStateStack = ATNPath;
 }
 
 namespace std

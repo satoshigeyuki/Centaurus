@@ -296,7 +296,7 @@ private:
     /*!
      * @brief Add all the CATN nodes reachable from all the invocation sites of a machine
      */
-    void build_wildcard_closure(CATNClosure& closure, const Identifier& id, int color) const
+    void build_wildcard_closure(CATNClosure& closure, const Identifier& id, int color, ATNStateStack& stack) const
     {
         std::cout << "Wildcard " << id.narrow() << ":" << color << std::endl;
 
@@ -308,7 +308,14 @@ private:
 
                 if (node.get_submachine() == id)
                 {
-                    build_closure_exclusive(closure, ATNPath(p.first, i), color);
+                    if (stack.find(p.first, i))
+                    {
+                        std::cout << "Upward sentinel reached." << std::endl;
+                        continue;
+                    }
+                    stack.push(p.first, i);
+                    build_closure_exclusive(closure, ATNPath(p.first, i), color, stack);
+                    stack.pop();
                 }
             }
         }
@@ -316,7 +323,7 @@ private:
     /*!
      * @brief Add all the CATN nodes reachable from a path
      */
-    void build_closure_exclusive(CATNClosure& closure, const ATNPath& path, int color) const
+    void build_closure_exclusive(CATNClosure& closure, const ATNPath& path, int color, ATNStateStack& stack) const
     {
         const CATNNode<TCHAR>& node = get_node(path);
 
@@ -330,11 +337,11 @@ private:
 
             if (parent.depth() == 0)
             {
-                build_wildcard_closure(closure, path.leaf_id(), color);
+                build_wildcard_closure(closure, path.leaf_id(), color, stack);
             }
             else
             {
-                build_closure_exclusive(closure, parent, color);
+                build_closure_exclusive(closure, parent, color, stack);
             }
         }
         else
@@ -353,17 +360,17 @@ private:
                     {
                         closure.emplace(dest_path, color);
 
-                        build_closure_exclusive(closure, dest_path, color);
+                        build_closure_exclusive(closure, dest_path, color, stack);
                     }
                     else
                     {
-                        build_closure_inclusive(closure, dest_path.add(dest_node.get_submachine(), 0), color);
+                        build_closure_inclusive(closure, dest_path.add(dest_node.get_submachine(), 0), color, stack);
                     }
                 }
             }
         }
     }
-    void build_closure_inclusive(CATNClosure& closure, const ATNPath& path, int color) const
+    void build_closure_inclusive(CATNClosure& closure, const ATNPath& path, int color, ATNStateStack& stack) const
     {
         const CATNNode<TCHAR>& node = get_node(path);
 
@@ -371,14 +378,14 @@ private:
         {
             closure.emplace(path, color);
 
-            build_closure_exclusive(closure, path, color);
+            build_closure_exclusive(closure, path, color, stack);
         }
         else
         {
-            build_closure_inclusive(closure, path.add(node.get_submachine(), 0), color);
+            build_closure_inclusive(closure, path.add(node.get_submachine(), 0), color, stack);
         }
     }
-    void build_wildcard_departure_set(CATNDepartureSet<TCHAR>& deptset, const Identifier& id, int color) const
+    void build_wildcard_departure_set(CATNDepartureSet<TCHAR>& deptset, const Identifier& id, int color, ATNStateStack& stack) const
     {
         for (const auto& p : m_dict)
         {
@@ -386,12 +393,19 @@ private:
             {
                 if (p.second[i].get_submachine() == id)
                 {
-                    build_departure_set_r(deptset, ATNPath(p.first, i), color);
+                    if (stack.find(p.first, i))
+                    {
+                        std::cout << "Upward sentinel reached." << std::endl;
+                        continue;
+                    }
+                    stack.push(p.first, i);
+                    build_departure_set_r(deptset, ATNPath(p.first, i), color, stack);
+                    stack.pop();
                 }
             }
         }
     }
-    void build_departure_set_r(CATNDepartureSet<TCHAR>& deptset, const ATNPath& path, int color) const
+    void build_departure_set_r(CATNDepartureSet<TCHAR>& deptset, const ATNPath& path, int color, ATNStateStack& stack) const
     {
         const CATNNode<TCHAR>& node = get_node(path);
 
@@ -401,11 +415,11 @@ private:
 
             if (parent_path.depth() == 0)
             {
-                build_wildcard_departure_set(deptset, path.leaf_id(), color);
+                build_wildcard_departure_set(deptset, path.leaf_id(), color, stack);
             }
             else
             {
-                build_departure_set_r(deptset, parent_path, color);
+                build_departure_set_r(deptset, parent_path, color, stack);
             }
         }
         else
@@ -454,9 +468,11 @@ public:
     {
         CATNClosure ret;
 
+        ATNStateStack stack;
+
         for (const auto& p : closure)
         {
-            build_closure_inclusive(ret, p.first, p.second);
+            build_closure_inclusive(ret, p.first, p.second, stack);
         }
 
         return ret;
@@ -465,7 +481,9 @@ public:
     {
         CATNClosure closure;
 
-        build_closure_inclusive(closure, path, color);
+        ATNStateStack stack;
+
+        build_closure_inclusive(closure, path, color, stack);
 
         return closure;
     }
@@ -476,6 +494,8 @@ public:
     {
         CATNClosure closure;
 
+        ATNStateStack stack;
+
         const CATNNode<TCHAR>& root_node = get_node(path);
 
         const std::vector<CATNTransition<TCHAR> >& transitions = root_node.get_transitions();
@@ -485,7 +505,7 @@ public:
             //All transitions originating from the root node must be epsilon transitions
             assert(transitions[i].is_epsilon());
 
-            build_closure_inclusive(closure, path.replace_index(transitions[i].dest()), i + 1);
+            build_closure_inclusive(closure, path.replace_index(transitions[i].dest()), i + 1, stack);
         }
 
         return closure;
@@ -497,9 +517,11 @@ public:
     {
         CATNDepartureSet<TCHAR> deptset;
 
+        ATNStateStack stack;
+
         for (const auto& p : closure)
         {
-            build_departure_set_r(deptset, p.first, p.second);
+            build_departure_set_r(deptset, p.first, p.second, stack);
         }
 
         return deptset;
