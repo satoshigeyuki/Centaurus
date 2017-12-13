@@ -4,45 +4,138 @@
 #include <string>
 #include <type_traits>
 
+#include <assert.h>
+
 #include "catn2.hpp"
+#include "ldfa.hpp"
 
 namespace Centaurus
 {
-class IndentedFileWriter : public std::ofstream
+class CodeFormatterBase
 {
+    friend void NewLine(CodeFormatterBase&);
+
+    std::ofstream m_ofs;
+    int m_indlevel;
+    bool m_lineflag;
 public:
-    IndentedFileWriter(const std::string& path)
-        : std::ofstream(path)
+    CodeFormatterBase(const std::string& path)
+        : m_ofs(path), m_indlevel(0), m_lineflag(true)
     {
     }
-    virtual ~IndentedFileWriter()
+    virtual ~CodeFormatterBase()
     {
     }
-    virtual std::ostream& put(char ch) override
+    void indent(int n)
     {
+        if (m_indlevel + n >= 0)
+            m_indlevel += n;
+    }
+    template<typename T> CodeFormatterBase& operator<<(const T& obj)
+    {
+        if (m_lineflag)
+        {
+            for (int i = 0; i < m_indlevel; i++)
+            {
+                m_ofs << '\t';
+            }
+            m_lineflag = false;
+        }
+        m_ofs << obj;
+        return *this;
+    }
+    template<> CodeFormatterBase& operator<<(void (*pf)(CodeFormatterBase&))
+    {
+        pf(*this);
+        return *this;
     }
 };
-template<typename TCHAR, class GeneratorImpl>
+class IndentedBlock
+{
+    CodeFormatterBase& m_fmt;
+public:
+    IndentedBlock(CodeFormatterBase& fmt)
+        : m_fmt(fmt)
+    {
+        m_fmt << '{' << NewLine;
+        m_fmt.indent(+1);
+    }
+    ~IndentedBlock()
+    {
+        m_fmt.indent(-1);
+        m_fmt << '}' << NewLine;
+    }
+};
+static void NewLine(CodeFormatterBase& fmt)
+{
+    fmt.m_ofs << std::endl;
+    fmt.m_lineflag = true;
+}
+template<typename TCHAR, class GeneratorImpl, class FormatterImpl>
 class CodeGeneratorBase
 {
-    IndentedFileWriter ofs;
+    FormatterImpl m_fmt;
+    int m_temp_counter;
+protected:
+    std::string get_temp_varname(const char *prefix)
+    {
+        std::string ret = std::string(prefix) + std::to_string(m_temp_counter);
+        m_temp_counter++;
+        return ret;
+    }
 public:
     CodeGeneratorBase(const std::string& path)
-        : ofs(path)
+        : m_fmt(path), m_temp_counter(0)
     {
     }
     virtual ~CodeGeneratorBase()
     {
     }
-    virtual void operator()(const CATNMachine<TCHAR>& machine)
+    virtual void operator()(const CATNMachine<TCHAR>& machine) = 0;
+    virtual void operator()(const LookaheadDFA<TCHAR>& ldfa, const std::wstring& name, int index) = 0;
+};
+template<typename TCHAR>
+class CppCodeFormatter : public CodeFormatterBase
+{
+public:
+    CppCodeFormatter()
     {
-        
+    }
+    virtual ~CppCodeFormatter()
+    {
+    }
+};
+class CppParseFunc
+{
+    CodeFormatterBase& m_fmt;
+public:
+    CppParseFunc(CodeFormatterBase& fmt, const std::string& name)
+        : m_fmt(fmt)
+    {
+        m_fmt << "mysval parse_" << name << "(mystream& stream)" << NewLine;
+        m_fmt << "{" << NewLine;
+        m_fmt.indent(+1);
+    }
+    virtual ~CppParseFunc()
+    {
+        m_fmt.indent(-1);
+        m_fmt << "}" << NewLine;
+    }
+};
+class CppDecisionFunc
+{
+public:
+    CppDecisionFunc()
+    {
+    }
+    virtual ~CppDecisionFunc()
+    {
     }
 };
 template<typename TCHAR>
-class CppCodeGenerator : public CodeGeneratorBase<TCHAR, CppCodeGenerator<TCHAR> >
+class CppCodeGenerator : public CodeGeneratorBase<TCHAR, CppCodeGenerator<TCHAR> , CppCodeFormatter<TCHAR> >
 {
-    using CodeGeneratorBase::ofs;
+    using CodeGeneratorBase::m_fmt;
 
     const char *get_chartype() const
     {
@@ -57,9 +150,36 @@ class CppCodeGenerator : public CodeGeneratorBase<TCHAR, CppCodeGenerator<TCHAR>
         else
             return "int";
     }
+    const char *get_char_prefix() const
+    {
+        if (std::is_same<TCHAR, char>::value)
+            return "";
+        else if (std::is_same<TCHAR, char16_t>::value)
+            return "u";
+        else if (std::is_same<TCHAR, char32_t>::value)
+            return "U";
+        else if (std::is_same<TCHAR, wchar_t>::value)
+            return "L";
+        else
+            return "u8";
+    }
+    char get_hex_digit(int hex) const
+    {
+        return (hex & 0xF) < 10 ? (hex & 0xF) + '0' : (hex & 0xF) - 10 + 'A';
+    }
+    void print_char_literal(TCHAR ch)
+    {
+        m_fmt << get_char_prefix() << "'\x";
+        for (int i = 0; i < sizeof(TCHAR); i++)
+        {
+            m_fmt << get_hex_digit(ch >> ((sizeof(TCHAR) - 1 - i) * 8 + 4));
+            m_fmt << get_hex_digit(ch >> ((sizeof(TCHAR) - 1 - i) * 8));
+        }
+        m_fmt << "'";
+    }
     void declare_char_var(const char *name)
     {
-        ofs << get_chartype() << " " << name << ";" << std::endl;
+        m_fmt << get_chartype() << " " << name << NewLine;
     }
 public:
     CppCodeGenerator(const std::string& path)
@@ -68,7 +188,23 @@ public:
     }
     void match_single_char(TCHAR ch)
     {
-        ofs << "{" << std::endl;
+        IndentedBlock(m_fmt);
+        {
+            declare_char_var("ch");
+
+            m_fmt << "ch = stream.get();" << NewLine;
+            m_fmt << "if (ch != ";
+            print_char_literal(ch);
+            m_fmt << ')' << NewLine;
+            m_fmt << "\tthrow stream.unexpected(ch);" << NewLine;
+        }
+    }
+    void match_char_sequence(const TCHAR *seq)
+    {
+        IndentedBlock(m_fmt);
+        {
+
+        }
     }
     virtual ~CppCodeGenerator()
     {
