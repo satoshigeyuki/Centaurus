@@ -167,19 +167,33 @@ class CppCodeGenerator : public CodeGeneratorBase<TCHAR, CppCodeGenerator<TCHAR>
     {
         return (hex & 0xF) < 10 ? (hex & 0xF) + '0' : (hex & 0xF) - 10 + 'A';
     }
-    void print_char_literal(TCHAR ch)
+    void print_char_code(TCHAR ch)
     {
-        m_fmt << get_char_prefix() << "'\x";
         for (int i = 0; i < sizeof(TCHAR); i++)
         {
             m_fmt << get_hex_digit(ch >> ((sizeof(TCHAR) - 1 - i) * 8 + 4));
             m_fmt << get_hex_digit(ch >> ((sizeof(TCHAR) - 1 - i) * 8));
         }
+    }
+    void print_char_literal(TCHAR ch)
+    {
+        m_fmt << get_char_prefix() << "'\x";
+        print_char_code(ch);
         m_fmt << "'";
     }
     void declare_char_var(const char *name)
     {
         m_fmt << get_chartype() << " " << name << NewLine;
+    }
+    void declare_string_literal(const char *name, const TCHAR *seq)
+    {
+        m_fmt << "const " << get_chartype() << " *" << name << " = ";
+        m_fmt << get_char_prefix() << "\"";
+        for (; *seq != 0; seq++)
+        {
+            print_char_code(*seq);
+        }
+        m_fmt << "\";" << NewLine;
     }
 public:
     CppCodeGenerator(const std::string& path)
@@ -199,11 +213,36 @@ public:
             m_fmt << "\tthrow stream.unexpected(ch);" << NewLine;
         }
     }
-    void match_char_sequence(const TCHAR *seq)
+    void match_string(const TCHAR *seq)
     {
         IndentedBlock(m_fmt);
         {
+            declare_string_literal("pat", seq);
 
+            m_fmt << NewLine;
+            m_fmt << "for (int i = 0; i < " << target_strlen<TCHAR>(seq) << "; i++)" << NewLine;
+            
+            IndentedBlock(m_fmt);
+            {
+                declare_char_var("ch");
+
+                m_fmt << "ch = stream.get();" << NewLine;
+                m_fmt << "if (ch != pat[i])" << NewLine;
+                m_fmt << "\tthrow stream.unexpected(ch);" << NewLine;
+            }
+        }
+    }
+    void match_regex_r(const DFA<TCHAR>& dfa, int index)
+    {
+        if (
+    }
+    void match_regex(const NFA<TCHAR>& nfa)
+    {
+        DFA<TCHAR> dfa(nfa);
+
+        IndentedBlock(m_fmt);
+        {
+            match_regex_r(dfa, 0);
         }
     }
     virtual ~CppCodeGenerator()

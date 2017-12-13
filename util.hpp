@@ -13,6 +13,13 @@ template<typename TCHAR> TCHAR wide_to_target(char16_t ch)
 {
     return static_cast<TCHAR>(ch);
 }
+template<typename TCHAR> int target_strlen(const TCHAR *str)
+{
+    int i;
+    for (i = 0; str[i] != 0; i++)
+        ;
+    return i;
+}
 class ATNPath
 {
     friend std::ostream& operator<<(std::ostream& os, const ATNPath& path);
