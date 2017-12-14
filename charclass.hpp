@@ -88,6 +88,14 @@ public:
     {
         m_end = ch;
     }
+    std::vector<Range<TCHAR> >::const_iterator cbegin() const
+    {
+        return m_ranges.cbegin();
+    }
+    std::vector<Range<TCHAR> >::const_iterator cend() const
+    {
+        return m_ranges.cend();
+    }
 };
 
 template<typename TCHAR>

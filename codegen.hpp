@@ -8,6 +8,7 @@
 
 #include "catn2.hpp"
 #include "ldfa.hpp"
+#include "charclass.hpp"
 
 namespace Centaurus
 {
@@ -194,6 +195,33 @@ class CppCodeGenerator : public CodeGeneratorBase<TCHAR, CppCodeGenerator<TCHAR>
             print_char_code(*seq);
         }
         m_fmt << "\";" << NewLine;
+    }
+    void print_charclass_cond(const CharClass<TCHAR>& cc, const char *var)
+    {
+        for (auto i = cc.cbegin(); i != cc.cend();)
+        {
+            assert(i->start() < i->end());
+
+            if (i->start() + 1 == i->end())
+            {
+                m_fmt << "(" << var << " == ";
+                print_char_literal(i->start());
+                m_fmt << ")";
+            }
+            else
+            {
+                m_fmt << "(";
+                print_char_literal(i->start());
+                m_fmt << " <= " << var << " && " << var << " < ";
+                print_char_literal(i->end());
+                m_fmt << ")";
+            }
+
+            if (++i != cc.cend())
+            {
+                m_fmt << " || ";
+            }
+        }
     }
 public:
     CppCodeGenerator(const std::string& path)
