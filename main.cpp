@@ -12,6 +12,11 @@
 
 #include "codegen.hpp"
 
+std::locale::id std::codecvt<char, char, std::mbstate_t>::id;
+std::locale::id std::codecvt<char16_t, char, std::mbstate_t>::id;
+std::locale::id std::codecvt<char32_t, char, std::mbstate_t>::id;
+//std::locale::id std::codecvt<wchar_t, char, std::mbstate_t>::id;
+
 int main(int argc, const char *argv[])
 {
     if (argc < 2)

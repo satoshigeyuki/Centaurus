@@ -2,6 +2,8 @@
 
 #include <unordered_map>
 #include <vector>
+#include <array>
+
 #include "identifier.hpp"
 #include "nfa.hpp"
 #include "atn.hpp"

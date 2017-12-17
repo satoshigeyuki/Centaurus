@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <tuple>
 #include <set>
+#include <array>
 
 #include "stream.hpp"
 #include "util.hpp"
@@ -87,14 +88,6 @@ public:
     void end(TCHAR ch)
     {
         m_end = ch;
-    }
-    std::vector<Range<TCHAR> >::const_iterator cbegin() const
-    {
-        return m_ranges.cbegin();
-    }
-    std::vector<Range<TCHAR> >::const_iterator cend() const
-    {
-        return m_ranges.cend();
     }
 };
 
@@ -421,5 +414,13 @@ public:
     {
         return !m_ranges.empty();
     }
+	typename std::vector<Range<TCHAR> >::const_iterator cbegin() const
+	{
+		return m_ranges.cbegin();
+	}
+	typename std::vector<Range<TCHAR> >::const_iterator cend() const
+	{
+		return m_ranges.cend();
+	}
 };
 }

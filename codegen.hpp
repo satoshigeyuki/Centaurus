@@ -9,6 +9,7 @@
 #include "catn2.hpp"
 #include "ldfa.hpp"
 #include "charclass.hpp"
+#include "dfa.hpp"
 
 namespace Centaurus
 {
@@ -45,7 +46,7 @@ public:
         m_ofs << obj;
         return *this;
     }
-    template<> CodeFormatterBase& operator<<(void (*pf)(CodeFormatterBase&))
+    CodeFormatterBase& operator<<(void (*pf)(CodeFormatterBase&))
     {
         pf(*this);
         return *this;
@@ -75,6 +76,7 @@ static void NewLine(CodeFormatterBase& fmt)
 template<typename TCHAR, class GeneratorImpl, class FormatterImpl>
 class CodeGeneratorBase
 {
+protected:
     FormatterImpl m_fmt;
     int m_temp_counter;
 protected:
@@ -178,7 +180,7 @@ class CppCodeGenerator : public CodeGeneratorBase<TCHAR, CppCodeGenerator<TCHAR>
     }
     void print_char_literal(TCHAR ch)
     {
-        m_fmt << get_char_prefix() << "'\x";
+        m_fmt << get_char_prefix() << "'\\x";
         print_char_code(ch);
         m_fmt << "'";
     }
@@ -262,7 +264,7 @@ public:
     }
     void match_regex_r(const DFA<TCHAR>& dfa, int index)
     {
-        if (
+        //if (
     }
     void match_regex(const NFA<TCHAR>& nfa)
     {

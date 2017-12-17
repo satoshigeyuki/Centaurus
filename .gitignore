@@ -2,5 +2,11 @@
 !*.cgr
 !*.cpp
 !*.hpp
+!*.h
+!*.sln
+!*.vcproj
+!*.vcxproj
+!*.vcxproj.filters
 !.gitignore
 !CMakeLists.txt
+!vc
