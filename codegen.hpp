@@ -13,6 +13,8 @@
 
 namespace Centaurus
 {
+class CodeFormatterBase;
+static void NewLine(CodeFormatterBase&);
 class CodeFormatterBase
 {
     friend void NewLine(CodeFormatterBase&);
@@ -52,6 +54,11 @@ public:
         return *this;
     }
 };
+static void NewLine(CodeFormatterBase& fmt)
+{
+    fmt.m_ofs << std::endl;
+    fmt.m_lineflag = true;
+}
 class IndentedBlock
 {
     CodeFormatterBase& m_fmt;
@@ -68,11 +75,6 @@ public:
         m_fmt << '}' << NewLine;
     }
 };
-static void NewLine(CodeFormatterBase& fmt)
-{
-    fmt.m_ofs << std::endl;
-    fmt.m_lineflag = true;
-}
 template<typename TCHAR, class GeneratorImpl, class FormatterImpl>
 class CodeGeneratorBase
 {
@@ -138,7 +140,8 @@ public:
 template<typename TCHAR>
 class CppCodeGenerator : public CodeGeneratorBase<TCHAR, CppCodeGenerator<TCHAR> , CppCodeFormatter<TCHAR> >
 {
-    using CodeGeneratorBase::m_fmt;
+    using base = CodeGeneratorBase<TCHAR, CppCodeGenerator<TCHAR>, CppCodeFormatter<TCHAR> >;
+    using base::m_fmt;
 
     const char *get_chartype() const
     {
@@ -227,12 +230,12 @@ class CppCodeGenerator : public CodeGeneratorBase<TCHAR, CppCodeGenerator<TCHAR>
     }
 public:
     CppCodeGenerator(const std::string& path)
-        : CodeGeneratorBase(path)
+        : base(path)
     {
     }
     void match_single_char(TCHAR ch)
     {
-        IndentedBlock(m_fmt);
+        IndentedBlock _b(m_fmt);
         {
             declare_char_var("ch");
 
@@ -245,14 +248,14 @@ public:
     }
     void match_string(const TCHAR *seq)
     {
-        IndentedBlock(m_fmt);
+        IndentedBlock _b0(m_fmt);
         {
             declare_string_literal("pat", seq);
 
             m_fmt << NewLine;
             m_fmt << "for (int i = 0; i < " << target_strlen<TCHAR>(seq) << "; i++)" << NewLine;
             
-            IndentedBlock(m_fmt);
+            IndentedBlock _b1(m_fmt);
             {
                 declare_char_var("ch");
 
@@ -270,7 +273,7 @@ public:
     {
         DFA<TCHAR> dfa(nfa);
 
-        IndentedBlock(m_fmt);
+        IndentedBlock _b(m_fmt);
         {
             match_regex_r(dfa, 0);
         }
