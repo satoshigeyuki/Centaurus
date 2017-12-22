@@ -222,6 +222,36 @@ public:
     }
 };
 
+using NFAClosure = std::set<int>;
+
+template<typename TCHAR> class NFADepartureSet : public std::vector<std::pair<CharClass<TCHAR>, NFAClosure> >
+{
+public:
+	NFADepartureSet()
+	{
+
+	}
+	virtual ~NFADepartureSet()
+	{
+
+	}
+	void add(const CharClass<TCHAR>& cc, int index)
+	{
+		for (auto i = this->begin(); i != this->end(); i++)
+		{
+			if (i->first.overlaps(cc))
+			{
+				std::array<CharClass<TCHAR>, 3> diset = i->first.diff_and_int(cc);
+
+				if (diset[0])
+				{
+					this->emplace_back(diset[0], i->second);
+				}
+			}
+		}
+	}
+};
+
 template<typename TCHAR> class NFA : public NFABase<NFAState<TCHAR> >
 {
     using NFABase<NFAState<TCHAR> >::m_states;
