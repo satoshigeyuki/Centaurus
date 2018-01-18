@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Express 15 for Windows Desktop
-VisualStudioVersion = 15.0.27004.2005
+# Visual Studio 15
+VisualStudioVersion = 15.0.27130.2010
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Centaurus", "Centaurus.vcxproj", "{5845A67D-1501-40A7-8192-A13CE0530446}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UnitTest1", "..\UnitTest1\UnitTest1.vcxproj", "{825533C1-6455-45A2-A676-67EA0C379EB3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,14 @@ Global
 		{5845A67D-1501-40A7-8192-A13CE0530446}.Release|x64.Build.0 = Release|x64
 		{5845A67D-1501-40A7-8192-A13CE0530446}.Release|x86.ActiveCfg = Release|Win32
 		{5845A67D-1501-40A7-8192-A13CE0530446}.Release|x86.Build.0 = Release|Win32
+		{825533C1-6455-45A2-A676-67EA0C379EB3}.Debug|x64.ActiveCfg = Debug|x64
+		{825533C1-6455-45A2-A676-67EA0C379EB3}.Debug|x64.Build.0 = Debug|x64
+		{825533C1-6455-45A2-A676-67EA0C379EB3}.Debug|x86.ActiveCfg = Debug|Win32
+		{825533C1-6455-45A2-A676-67EA0C379EB3}.Debug|x86.Build.0 = Debug|Win32
+		{825533C1-6455-45A2-A676-67EA0C379EB3}.Release|x64.ActiveCfg = Release|x64
+		{825533C1-6455-45A2-A676-67EA0C379EB3}.Release|x64.Build.0 = Release|x64
+		{825533C1-6455-45A2-A676-67EA0C379EB3}.Release|x86.ActiveCfg = Release|Win32
+		{825533C1-6455-45A2-A676-67EA0C379EB3}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

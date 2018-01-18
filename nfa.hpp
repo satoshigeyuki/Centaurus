@@ -189,7 +189,7 @@ public:
             print_state(os, i);
             os << "\", shape=circle ];" << std::endl;
         }
-
+		 
         for (unsigned int i = 0; i < m_states.size(); i++)
         {
             m_states[i].print(os, i);
@@ -224,7 +224,8 @@ public:
 
 using NFAClosure = std::set<int>;
 
-template<typename TCHAR> class NFADepartureSet : public std::vector<std::pair<CharClass<TCHAR>, NFAClosure> >
+template<typename TCHAR>
+class NFADepartureSet : public std::vector<std::pair<CharClass<TCHAR>, NFAClosure> >
 {
 public:
 	NFADepartureSet()
@@ -247,6 +248,18 @@ public:
 				{
 					this->emplace_back(diset[0], i->second);
 				}
+				if (diset[2])
+				{
+					NFAClosure new_closure;
+					new_closure.emplace(index);
+					this->emplace_back(diset[2], new_closure);
+				}
+				if (diset[1])
+				{
+					this->emplace_back(diset[1], i->second | new_closure);
+				}
+
+				
 			}
 		}
 	}
