@@ -481,5 +481,43 @@ public:
     {
         return m_states.size();
     }
+	int get_destination(int src, TCHAR ch) const
+	{
+		for (const auto& tr : get_transitions(src))
+		{
+			if (tr.label().includes(ch))
+			{
+				return tr.dest();
+			}
+		}
+		return -1;
+	}
+	/*!
+	 * @brief Tests if the NFA accepts the given string
+	 */
+	bool run(const std::basic_string<TCHAR>& seq, int index = 0, int input_pos = 0) const
+	{
+		if (index == m_states.size() - 1 && seq.size() == input_pos)
+		{
+			return true;
+		}
+		else
+		{
+			for (const auto& tr : get_transitions(index))
+			{
+				if (tr.is_epsilon())
+				{
+					if (run(seq, tr.dest(), input_pos))
+						return true;
+				}
+				else if (tr.label().includes(seq[input_pos]))
+				{
+					if (run(seq, tr.dest(), input_pos + 1))
+						return true;
+				}
+			}
+			return false;
+		}
+	}
 };
 }

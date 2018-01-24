@@ -98,11 +98,19 @@ std::ostream& operator<<(std::ostream& os, const Range<TCHAR>& r)
     return os;
 }
 
+template<typename TCHAR>
+std::wostream& operator<<(std::wostream& os, const Range<TCHAR>& r)
+{
+	os << L'[' << r.start() << L", " << r.end() - 1 << L')';
+	return os;
+}
+
 template<typename TCHAR> class CharClass
 {
     std::vector<Range<TCHAR> > m_ranges;
 
     template<typename T> friend std::ostream& operator<<(std::ostream& os, const CharClass<T>& cc);
+	template<typename T> friend std::wostream& operator<<(std::wostream& os, const CharClass<T>& cc);
 
     void parse(Stream& stream);
 public:
@@ -229,6 +237,14 @@ public:
         }
         return false;
     }
+	bool includes(TCHAR ch) const
+	{
+		for (const auto& mr : m_ranges)
+		{
+			if (mr.start() <= ch && ch < mr.end()) return true;
+		}
+		return false;
+	}
     bool overlaps(const CharClass<TCHAR>& cc) const
     {
         auto i = m_ranges.cbegin();
@@ -423,4 +439,16 @@ public:
 		return m_ranges.cend();
 	}
 };
+}
+
+namespace Microsoft
+{
+	namespace VisualStudio
+	{
+		namespace CppUnitTestFramework
+		{
+			template<typename TCHAR>
+			std::wstring ToString(const Centaurus::CharClass<TCHAR>& cc);
+		}
+	}
 }
