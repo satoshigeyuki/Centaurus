@@ -47,11 +47,11 @@ public:
     }
     bool operator<(const Range<TCHAR>& r) const
     {
-        return m_end < r.m_start;
+        return m_end <= r.m_start;
     }
     bool operator>(const Range<TCHAR>& r) const
     {
-        return r.m_end < m_start;
+        return r.m_end <= m_start;
     }
     bool operator==(const Range<TCHAR>& r) const
     {

@@ -19,6 +19,8 @@ namespace UnitTest1
 			nfa.parse(stream);
 
 			Assert::IsTrue(nfa.run("aABCD"));
+			Assert::IsTrue(nfa.run("dEFGH"));
+			Assert::IsFalse(nfa.run("fABGH"));
 		}
 	};
 }

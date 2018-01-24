@@ -225,8 +225,35 @@ public:
 using NFAClosure = std::set<int>;
 
 template<typename TCHAR>
+class NFADepartureSetFactory
+{
+	std::set<int> m_borders;
+	std::vector<std::pair<CharClass<TCHAR>, NFAClosure> > m_departures;
+public:
+	NFADepartureSetFactory()
+	{
+
+	}
+	virtual ~NFADepartureSetFactory()
+	{
+
+	}
+	void add(const NFATransition<TCHAR>& tr)
+	{
+		if (tr.is_epsilon()) return;
+
+		std::set<int> border = tr.label().collect_borders();
+
+		m_borders.insert(border.cbegin(), borders.cend());
+
+
+	}
+};
+
+template<typename TCHAR>
 class NFADepartureSet : public std::vector<std::pair<CharClass<TCHAR>, NFAClosure> >
 {
+	std::set<int> 
 public:
 	NFADepartureSet()
 	{
@@ -236,9 +263,13 @@ public:
 	{
 
 	}
-	void add(const CharClass<TCHAR>& cc, int index)
+	void add(const NFATransition<TCHAR>& tr)
 	{
-		for (auto i = this->begin(); i != this->end(); i++)
+		if (tr.is_epsilon()) return;
+
+		std::set<int> 
+
+		/*for (auto i = this->begin(); i != this->end(); i++)
 		{
 			if (i->first.overlaps(cc))
 			{
@@ -261,7 +292,7 @@ public:
 
 				
 			}
-		}
+		}*/
 	}
 };
 
@@ -481,17 +512,6 @@ public:
     {
         return m_states.size();
     }
-	int get_destination(int src, TCHAR ch) const
-	{
-		for (const auto& tr : get_transitions(src))
-		{
-			if (tr.label().includes(ch))
-			{
-				return tr.dest();
-			}
-		}
-		return -1;
-	}
 	/*!
 	 * @brief Tests if the NFA accepts the given string
 	 */
