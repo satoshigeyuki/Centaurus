@@ -15,23 +15,6 @@ template<typename TCHAR> using DFAState = NFABaseState<TCHAR, IndexVector>;
 template<typename TCHAR> class DFA : public NFABase<DFAState<TCHAR> >
 {
     using NFABase<DFAState<TCHAR> >::m_states;
-    using EquivalenceTable = std::vector<std::pair<CharClass<TCHAR>, std::set<int> > >;
-
-    /*!
-     * @brief Add a transition to EquivalenceTable
-     */
-    void add_transition(EquivalenceTable& table, const Range<TCHAR>& r, const std::set<int>& dests) const
-    {
-        for (auto& item : table)
-        {
-            if (std::equal(item.second.cbegin(), item.second.cend(), dests.cbegin()))
-            {
-                item.first |= r;
-                return;
-            }
-        }
-        table.emplace_back(CharClass<TCHAR>(r), dests);
-    }
     /*!
      * @brief Create a state with a label if it does not exist
      */
@@ -49,66 +32,26 @@ template<typename TCHAR> class DFA : public NFABase<DFAState<TCHAR> >
     }
     void fork_states(int index, const NFA<TCHAR>& nfa)
     {
-        //States reached via non-epsilon transitions
-        std::vector<NFATransition<TCHAR> > noneps_tr;
+		NFADepartureSetFactory<TCHAR> ds_factory;
 
         for (int i : m_states[index].label())
         {
             for (const auto& tr : nfa.get_transitions(i))
             {
-                if (!tr.is_epsilon())
-                {
-                    noneps_tr.push_back(tr);
-                }
+				ds_factory.add(tr);
             }
         }
 
-        //All borders included in the transition set
-        std::set<int> borders;
+		NFADepartureSet<TCHAR> deptset = ds_factory.build_departure_set();
 
-        for (const auto& tr : noneps_tr)
-        {
-            IndexVector mb = tr.label().collect_borders();
-
-            borders.insert(mb.cbegin(), mb.cend());
-        }
-
-        EquivalenceTable table;
-
-        for (auto i = borders.cbegin(); i != borders.cend(); )
-        {
-            TCHAR range_start = *i;
-            if (++i == borders.cend()) break;
-            TCHAR range_end = *i;
-
-            Range<TCHAR> r(range_start, range_end);
-
-            std::set<int> dests;
-
-            for (const auto& tr : noneps_tr)
-            {
-                if (tr.label().includes(r))
-                {
-                    std::cout << r;
-
-                    dests.insert(tr.dest());
-                }
-            }
-
-            if (!dests.empty())
-                add_transition(table, r, dests);
-        }
-
-        std::cout << std::endl;
-
-        int initial_index = m_states.size();
-        for (const auto& item : table)
+		int initial_index = m_states.size();
+        for (const auto& item : deptset)
         {
             std::set<int> ec = nfa.epsilon_closure(item.second);
 
             int new_index = add_state(ec);
 
-            std::cout << "S" << index << "->" << new_index << std::endl;
+            //std::cout << "S" << index << "->" << new_index << std::endl;
 
             m_states[index].add_transition(item.first, new_index);
         }
@@ -129,6 +72,16 @@ public:
 
         //Recursively construct the DFA
         fork_states(0, nfa);
+
+		int accept_state_index = nfa.get_state_num() - 1;
+
+		for (auto& state : m_states)
+		{
+			if (state.label().includes(accept_state_index))
+			{
+				state.add_transition(CharClass<TCHAR>(), -1);
+			}
+		}
     }
     DFA()
     {
@@ -140,5 +93,28 @@ public:
     {
         os << m_states[index].label();
     }
+	bool run(const std::basic_string<TCHAR>& seq, int index = 0, int input_pos = 0) const
+	{
+		const DFAState<TCHAR>& state = m_states[index];
+		if (input_pos == seq.size())
+		{
+			for (const auto& tr : state.get_transitions())
+			{
+				if (tr.dest() == -1) return true;
+			}
+			return false;
+		}
+		else
+		{
+			for (const auto& tr : state.get_transitions())
+			{
+				if (tr.label().includes(seq[input_pos]))
+				{
+					return run(seq, tr.dest(), input_pos + 1);
+				}
+			}
+			return false;
+		}
+	}
 };
 }

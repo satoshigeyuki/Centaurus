@@ -178,6 +178,10 @@ public:
     {
         std::sort(begin(), end());
     }
+	bool includes(int i) const
+	{
+		return std::find(cbegin(), cend(), i) != cend();
+	}
 };
 std::ostream& operator<<(std::ostream& os, const Identifier& id);
 std::ostream& operator<<(std::ostream& os, const ATNPath& path);

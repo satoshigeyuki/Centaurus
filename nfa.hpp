@@ -225,10 +225,33 @@ public:
 using NFAClosure = std::set<int>;
 
 template<typename TCHAR>
+class NFADepartureSet : public std::vector<std::pair<CharClass<TCHAR>, NFAClosure> >
+{
+public:
+	NFADepartureSet()
+	{
+	}
+	virtual ~NFADepartureSet()
+	{
+	}
+	void add(const Range<TCHAR>& r, const NFAClosure& closure)
+	{
+		for (auto& p : *this)
+		{
+			if (std::equal(closure.cbegin(), closure.cend(), p.second.cbegin()))
+			{
+				p.first |= r;
+				return;
+			}
+		}
+		emplace_back(CharClass<TCHAR>(r), closure);
+	}
+};
+
+template<typename TCHAR>
 class NFADepartureSetFactory
 {
-	std::set<int> m_borders;
-	std::vector<std::pair<CharClass<TCHAR>, NFAClosure> > m_departures;
+	std::vector<NFATransition<TCHAR> > m_transitions;
 public:
 	NFADepartureSetFactory()
 	{
@@ -242,57 +265,46 @@ public:
 	{
 		if (tr.is_epsilon()) return;
 
-		std::set<int> border = tr.label().collect_borders();
-
-		m_borders.insert(border.cbegin(), borders.cend());
-
-
+		m_transitions.push_back(tr);
 	}
-};
-
-template<typename TCHAR>
-class NFADepartureSet : public std::vector<std::pair<CharClass<TCHAR>, NFAClosure> >
-{
-	std::set<int> 
-public:
-	NFADepartureSet()
+	NFADepartureSet<TCHAR> build_departure_set()
 	{
+		std::set<int> borders;
 
-	}
-	virtual ~NFADepartureSet()
-	{
-
-	}
-	void add(const NFATransition<TCHAR>& tr)
-	{
-		if (tr.is_epsilon()) return;
-
-		std::set<int> 
-
-		/*for (auto i = this->begin(); i != this->end(); i++)
+		for (const auto& tr : m_transitions)
 		{
-			if (i->first.overlaps(cc))
+			IndexVector borders_for_one_tr = tr.label().collect_borders();
+
+			borders.insert(borders_for_one_tr.cbegin(), borders_for_one_tr.cend());
+		}
+
+		NFADepartureSet<TCHAR> deptset;
+
+		for (auto i = borders.cbegin(); i != borders.cend();)
+		{
+			TCHAR atomic_range_start = *i;
+			if (++i == borders.cend()) break;
+			TCHAR atomic_range_end = *i;
+
+			Range<TCHAR> atomic_range(atomic_range_start, atomic_range_end);
+
+			NFAClosure closure;
+
+			for (const auto& tr : m_transitions)
 			{
-				std::array<CharClass<TCHAR>, 3> diset = i->first.diff_and_int(cc);
-
-				if (diset[0])
+				if (tr.label().includes(atomic_range))
 				{
-					this->emplace_back(diset[0], i->second);
+					closure.insert(tr.dest());
 				}
-				if (diset[2])
-				{
-					NFAClosure new_closure;
-					new_closure.emplace(index);
-					this->emplace_back(diset[2], new_closure);
-				}
-				if (diset[1])
-				{
-					this->emplace_back(diset[1], i->second | new_closure);
-				}
-
-				
 			}
-		}*/
+
+			if (!closure.empty())
+			{
+				deptset.add(atomic_range, closure);
+			}
+		}
+
+		return deptset;
 	}
 };
 
