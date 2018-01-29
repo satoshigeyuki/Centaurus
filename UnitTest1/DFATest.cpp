@@ -17,11 +17,11 @@ namespace Microsoft
 			public:
 				TEST_METHOD(ConstructDFA1)
 				{
-					NFA<char> nfa(Stream(u"(abc)+|(def)?"));
+					NFA<char> nfa(Stream(u"(abc)+(def)?"));
 
 					DFA<char> dfa(nfa);
 
-					Assert::IsTrue(dfa.run("abcabc"));
+					Assert::IsTrue(dfa.run("abcabcdef"));
 				}
 			};
 		}
