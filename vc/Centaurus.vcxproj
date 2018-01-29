@@ -172,6 +172,7 @@
   <ItemGroup>
     <ClCompile Include="..\atn.cpp" />
     <ClCompile Include="..\charclass.cpp" />
+    <ClCompile Include="..\DFAGenX86.cpp" />
     <ClCompile Include="..\main.cpp" />
     <ClCompile Include="..\util.cpp" />
     <ClCompile Include="stdafx.cpp">
