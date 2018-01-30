@@ -116,5 +116,9 @@ public:
 			return false;
 		}
 	}
+	const std::vector<DFATransition<TCHAR> >& get_transitions(int index) const
+	{
+		return m_states[index].get_transitions();
+	}
 };
 }

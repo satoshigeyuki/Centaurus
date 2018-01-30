@@ -220,6 +220,14 @@ public:
     {
         return prefix + "_S" + std::to_string(m_states.size() - 1);
     }
+	int get_state_num() const
+	{
+		return m_states.size();
+	}
+	const TSTATE& get_state(int index) const
+	{
+		return m_states[index];
+	}
 };
 
 using NFAClosure = std::set<int>;
@@ -458,28 +466,6 @@ public:
     virtual ~NFA()
     {
     }
-    /*!
-     * @brief Add a transition to a new state from the final state.
-     */
-    void add_state(const CharClass<TCHAR>& cc)
-    {
-        m_states.back().add_transition(cc, m_states.size());
-        m_states.emplace_back();
-    }
-    /*!
-     * @brief Add a transition from the final state to another state.
-     */
-    void add_transition_to(const CharClass<TCHAR>& cc, int dest)
-    {
-        m_states.back().add_transition(cc, dest);
-    }
-    /*!
-     * @brief Add a transition to the final state from another state.
-     */
-    void add_transition_from(const CharClass<TCHAR>& cc, int src)
-    {
-        m_states[src].add_transition(cc, m_states.size() - 1);
-    }
     void epsilon_closure_sub(std::set<int>& closure, int index) const
     {
         //Always include myself
@@ -512,18 +498,6 @@ public:
 
         return ret;
     }
-    const std::vector<NFATransition<TCHAR> >& get_transitions(int index) const
-    {
-        return m_states[index].get_transitions();
-    }
-    const NFAState<TCHAR>& get_state(int index) const
-    {
-        return m_states[index];
-    }
-    int get_state_num() const
-    {
-        return m_states.size();
-    }
 	/*!
 	 * @brief Tests if the NFA accepts the given string
 	 */
@@ -550,6 +524,32 @@ public:
 			}
 			return false;
 		}
+	}
+	/*!
+	* @brief Add a transition to a new state from the final state.
+	*/
+	void add_state(const CharClass<TCHAR>& cc)
+	{
+		m_states.back().add_transition(cc, m_states.size());
+		m_states.emplace_back();
+	}
+	/*!
+	* @brief Add a transition from the final state to another state.
+	*/
+	void add_transition_to(const CharClass<TCHAR>& cc, int dest)
+	{
+		m_states.back().add_transition(cc, dest);
+	}
+	/*!
+	* @brief Add a transition to the final state from another state.
+	*/
+	void add_transition_from(const CharClass<TCHAR>& cc, int src)
+	{
+		m_states[src].add_transition(cc, m_states.size() - 1);
+	}
+	const std::vector<NFATransition<TCHAR> >& get_transitions(int index) const
+	{
+		return m_states[index].get_transitions();
 	}
 };
 }
