@@ -379,9 +379,9 @@ public:
                 rj = *j;
         }
 
-        std::cout << ret[0] << std::endl;
+        /*std::cout << ret[0] << std::endl;
         std::cout << ret[1] << std::endl;
-        std::cout << ret[2] << std::endl;
+        std::cout << ret[2] << std::endl;*/
 
         return ret;
     }
@@ -435,6 +435,14 @@ public:
 		return m_ranges.cbegin();
 	}
 	typename std::vector<Range<TCHAR> >::const_iterator cend() const
+	{
+		return m_ranges.cend();
+	}
+	typename std::vector<Range<TCHAR> >::const_iterator begin() const
+	{
+		return m_ranges.cbegin();
+	}
+	typename std::vector<Range<TCHAR> >::const_iterator end() const
 	{
 		return m_ranges.cend();
 	}

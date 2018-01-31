@@ -7,6 +7,7 @@
 #include "identifier.hpp"
 #include "nfa.hpp"
 #include "atn.hpp"
+#include "grammar.hpp"
 
 namespace std
 {
