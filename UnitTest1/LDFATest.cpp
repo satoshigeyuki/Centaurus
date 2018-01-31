@@ -60,7 +60,7 @@ public:
 
 		int lookup_result = ldfa.run("{}", 0, 0);
 
-		Assert::IsTrue(lookup_result > 0);
+		Assert::AreEqual(4, lookup_result);
 	}
 };
 }

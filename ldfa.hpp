@@ -102,6 +102,23 @@ class LookaheadDFA : public NFABase<TCHAR>
 {
     std::vector<LDFAState<TCHAR> > m_states;
 private:
+	static int get_closure_color(const CATNClosure& closure)
+	{
+		int color = 0;
+		for (const auto& p : closure)
+		{
+			if (color == 0)
+			{
+				color = p.second;
+			}
+			else
+			{
+				if (color != p.second && p.second != 0)
+					return -1;
+			}
+		}
+		return color;
+	}
     int add_state(const CATNClosure& label)
     {
         for (unsigned int i = 0; i < m_states.size(); i++)
@@ -132,23 +149,25 @@ private:
 
         std::cout << deptset << std::endl;
 
-        if (deptset.is_resolved())
-        {
-
-            //std::cout << "Resolved " << index << std::endl;
-            return;
-        }
-
         //Add new states to the LDFA
         int initial_index = m_states.size();
 
         for (const auto& item : deptset)
         {
-            CATNClosure ec = catn.build_closure(item.second);
+			int color = get_closure_color(item.second);
 
-            int new_index = add_state(ec);
+			if (color > 0)
+			{
+				m_states[index].add_transition(item.first, -color);
+			}
+			else
+			{
+				CATNClosure ec = catn.build_closure(item.second);
 
-            m_states[index].add_transition(item.first, new_index);
+				int new_index = add_state(ec);
+
+				m_states[index].add_transition(item.first, new_index);
+			}
         }
 
         //Recursively construct the closures for all the newly added DFA states
@@ -177,17 +196,18 @@ public:
 		{
 			const LDFAState<TCHAR>& state = m_states[index];
 
-			if (state.get_color() > 0)
-			{
-				return state.get_color();
-			}
 			for (const auto& tr : state.get_transitions())
 			{
 				if (tr.label().includes(seq[input_pos]))
 				{
+					if (tr.dest() < 0)
+					{
+						return -tr.dest();
+					}
 					return run(seq, tr.dest(), input_pos + 1);
 				}
 			}
+			return -1;
 		}
 	}
 };
