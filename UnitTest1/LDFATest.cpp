@@ -2,6 +2,8 @@
 #include "grammar.hpp"
 #include "ldfa.hpp"
 
+#include "loggerstream.hpp"
+
 namespace Microsoft
 {
 namespace VisualStudio
@@ -10,6 +12,8 @@ namespace CppUnitTestFramework
 {
 TEST_CLASS(LDFATest)
 {
+	LoggerStreamBuf<char> m_narrowstreambuf;
+
 	Centaurus::CompositeATN<char> LoadCATN(const char *filename)
 	{
 		std::ifstream grammar_file(filename, std::ios::in);
@@ -44,6 +48,10 @@ TEST_CLASS(LDFATest)
 		return catn;
 	}
 public:
+	TEST_METHOD_INITIALIZE(LDFATestInitialize)
+	{
+		std::cout.set_rdbuf(&m_narrowstreambuf);
+	}
 	TEST_METHOD(LDFAConstructionTest)
 	{
 		Centaurus::CompositeATN<char> catn = LoadCATN("../../../json.cgr");

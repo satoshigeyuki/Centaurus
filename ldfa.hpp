@@ -134,7 +134,8 @@ private:
 
         if (deptset.is_resolved())
         {
-            std::cout << "Resolved " << index << std::endl;
+
+            //std::cout << "Resolved " << index << std::endl;
             return;
         }
 
