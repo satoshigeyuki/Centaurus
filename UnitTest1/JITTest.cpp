@@ -73,6 +73,55 @@ namespace CppUnitTestFramework
 
 			Assert::AreEqual(6, result);
 		}
+
+		TEST_METHOD(JITByteCompare1)
+		{
+			using namespace asmjit;
+
+			JitRuntime rt;
+			CodeHolder code;
+
+			code.init(rt.getCodeInfo());
+
+			X86Compiler cc(&code);
+
+			cc.addFunc(FuncSignature1<int, void *>());
+
+			X86Gp pReg = cc.newIntPtr();
+			X86Gp aReg = cc.newGpd();
+
+			cc.alloc(aReg, X86Gp::kIdBx);
+
+			Assert::AreEqual((uint32_t)X86Gp::kIdAx, aReg.getKind());
+
+			cc.setArg(0, pReg);
+
+			cc.movzx(aReg, x86::byte_ptr(pReg));
+
+			Label label = cc.newLabel();
+
+			cc.sub(aReg, '0');
+			cc.cmp(aReg, '9'-'0'+1);
+			cc.jb(label);
+			cc.mov(aReg, 0);
+			cc.ret(aReg);
+			cc.bind(label);
+			cc.mov(aReg, 1);
+			cc.ret(aReg);
+
+			cc.endFunc();
+			cc.finalize();
+
+			int (*func)(char *ch);
+
+			rt.add(&func, &code);
+
+			char ch1 = '3', ch2 = '/', ch3 = ':';
+			
+			Assert::AreEqual(1, func(&ch1));
+			Assert::AreEqual(0, func(&ch2));
+			Assert::AreEqual(0, func(&ch3));
+		}
 	};
 }
 }

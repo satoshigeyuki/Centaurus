@@ -120,5 +120,13 @@ public:
 	{
 		return m_states[index].get_transitions();
 	}
+	bool is_accept_state(int index) const
+	{
+		for (const auto& tr : get_transitions(index))
+		{
+			if (tr.dest() == -1) return true;
+		}
+		return false;
+	}
 };
 }
