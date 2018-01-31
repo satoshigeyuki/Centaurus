@@ -201,7 +201,7 @@ public:
 
 using CATNClosure = std::set<std::pair<ATNPath, int> >;
 
-std::ostream& operator<<(std::ostream& os, const CATNClosure& closure)
+static std::ostream& operator<<(std::ostream& os, const CATNClosure& closure)
 {
     for (const auto& p : closure)
     {

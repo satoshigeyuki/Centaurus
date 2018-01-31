@@ -67,6 +67,10 @@ public:
     virtual ~LDFAState()
     {
     }
+	const std::vector<LDFATransition<TCHAR> >& get_transitions() const
+	{
+		return m_transitions;
+	}
 };
 
 template<typename TCHAR>
@@ -162,5 +166,28 @@ public:
     virtual ~LookaheadDFA()
     {
     }
+	int run(const std::basic_string<TCHAR>& seq, int index = 0, int input_pos = 0) const
+	{
+		if (input_pos == seq.size())
+		{
+			return -1;
+		}
+		else
+		{
+			const LDFAState<TCHAR>& state = m_states[index];
+
+			if (state.get_color() > 0)
+			{
+				return state.get_color();
+			}
+			for (const auto& tr : state.get_transitions())
+			{
+				if (tr.label().includes(seq[input_pos]))
+				{
+					return run(seq, tr.dest(), input_pos + 1);
+				}
+			}
+		}
+	}
 };
 }

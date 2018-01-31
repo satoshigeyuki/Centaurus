@@ -161,6 +161,7 @@
   <ItemGroup>
     <ClCompile Include="DFATest.cpp" />
     <ClCompile Include="JITTest.cpp" />
+    <ClCompile Include="LDFATest.cpp" />
     <ClCompile Include="NFATest.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
