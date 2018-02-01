@@ -186,6 +186,14 @@ public:
     virtual ~LookaheadDFA()
     {
     }
+	const std::vector<LDFATransition<TCHAR> >& get_transitions(int index) const
+	{
+		return m_states[index].get_transitions();
+	}
+	int get_state_num() const
+	{
+		return m_states.size();
+	}
 	int run(const std::basic_string<TCHAR>& seq, int index = 0, int input_pos = 0) const
 	{
 		if (input_pos == seq.size())
