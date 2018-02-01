@@ -157,6 +157,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="CATNLoader.hpp" />
     <ClInclude Include="loggerstream.hpp" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />

@@ -277,6 +277,7 @@ public:
 
 		m_rejectlabel = m_cc.newLabel();
 
+        m_inputReg = m_cc.newIntPtr();
 		m_cc.setArg(0, m_inputReg);
 
 		emit();
@@ -348,29 +349,25 @@ template<> void MatchRoutineBuilderEM64T<wchar_t>::emit()
 }
 
 template<typename TCHAR>
-DFARoutineEM64T<TCHAR>::DFARoutineEM64T(asmjit::JitRuntime& rt, const DFA<TCHAR>& dfa)
+DFARoutineEM64T<TCHAR>::DFARoutineEM64T(const asmjit::CodeInfo& codeinfo, const DFA<TCHAR>& dfa)
 {
-    code.init(rt.getCodeInfo());
-
-    //code.init(asmjit::CodeInfo(asmjit::ArchInfo::kTypeX64));
+    code.init(codeinfo);
 
 	DFARoutineBuilderEM64T<TCHAR> builder(code, dfa);
-
-    rt.add(&run, &code);
 }
 
 template<typename TCHAR>
-LDFARoutineEM64T<TCHAR>::LDFARoutineEM64T(const LookaheadDFA<TCHAR>& ldfa)
+LDFARoutineEM64T<TCHAR>::LDFARoutineEM64T(const asmjit::CodeInfo& codeinfo, const LookaheadDFA<TCHAR>& ldfa)
 {
-    code.init(asmjit::CodeInfo(asmjit::ArchInfo::kTypeX64));
+    code.init(codeinfo);
 
 	LDFARoutineBuilderEM64T<TCHAR> builder(code, ldfa);
 }
 
 template<typename TCHAR>
-MatchRoutineEM64T<TCHAR>::MatchRoutineEM64T(const std::basic_string<TCHAR>& str)
+MatchRoutineEM64T<TCHAR>::MatchRoutineEM64T(const asmjit::CodeInfo& codeinfo, const std::basic_string<TCHAR>& str)
 {
-    code.init(asmjit::CodeInfo(asmjit::ArchInfo::kTypeX64));
+    code.init(codeinfo);
 
 	MatchRoutineBuilderEM64T<TCHAR> builder(code, str);
 }

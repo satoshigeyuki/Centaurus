@@ -2,6 +2,8 @@
 #include "nfa.hpp"
 #include "CodeGenEM64T.hpp"
 
+#include "CATNLoader.hpp"
+
 #include <CppUnitTest.h>
 
 namespace Microsoft
@@ -27,13 +29,48 @@ public:
 
         asmjit::JitRuntime rt;
 
-        DFARoutineEM64T<char> dfa_routine(rt, dfa);
+        DFARoutineEM64T<char> dfa_routine(rt.getCodeInfo(), dfa);
 
         const char buf[] = "abcabcabcdef";
         const char buf2[] = "abcabcde";
 
-        Assert::AreEqual((const void *)(buf + sizeof(buf) - 1), dfa_routine.run(buf));
-        Assert::AreEqual((const void *)NULL, dfa_routine.run(buf2));
+        DFARoutine routine = dfa_routine.getRoutine(rt);
+
+        Assert::AreEqual((const void *)(buf + sizeof(buf) - 1), routine(buf));
+        Assert::AreEqual((const void *)NULL, routine(buf2));
+    }
+    TEST_METHOD(LDFACodeGenTest1)
+    {
+        using namespace Centaurus;
+
+        CompositeATN<char> catn = LoadCATN("../../../json.cgr");
+
+        LookaheadDFA<char> ldfa(catn, ATNPath(u"Object", 0));
+
+        asmjit::JitRuntime rt;
+
+        LDFARoutineEM64T<char> ldfa_routine(rt.getCodeInfo(), ldfa);
+
+        LDFARoutine routine = ldfa_routine.getRoutine(rt);
+
+        Assert::AreEqual(1, routine("8"));
+    }
+    TEST_METHOD(MatchCodeGenTest1)
+    {
+        using namespace Centaurus;
+
+        asmjit::JitRuntime rt;
+
+        const char str1[] = "A quick brown fox jumps over the lazy dog.";
+
+        MatchRoutineEM64T<char> match_routine(rt.getCodeInfo(), str1);
+
+        MatchRoutine routine = match_routine.getRoutine(rt);
+
+        char *buf = (char *)malloc((sizeof(str1) + 15) / 16 * 16);
+        memcpy(buf, str1, sizeof(str1));
+
+        Assert::AreEqual((const void *)(str1 + sizeof(str1) - 1), routine(str1));
     }
 };
 }
