@@ -18,23 +18,23 @@ public:
 	DFARoutineBuilderEM64T(asmjit::CodeHolder& code, const DFA<TCHAR>& dfa)
 		: m_cc(&code), m_dfa(dfa)
 	{
-		m_cc.addFunc(asmjit::FuncSignature1<void *, void *>(asmjit::CallConv::kIdHost));
+		m_cc.addFunc(asmjit::FuncSignature1<const void *, const void *>(/*asmjit::CallConv::kIdHost*/));
 
 		m_inputReg = m_cc.newIntPtr();
 		m_backupReg = m_cc.newIntPtr();
 
 		//Set the initial position to RCX
-		m_cc.setArg(0, m_input);
+		m_cc.setArg(0, m_inputReg);
 		//Set the backup position to NULL (no backup candidates)
 		m_cc.mov(m_backupReg, 0);
 
 		//Prepare one label for each state entry
-		for (int i = 0; i < dfa.get_state_num(); i++)
-			m_labels.push_back(cc.newLabel());
+		for (int i = 0; i < m_dfa.get_state_num(); i++)
+			m_labels.push_back(m_cc.newLabel());
 
 		//Labels for accept and reject states
-		m_acceptlabel = cc.newLabel();
-		m_rejectlabel = cc.newLabel();
+		m_acceptlabel = m_cc.newLabel();
+		m_rejectlabel = m_cc.newLabel();
 
 		for (int i = 0; i < m_dfa.get_state_num(); i++)
 		{
@@ -133,7 +133,7 @@ public:
 	LDFARoutineBuilderEM64T(asmjit::CodeHolder& code, const LookaheadDFA<TCHAR>& ldfa)
 		: m_cc(&code), m_ldfa(ldfa)
 	{
-		m_cc.addFunc(asmjit::FuncSignature1<int, void *>(asmjit::CallConv::kIdHost));
+		m_cc.addFunc(asmjit::FuncSignature1<int, const void *>(asmjit::CallConv::kIdHost));
 
 		m_inputReg = m_cc.newIntPtr();
 		m_cc.setArg(0, m_inputReg);
@@ -273,7 +273,7 @@ public:
 	MatchRoutineBuilderEM64T(asmjit::CodeHolder& code, const std::basic_string<TCHAR>& str)
 		: m_cc(&code), m_str(str)
 	{
-		m_cc.addFunc(asmjit::FuncSignature1<void *, void *>(asmjit::CallConv::kIdHost));
+		m_cc.addFunc(asmjit::FuncSignature1<const void *, const void *>(asmjit::CallConv::kIdHost));
 
 		m_rejectlabel = m_cc.newLabel();
 
@@ -348,21 +348,38 @@ template<> void MatchRoutineBuilderEM64T<wchar_t>::emit()
 }
 
 template<typename TCHAR>
-DFARoutineEM64T<TCHAR>::DFARoutineEM64T(const DFA<TCHAR>& dfa)
+DFARoutineEM64T<TCHAR>::DFARoutineEM64T(asmjit::JitRuntime& rt, const DFA<TCHAR>& dfa)
 {
+    code.init(rt.getCodeInfo());
+
+    //code.init(asmjit::CodeInfo(asmjit::ArchInfo::kTypeX64));
+
 	DFARoutineBuilderEM64T<TCHAR> builder(code, dfa);
+
+    rt.add(&run, &code);
 }
 
 template<typename TCHAR>
 LDFARoutineEM64T<TCHAR>::LDFARoutineEM64T(const LookaheadDFA<TCHAR>& ldfa)
 {
+    code.init(asmjit::CodeInfo(asmjit::ArchInfo::kTypeX64));
+
 	LDFARoutineBuilderEM64T<TCHAR> builder(code, ldfa);
 }
 
 template<typename TCHAR>
 MatchRoutineEM64T<TCHAR>::MatchRoutineEM64T(const std::basic_string<TCHAR>& str)
 {
+    code.init(asmjit::CodeInfo(asmjit::ArchInfo::kTypeX64));
+
 	MatchRoutineBuilderEM64T<TCHAR> builder(code, str);
 }
+
+template class DFARoutineEM64T<char>;
+template class DFARoutineEM64T<wchar_t>;
+template class LDFARoutineEM64T<char>;
+template class LDFARoutineEM64T<wchar_t>;
+template class MatchRoutineEM64T<char>;
+template class MatchRoutineEM64T<wchar_t>;
 
 }
