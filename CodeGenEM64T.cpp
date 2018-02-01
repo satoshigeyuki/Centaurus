@@ -4,6 +4,47 @@
 
 namespace Centaurus
 {
+asmjit::Data128 pack_charclass(const CharClass<char>& cc)
+{
+    asmjit::Data128 d128;
+
+    for (int i = 0; i < 8; i++)
+    {
+        if (cc[i].empty())
+        {
+            d128.ub[i * 2 + 0] = 0xFF;
+            d128.ub[i * 2 + 1] = 0;
+        }
+        else
+        {
+            d128.ub[i * 2 + 0] = cc[i].start();
+            d128.ub[i * 2 + 1] = cc[i].end() - 1;
+        }
+    }
+
+    return d128;
+}
+asmjit::Data128 pack_charclass(const CharClass<wchar_t>& cc)
+{
+    asmjit::Data128 d128;
+
+    for (int i = 0; i < 4; i++)
+    {
+        if (cc[i].empty())
+        {
+            d128.uw[i * 2 + 0] = 0xFFFF;
+            d128.uw[i * 2 + 1] = 0;
+        }
+        else
+        {
+            d128.uw[i * 2 + 0] = cc[i].start();
+            d128.uw[i * 2 + 1] = cc[i].end() - 1;
+        }
+    }
+
+    return d128;
+}
+
 template<typename TCHAR>
 class DFARoutineBuilderEM64T
 {
@@ -349,6 +390,65 @@ template<> void MatchRoutineBuilderEM64T<wchar_t>::emit()
 }
 
 template<typename TCHAR>
+class SkipRoutineBuilderEM64T
+{
+    asmjit::X86Compiler m_cc;
+    CharClass<TCHAR> m_filter;
+    asmjit::X86Gp m_inputReg;
+    asmjit::X86Xmm m_filterReg;
+private:
+    void emit();
+public:
+    SkipRoutineBuilderEM64T(asmjit::CodeHolder& code, const CharClass<TCHAR>& cc)
+        : m_cc(&code), m_filter(cc)
+    {
+        m_cc.addFunc(asmjit::FuncSignature1<const void *, const void *>(asmjit::CallConv::kIdHost));
+
+        m_inputReg = m_cc.newIntPtr();
+        m_cc.setArg(0, m_inputReg);
+        m_filterReg = m_cc.newXmm();
+
+        asmjit::X86Mem filterMem = m_cc.newXmmConst(asmjit::kConstScopeLocal, pack_charclass(m_filter));
+        m_cc.vmovdqa(m_filterReg, filterMem);
+
+        asmjit::Label looplabel = m_cc.newLabel();
+
+        m_cc.bind(looplabel);
+
+        emit();
+
+        m_cc.jg(looplabel);
+        m_cc.ret(m_inputReg);
+
+        m_cc.endFunc();
+        m_cc.finalize();
+    }
+    virtual ~SkipRoutineBuilderEM64T() {}
+};
+
+template<> void SkipRoutineBuilderEM64T<char>::emit()
+{
+    asmjit::X86Xmm loadReg = m_cc.newXmm();
+    asmjit::X86Gp miReg = m_cc.newGpz();
+
+    m_cc.vmovdqu(loadReg, asmjit::X86Mem(m_inputReg, 0));
+    m_cc.vpcmpistri(loadReg, m_filterReg, asmjit::Imm(0x14), miReg);
+    m_cc.add(m_inputReg, miReg);
+    m_cc.cmp(miReg, 15);
+}
+
+template<> void SkipRoutineBuilderEM64T<wchar_t>::emit()
+{
+    asmjit::X86Xmm loadReg = m_cc.newXmm();
+    asmjit::X86Gp miReg = m_cc.newGpz();
+
+    m_cc.vmovdqu(loadReg, asmjit::X86Mem(m_inputReg, 0));
+    m_cc.vpcmpistri(loadReg, m_filterReg, asmjit::Imm(0x15), miReg);
+    m_cc.add(m_inputReg, miReg);
+    m_cc.cmp(miReg, 7);
+}
+
+template<typename TCHAR>
 DFARoutineEM64T<TCHAR>::DFARoutineEM64T(const asmjit::CodeInfo& codeinfo, const DFA<TCHAR>& dfa)
 {
     code.init(codeinfo);
@@ -372,11 +472,20 @@ MatchRoutineEM64T<TCHAR>::MatchRoutineEM64T(const asmjit::CodeInfo& codeinfo, co
 	MatchRoutineBuilderEM64T<TCHAR> builder(code, str);
 }
 
+template<typename TCHAR>
+SkipRoutineEM64T<TCHAR>::SkipRoutineEM64T(const asmjit::CodeInfo& codeinfo, const CharClass<TCHAR>& cc)
+{
+    code.init(codeinfo);
+
+    SkipRoutineBuilderEM64T<TCHAR> builder(code, cc);
+}
+
 template class DFARoutineEM64T<char>;
 template class DFARoutineEM64T<wchar_t>;
 template class LDFARoutineEM64T<char>;
 template class LDFARoutineEM64T<wchar_t>;
 template class MatchRoutineEM64T<char>;
 template class MatchRoutineEM64T<wchar_t>;
-
+template class SkipRoutineEM64T<char>;
+template class SkipRoutineEM64T<wchar_t>;
 }

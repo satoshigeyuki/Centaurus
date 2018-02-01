@@ -9,6 +9,7 @@ namespace Centaurus
 typedef const void *(*DFARoutine)(const void *);
 typedef int (*LDFARoutine)(const void *);
 typedef const void *(*MatchRoutine)(const void *);
+typedef const void *(*SkipRoutine)(const void *);
 
 template<typename TCHAR>
 class DFARoutineEM64T
@@ -48,6 +49,20 @@ public:
     MatchRoutine getRoutine(asmjit::JitRuntime& runtime)
     {
         MatchRoutine routine;
+        runtime.add(&routine, &code);
+        return routine;
+    }
+};
+template<typename TCHAR>
+class SkipRoutineEM64T
+{
+    asmjit::CodeHolder code;
+public:
+    SkipRoutineEM64T(const asmjit::CodeInfo& codeinfo, const CharClass<TCHAR>& cc);
+    virtual ~SkipRoutineEM64T() {}
+    SkipRoutine getRoutine(asmjit::JitRuntime& runtime)
+    {
+        SkipRoutine routine;
         runtime.add(&routine, &code);
         return routine;
     }
