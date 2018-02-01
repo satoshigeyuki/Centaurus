@@ -164,6 +164,7 @@
   <ItemGroup>
     <ClInclude Include="..\atn.hpp" />
     <ClInclude Include="..\catn2.hpp" />
+    <ClInclude Include="..\JitParser.hpp" />
     <ClInclude Include="..\cfgraph.hpp" />
     <ClInclude Include="..\charclass.hpp" />
     <ClInclude Include="..\codegen.hpp" />
@@ -182,6 +183,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\atn.cpp" />
+    <ClCompile Include="..\JitParser.cpp" />
     <ClCompile Include="..\charclass.cpp" />
     <ClCompile Include="..\CodeGenEM64T.cpp" />
     <ClCompile Include="..\main.cpp" />
