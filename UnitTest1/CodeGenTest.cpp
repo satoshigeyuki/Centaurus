@@ -72,6 +72,25 @@ public:
 
         Assert::AreEqual((const void *)(str1 + sizeof(str1) - 1), routine(str1));
     }
+    TEST_METHOD(SkipCodeGenTest1)
+    {
+        using namespace Centaurus;
+
+        asmjit::JitRuntime rt;
+
+        const char str1[] = " \t\n\rabcdefg";
+
+        Stream filter_source(u" \\t\\r\\n]");
+        CharClass<char> filter(filter_source);
+
+        Logger::WriteMessage(ToString(filter).c_str());
+
+        SkipRoutineEM64T<char> skip_routine(rt.getCodeInfo(), filter);
+
+        SkipRoutine routine = skip_routine.getRoutine(rt);
+
+        Assert::AreEqual((const void *)(str1 + 4), routine(str1));
+    }
 };
 }
 }

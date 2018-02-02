@@ -84,7 +84,8 @@ enum class ATNNodeType
     Blank,
     Nonterminal,
     LiteralTerminal,
-    RegularTerminal
+    RegularTerminal,
+    WhiteSpace
 };
 
 template<typename TCHAR> class ATNPrinter;
@@ -128,6 +129,10 @@ private:
 public:
     ATNNode()
         : m_type(ATNNodeType::Blank)
+    {
+    }
+    ATNNode(ATNNodeType type)
+        : m_type(type)
     {
     }
     ATNNode(Stream& stream)
@@ -187,6 +192,9 @@ public:
         case ATNNodeType::RegularTerminal:
             m_nfa.print_subgraph(os, prefix);
             break;
+        case ATNNodeType::WhiteSpace:
+            os << prefix << " [ label=\"[ ]\" ];" << std::endl;
+            break;
         }
     }
     ATNNodeType type() const
@@ -204,6 +212,10 @@ public:
     bool is_blank() const
     {
         return m_type == ATNNodeType::Blank;
+    }
+    bool is_whitespace() const
+    {
+        return m_type == ATNNodeType::WhiteSpace;
     }
     const NFA<TCHAR>& get_nfa() const
     {

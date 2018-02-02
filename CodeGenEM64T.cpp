@@ -432,7 +432,7 @@ template<> void SkipRoutineBuilderEM64T<char>::emit()
     asmjit::X86Gp miReg = m_cc.newGpz();
 
     m_cc.vmovdqu(loadReg, asmjit::X86Mem(m_inputReg, 0));
-    m_cc.vpcmpistri(loadReg, m_filterReg, asmjit::Imm(0x14), miReg);
+    m_cc.vpcmpistri(m_filterReg, loadReg, asmjit::Imm(0x14), miReg);
     m_cc.add(m_inputReg, miReg);
     m_cc.cmp(miReg, 15);
 }
@@ -443,9 +443,10 @@ template<> void SkipRoutineBuilderEM64T<wchar_t>::emit()
     asmjit::X86Gp miReg = m_cc.newGpz();
 
     m_cc.vmovdqu(loadReg, asmjit::X86Mem(m_inputReg, 0));
-    m_cc.vpcmpistri(loadReg, m_filterReg, asmjit::Imm(0x15), miReg);
+    m_cc.vpcmpistri(m_filterReg, loadReg, asmjit::Imm(0x15), miReg);
+    m_cc.sal(miReg, 1);
     m_cc.add(m_inputReg, miReg);
-    m_cc.cmp(miReg, 7);
+    m_cc.cmp(miReg, 14);
 }
 
 template<typename TCHAR>

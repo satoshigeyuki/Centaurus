@@ -1,6 +1,7 @@
 #include "charclass.hpp"
 
 #include <cctype>
+#include <iomanip>
 
 namespace Centaurus
 {
@@ -44,6 +45,18 @@ void CharClass<TCHAR>::parse(Stream& stream)
                 break;
             case u'-':
                 ch = u'-';
+                break;
+            case u't':
+            case u'T':
+                ch = u'\t';
+                break;
+            case u'r':
+            case u'R':
+                ch = u'\r';
+                break;
+            case u'n':
+            case u'N':
+                ch = u'\n';
                 break;
             default:
                 throw stream.unexpected(ch);
@@ -294,7 +307,19 @@ namespace Microsoft
 			std::wstring ToString(const Centaurus::CharClass<TCHAR>& cc)
 			{
 				std::wostringstream os;
-				os << cc;
+				
+                os << std::hex << std::setfill(L'0') << std::setw(sizeof(TCHAR) * 2) << std::showbase;
+                os.put(L'[');
+                for (const auto& r : cc)
+                {
+                    if (r.start() + 1 == r.end())
+                        os << (unsigned int)r.start();
+                    else
+                        os << (unsigned int)r.start() << L'-' << (unsigned int)r.end() - 1;
+                    os << L' ';
+                }
+                os.put(L']');
+
 				return os.str();
 			}
 
