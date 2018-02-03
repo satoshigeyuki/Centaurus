@@ -109,6 +109,12 @@ private:
         m_nodes.push_back(node);
         return m_nodes.size() - 1;
     }
+    int import_whitespace(const CharClass<TCHAR>& cc, int origin)
+    {
+        origin = add_node(CharClass<TCHAR>(), origin);
+        m_nodes[origin].add_transition(cc, origin);
+        return origin;
+    }
     int import_literal_terminal(const std::basic_string<TCHAR>& literal, int origin)
     {
         for (TCHAR ch : literal)
@@ -152,6 +158,9 @@ private:
             break;
         case ATNNodeType::Nonterminal:
             origin = import_nonterminal(node.get_submachine(), origin);
+            break;
+        case ATNNodeType::WhiteSpace:
+            origin = import_whitespace(CharClass<TCHAR>({u' ', u'\t', u'\r', u'\n'}), origin);
             break;
         }
 

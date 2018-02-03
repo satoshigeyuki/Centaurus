@@ -9,6 +9,7 @@
 #include <tuple>
 #include <set>
 #include <array>
+#include <initializer_list>
 
 #include "stream.hpp"
 #include "util.hpp"
@@ -128,6 +129,13 @@ public:
     CharClass(char16_t ch)
     {
         m_ranges.push_back(Range<TCHAR>::make_from_wide(ch, ch + 1));
+    }
+    CharClass(const std::initializer_list<char16_t>& ch_list)
+    {
+        for (char16_t ch : ch_list)
+        {
+            m_ranges.push_back(Range<TCHAR>(ch, ch + 1));
+        }
     }
     CharClass(char16_t start, char16_t end)
     {

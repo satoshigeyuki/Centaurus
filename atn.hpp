@@ -262,6 +262,8 @@ public:
                 if (terminal_states.empty())
                     throw stream.unexpected(ch);
                 m_nodes.back().add_transition(m_nodes.size());
+                m_nodes.emplace_back(ATNNodeType::WhiteSpace);
+                m_nodes.back().add_transition(m_nodes.size());
                 m_nodes.emplace_back(stream);
                 terminal_states.back() = m_nodes.size() - 1;
             }
