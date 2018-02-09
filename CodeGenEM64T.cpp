@@ -46,63 +46,112 @@ asmjit::Data128 pack_charclass(const CharClass<wchar_t>& cc)
 }
 
 template<typename TCHAR>
+class ParserEM64T
+{
+    asmjit::X86Builder m_as;
+    const Grammar<TCHAR>& m_grammar;
+    std::unordered_map<Identifier, asmjit::Label> m_machinelabels;
+    asmjit::Label m_bailoutlabel;
+private:
+    void emit_machine(const ATNMachine<TCHAR>& machine)
+    {
+        for (const auto& state : machine)
+        {
+        }
+    }
+public:
+    ParserEM64T(asmjit::CodeHolder& code, const Grammar<TCHAR>& grammar)
+        : m_as(&code), m_grammar(grammar)
+    {
+        asmjit::FuncDetail func;
+        func.init(asmjit::FuncSignature1<const void *, const void *>(asmjit::CallConv::kIdHost));
+
+        asmjit::FuncFrameInfo ffi;
+        ffi.setDirtyRegs(asmjit::X86Reg::kKindVec, asmjit::Utils::mask(0, 1));
+
+        asmjit::X86Gp inputreg = m_as.zcx();
+
+        asmjit::FuncArgsMapper mapper(&func);
+        mapper.assignAll(inputreg);
+        mapper.updateFrameInfo(ffi);
+
+        asmjit::FuncFrameLayout layout;
+        layout.init(func, ffi);
+
+        asmjit::FuncUtils::emitProlog(&m_as, layout);
+        asmjit::FuncUtils::allocArgs(&m_as, layout, mapper);
+
+        for (const auto& p : grammar.get_machines())
+        {
+            m_machinelabels.emplace(p.first, m_as.newLabel());
+        }
+        for (const auto& p : grammar.get_machines())
+        {
+            m_as.bind(m_machinelabels[p.first]);
+
+            emit_machine(p.second);
+        }
+
+        asmjit::FuncUtils::emitEpilog(&m_as, layout);
+    }
+    virtual ~ParserEM64T() {}
+};
+
+template<typename TCHAR>
 class DFARoutineBuilderEM64T
 {
-	asmjit::X86Compiler m_cc;
+    asmjit::X86Emitter& m_as;
 	const DFA<TCHAR>& m_dfa;
 	std::vector<asmjit::Label> m_labels;
-	asmjit::Label m_rejectlabel, m_acceptlabel;
+	asmjit::Label m_rejectlabel, m_escapelabel;
 	asmjit::X86Gp m_inputReg, m_backupReg;
 private:
 	void emit_state(int index);
 public:
-	DFARoutineBuilderEM64T(asmjit::CodeHolder& code, const DFA<TCHAR>& dfa)
-		: m_cc(&code), m_dfa(dfa)
+    DFARoutineBuilderEM64T(asmjit::X86Emitter &emitter, asmjit::Label escapeLabel, const DFA<TCHAR>& dfa)
+		: m_as(emitter), m_escapeLabel(escapeLabel), m_dfa(dfa)
 	{
-		m_cc.addFunc(asmjit::FuncSignature1<const void *, const void *>(/*asmjit::CallConv::kIdHost*/));
+        m_inputReg = m_as.zcx();
+        m_backupReg = m_as.zdx();
 
-		m_inputReg = m_cc.newIntPtr();
-		m_backupReg = m_cc.newIntPtr();
-
-		//Set the initial position to RCX
-		m_cc.setArg(0, m_inputReg);
 		//Set the backup position to NULL (no backup candidates)
-		m_cc.mov(m_backupReg, 0);
+		m_as.mov(m_backupReg, 0);
 
 		//Prepare one label for each state entry
 		for (int i = 0; i < m_dfa.get_state_num(); i++)
-			m_labels.push_back(m_cc.newLabel());
+			m_labels.push_back(m_as.newLabel());
 
-		//Labels for accept and reject states
-		m_acceptlabel = m_cc.newLabel();
-		m_rejectlabel = m_cc.newLabel();
+		//Label for reject state
+		m_rejectlabel = m_as.newLabel();
 
 		for (int i = 0; i < m_dfa.get_state_num(); i++)
 		{
 			emit_state(i);
 		}
 		
-		m_cc.bind(m_rejectlabel);
-		m_cc.ret(m_backupReg);
+		m_as.bind(m_rejectlabel);
+        m_as.cmp(m_backupReg, 0);
 
-		m_cc.endFunc();
-		m_cc.finalize();
+        //Jump to the escape label when the input is rejected
+        m_as.jz(escapeLabel);
+
+        //Proceed to the next node within the machine
 	}
 	virtual ~DFARoutineBuilderEM64T() {}
 };
 
 template<> void DFARoutineBuilderEM64T<char>::emit_state(int index)
 {
-	m_cc.bind(m_labels[index]);
+	m_as.bind(m_labels[index]);
 
-	asmjit::X86Gp cReg = m_cc.newGpd();
-	asmjit::X86Gp c2Reg = m_cc.newGpd();
+	asmjit::X86Gp cReg = m_as.zax();
+	asmjit::X86Gp c2Reg = m_as.zbx();
 
-	m_cc.movzx(cReg, asmjit::x86::byte_ptr(m_inputReg, 0));
-	m_cc.mov(c2Reg, cReg);
+	m_as.movzx(cReg, asmjit::x86::byte_ptr(m_inputReg, 0));
+	m_as.mov(c2Reg, cReg);
 	if (m_dfa.is_accept_state(index))
-		m_cc.mov(m_backupReg, m_inputReg);
-	m_cc.inc(m_inputReg);
+		m_as.mov(m_backupReg, m_inputReg);
+	m_as.inc(m_inputReg);
 
 	for (const auto& tr : m_dfa.get_transitions(index))
 	{
@@ -110,34 +159,34 @@ template<> void DFARoutineBuilderEM64T<char>::emit_state(int index)
 		{
 			if (r.start() + 1 == r.end())
 			{
-				m_cc.cmp(cReg, r.start());
-				m_cc.je(m_labels[tr.dest()]);
+				m_as.cmp(cReg, r.start());
+				m_as.je(m_labels[tr.dest()]);
 			}
 			else
 			{
-				m_cc.sub(cReg, r.start());
-				m_cc.cmp(cReg, r.end() - r.start());
-				m_cc.jb(m_labels[tr.dest()]);
-				m_cc.mov(cReg, c2Reg);
+				m_as.sub(cReg, r.start());
+				m_as.cmp(cReg, r.end() - r.start());
+				m_as.jb(m_labels[tr.dest()]);
+				m_as.mov(cReg, c2Reg);
 			}
 		}
 	}
-	m_cc.jmp(m_rejectlabel);
+	m_as.jmp(m_rejectlabel);
 }
 
 template<> void DFARoutineBuilderEM64T<wchar_t>::emit_state(int index)
 {
-	m_cc.bind(m_labels[index]);
+	m_as.bind(m_labels[index]);
 
-	asmjit::X86Gp cReg = m_cc.newGpd();
-	asmjit::X86Gp c2Reg = m_cc.newGpd();
+	asmjit::X86Gp cReg = m_as.zax();
+	asmjit::X86Gp c2Reg = m_as.zax();
 
-	m_cc.movzx(cReg, asmjit::x86::word_ptr(m_inputReg, 0));
-	m_cc.mov(c2Reg, cReg);
+	m_as.movzx(cReg, asmjit::x86::word_ptr(m_inputReg, 0));
+	m_as.mov(c2Reg, cReg);
 
 	if (m_dfa.is_accept_state(index))
-		m_cc.mov(m_backupReg, m_inputReg);
-	m_cc.add(m_inputReg, 2);
+		m_as.mov(m_backupReg, m_inputReg);
+	m_as.add(m_inputReg, 2);
 
 	for (const auto& tr : m_dfa.get_transitions(index))
 	{
@@ -145,76 +194,67 @@ template<> void DFARoutineBuilderEM64T<wchar_t>::emit_state(int index)
 		{
 			if (r.start() + 1 == r.end())
 			{
-				m_cc.cmp(cReg, r.start());
-				m_cc.je(m_labels[tr.dest()]);
+				m_as.cmp(cReg, r.start());
+				m_as.je(m_labels[tr.dest()]);
 			}
 			else
 			{
-				m_cc.sub(cReg, r.start());
-				m_cc.cmp(cReg, r.end() - r.start());
-				m_cc.jb(m_labels[tr.dest()]);
-				m_cc.mov(cReg, c2Reg);
+				m_as.sub(cReg, r.start());
+				m_as.cmp(cReg, r.end() - r.start());
+				m_as.jb(m_labels[tr.dest()]);
+				m_as.mov(cReg, c2Reg);
 			}
 		}
 	}
-	m_cc.jmp(m_rejectlabel);
+	m_as.jmp(m_rejectlabel);
 }
 
 template<typename TCHAR>
 class LDFARoutineBuilderEM64T
 {
-	asmjit::X86Compiler m_cc;
+    asmjit::X86Emitter& m_as;
 	const LookaheadDFA<TCHAR>& m_ldfa;
-	asmjit::X86Gp m_inputReg, m_resultReg;
-	asmjit::Label m_exitlabel;
+	asmjit::X86Gp m_inputReg;
+	std::vector<asmjit::Label> m_exitlabels;
 	std::vector<asmjit::Label> m_labels;
+    asmjit::Label m_escapeLabel;
 private:
 	void emit_state(int index);
 public:
-	LDFARoutineBuilderEM64T(asmjit::CodeHolder& code, const LookaheadDFA<TCHAR>& ldfa)
-		: m_cc(&code), m_ldfa(ldfa)
+	LDFARoutineBuilderEM64T(asmjit::X86Emitter& emitter, asmjit::Label escapeLabel, const LookaheadDFA<TCHAR>& ldfa)
+		: m_as(emitter), m_escapeLabel(escapeLabel), m_ldfa(ldfa)
 	{
-		m_cc.addFunc(asmjit::FuncSignature1<int, const void *>(asmjit::CallConv::kIdHost));
+        m_inputReg = m_as.zcx();
 
-		m_inputReg = m_cc.newIntPtr();
-		m_cc.setArg(0, m_inputReg);
-
-		m_resultReg = m_cc.newGpz();
-
-		m_exitlabel = m_cc.newLabel();
+        int decision_num = m_ldfa.get_color_num();
+        for (int i = 0; i < decision_num; i++)
+        {
+            m_exitlabels.push_back(m_as.newLabel());
+        }
 
 		for (int i = 0; i < m_ldfa.get_state_num(); i++)
 		{
-			m_labels.push_back(m_cc.newLabel());
+			m_labels.push_back(m_as.newLabel());
 		}
-
-		m_cc.mov(m_resultReg, -1);
 
 		for (int i = 0; i < m_ldfa.get_state_num(); i++)
 		{
 			emit_state(i);
 		}
-
-		m_cc.bind(m_exitlabel);
-		
-		m_cc.ret(m_resultReg);
-
-		m_cc.endFunc();
-		m_cc.finalize();
 	}
 	virtual ~LDFARoutineBuilderEM64T() {}
 };
 
 template<> void LDFARoutineBuilderEM64T<char>::emit_state(int index)
 {
-	m_cc.bind(m_labels[index]);
+	m_as.bind(m_labels[index]);
 
-	asmjit::X86Gp cReg = m_cc.newGpd();
-	asmjit::X86Gp c2Reg = m_cc.newGpd();
+	asmjit::X86Gp cReg = m_as.zax();
+	asmjit::X86Gp c2Reg = m_as.zbx();
 
-	m_cc.movzx(cReg, asmjit::x86::byte_ptr(m_inputReg, 0));
-	m_cc.mov(c2Reg, cReg);
-	m_cc.inc(m_inputReg);
+	m_as.movzx(cReg, asmjit::x86::byte_ptr(m_inputReg, 0));
+	m_as.mov(c2Reg, cReg);
+	m_as.inc(m_inputReg);
 
 	for (const auto& tr : m_ldfa.get_transitions(index))
 	{
@@ -222,47 +262,45 @@ template<> void LDFARoutineBuilderEM64T<char>::emit_state(int index)
 		{
 			if (r.start() + 1 == r.end())
 			{
-				m_cc.cmp(cReg, r.start());
+				m_as.cmp(cReg, r.start());
 				if (tr.dest() >= 0)
 				{
-					m_cc.je(m_labels[tr.dest()]);
+					m_as.je(m_labels[tr.dest()]);
 				}
 				else
 				{
-					m_cc.mov(m_resultReg, asmjit::Imm(-tr.dest()));
-					m_cc.je(m_exitlabel);
+                    m_as.je(m_exitlabels[-tr.dest() - 1]);
 				}
 			}
 			else
 			{
-				m_cc.sub(cReg, r.start());
-				m_cc.cmp(cReg, r.end() - r.start());
+				m_as.sub(cReg, r.start());
+				m_as.cmp(cReg, r.end() - r.start());
 				if (tr.dest() >= 0)
 				{
-					m_cc.jb(m_labels[tr.dest()]);
+					m_as.jb(m_labels[tr.dest()]);
 				}
 				else
 				{
-					m_cc.mov(m_resultReg, asmjit::Imm(-tr.dest()));
-					m_cc.jb(m_exitlabel);
+                    m_as.jb(m_exitlabels[-tr.dest() - 1]);
 				}
-				m_cc.mov(cReg, c2Reg);
+				m_as.mov(cReg, c2Reg);
 			}
 		}
 	}
-	m_cc.jmp(m_exitlabel);
+    m_as.jmp(m_escapeLabel);
 }
 
 template<> void LDFARoutineBuilderEM64T<wchar_t>::emit_state(int index)
 {
-	m_cc.bind(m_labels[index]);
+	m_as.bind(m_labels[index]);
 
-	asmjit::X86Gp cReg = m_cc.newGpd();
-	asmjit::X86Gp c2Reg = m_cc.newGpd();
+	asmjit::X86Gp cReg = m_as.zax();
+	asmjit::X86Gp c2Reg = m_as.zbx();
 
-	m_cc.movzx(cReg, asmjit::x86::word_ptr(m_inputReg, 0));
-	m_cc.mov(c2Reg, cReg);
-	m_cc.add(m_inputReg, 2);
+	m_as.movzx(cReg, asmjit::x86::word_ptr(m_inputReg, 0));
+	m_as.mov(c2Reg, cReg);
+	m_as.add(m_inputReg, 2);
 
 	for (const auto& tr : m_ldfa.get_transitions(index))
 	{
@@ -270,74 +308,59 @@ template<> void LDFARoutineBuilderEM64T<wchar_t>::emit_state(int index)
 		{
 			if (r.start() + 1 == r.end())
 			{
-				m_cc.cmp(cReg, r.start());
+				m_as.cmp(cReg, r.start());
 				if (tr.dest() >= 0)
 				{
-					m_cc.je(m_labels[tr.dest()]);
+					m_as.je(m_labels[tr.dest()]);
 				}
 				else
 				{
-					m_cc.mov(m_resultReg, asmjit::Imm(-tr.dest()));
-					m_cc.je(m_exitlabel);
+                    m_as.je(m_exitlabels[-tr.dest() - 1]);
 				}
 			}
 			else
 			{
-				m_cc.sub(cReg, r.start());
-				m_cc.cmp(cReg, r.end() - r.start());
+				m_as.sub(cReg, r.start());
+				m_as.cmp(cReg, r.end() - r.start());
 				if (tr.dest() >= 0)
 				{
-					m_cc.jb(m_labels[tr.dest()]);
+					m_as.jb(m_labels[tr.dest()]);
 				}
 				else
 				{
-					m_cc.mov(m_resultReg, asmjit::Imm(-tr.dest()));
-					m_cc.jb(m_exitlabel);
+                    m_as.jb(m_exitlabels[-tr.dest() - 1]);
 				}
-				m_cc.mov(cReg, c2Reg);
+				m_as.mov(cReg, c2Reg);
 			}
 		}
 	}
-	m_cc.jmp(m_exitlabel);
+    m_as.jmp(m_escapeLabel);
 }
 
 template<typename TCHAR>
 class MatchRoutineBuilderEM64T
 {
-	asmjit::X86Compiler m_cc;
+    asmjit::X86Emitter& m_as;
 	const std::basic_string<TCHAR>& m_str;
 	asmjit::X86Gp m_inputReg;
-	asmjit::Label m_rejectlabel;
+	asmjit::Label m_escapeLabel;
 private:
 	void emit();
 public:
-	MatchRoutineBuilderEM64T(asmjit::CodeHolder& code, const std::basic_string<TCHAR>& str)
-		: m_cc(&code), m_str(str)
+	MatchRoutineBuilderEM64T(asmjit::X86Emitter& emitter, asmjit::Label escapeLabel, const std::basic_string<TCHAR>& str)
+		: m_as(emitter), m_escapeLabel(escapeLabel), m_str(str)
 	{
-		m_cc.addFunc(asmjit::FuncSignature1<const void *, const void *>(asmjit::CallConv::kIdHost));
-
-		m_rejectlabel = m_cc.newLabel();
-
-        m_inputReg = m_cc.newIntPtr();
-		m_cc.setArg(0, m_inputReg);
+        m_inputReg = m_as.zcx();
 
 		emit();
-
-		m_cc.bind(m_rejectlabel);
-
-		m_cc.mov(m_inputReg, 0);
-		m_cc.ret(m_inputReg);
-
-		m_cc.endFunc();
-		m_cc.finalize();
 	}
 	virtual ~MatchRoutineBuilderEM64T() {}
 };
 
 template<> void MatchRoutineBuilderEM64T<char>::emit()
 {
-	asmjit::X86Gp miReg = m_cc.newGpd();
-	asmjit::X86Xmm loadReg = m_cc.newXmm();
+	asmjit::X86Gp miReg = m_as.zcx();
+    asmjit::X86Xmm loadReg = asmjit::x86::xmm(0);
 
 	for (int i = 0; i < m_str.size(); i += 16)
 	{
@@ -350,20 +373,18 @@ template<> void MatchRoutineBuilderEM64T<char>::emit()
 			d1.ub[j] = m_str[i + j];
 		}
 
-		asmjit::X86Mem patMem = m_cc.newXmmConst(asmjit::kConstScopeLocal, d1);
+		asmjit::X86Mem patMem = m_as.newXmmConst(asmjit::kConstScopeLocal, d1);
 		
-		m_cc.vmovdqu(loadReg, asmjit::X86Mem(m_inputReg, 0));
-		m_cc.vpcmpistri(loadReg, patMem, asmjit::Imm(0x18), miReg);
-		m_cc.cmp(miReg, asmjit::Imm(l1));
-		m_cc.jb(m_rejectlabel);
-		m_cc.add(m_inputReg, l1);
+		m_as.vmovdqu(loadReg, asmjit::X86Mem(m_inputReg, 0));
+		m_as.vpcmpistri(loadReg, patMem, asmjit::Imm(0x18), miReg);
+		m_as.cmp(miReg, asmjit::Imm(l1));
+		m_as.jb(m_rejectlabel);
+		m_as.add(m_inputReg, l1);
 	}
-
-	m_cc.ret(m_inputReg);
 }
 template<> void MatchRoutineBuilderEM64T<wchar_t>::emit()
 {
-	asmjit::X86Gp miReg = m_cc.newGpd();
+	asmjit::X86Gp miReg = m_as.zcx();
 	asmjit::X86Xmm loadReg = m_cc.newXmm();
 
 	for (int i = 0; i < m_str.size(); i += 8)
@@ -379,20 +400,17 @@ template<> void MatchRoutineBuilderEM64T<wchar_t>::emit()
 
 		asmjit::X86Mem patMem = m_cc.newXmmConst(asmjit::kConstScopeLocal, d1);
 
-		m_cc.vmovdqu(loadReg, asmjit::X86Mem(m_inputReg, 0));
-		m_cc.vpcmpistri(loadReg, patMem, asmjit::Imm(0x18), miReg);
-		m_cc.cmp(miReg, asmjit::Imm(l1));
-		m_cc.jb(m_rejectlabel);
-		m_cc.add(m_inputReg, l1);
+		m_as.vmovdqu(loadReg, asmjit::X86Mem(m_inputReg, 0));
+		m_as.vpcmpistri(loadReg, patMem, asmjit::Imm(0x18), miReg);
+		m_as.cmp(miReg, asmjit::Imm(l1));
+		m_as.jb(m_rejectlabel);
+		m_as.add(m_inputReg, l1);
 	}
-
-	m_cc.ret(m_inputReg);
 }
 
 template<typename TCHAR>
 class SkipRoutineBuilderEM64T
 {
-    asmjit::X86Compiler m_cc;
     CharClass<TCHAR> m_filter;
     asmjit::X86Gp m_inputReg;
     asmjit::X86Xmm m_filterReg;
@@ -402,8 +420,6 @@ public:
     SkipRoutineBuilderEM64T(asmjit::CodeHolder& code, const CharClass<TCHAR>& cc)
         : m_cc(&code), m_filter(cc)
     {
-        m_cc.addFunc(asmjit::FuncSignature1<const void *, const void *>(asmjit::CallConv::kIdHost));
-
         m_inputReg = m_cc.newIntPtr();
         m_cc.setArg(0, m_inputReg);
         m_filterReg = m_cc.newXmm();
@@ -419,9 +435,6 @@ public:
 
         m_cc.jg(looplabel);
         m_cc.ret(m_inputReg);
-
-        m_cc.endFunc();
-        m_cc.finalize();
     }
     virtual ~SkipRoutineBuilderEM64T() {}
 };
@@ -454,7 +467,14 @@ DFARoutineEM64T<TCHAR>::DFARoutineEM64T(const asmjit::CodeInfo& codeinfo, const 
 {
     code.init(codeinfo);
 
+    asmjit::X86Compiler compiler(&code);
+
+    compiler.addFunc(asmjit::FuncSignature1<const void *, const void *>());
+
 	DFARoutineBuilderEM64T<TCHAR> builder(code, dfa);
+
+    compiler.endFunc();
+    compiler.finalize();
 }
 
 template<typename TCHAR>
@@ -462,7 +482,14 @@ LDFARoutineEM64T<TCHAR>::LDFARoutineEM64T(const asmjit::CodeInfo& codeinfo, cons
 {
     code.init(codeinfo);
 
+    asmjit::X86Compiler compiler(&code);
+
+    compiler.addFunc(asmjit::FuncSignature1<int, const void *>());
+
 	LDFARoutineBuilderEM64T<TCHAR> builder(code, ldfa);
+
+    compiler.endFunc();
+    compiler.finalize();
 }
 
 template<typename TCHAR>
@@ -470,7 +497,14 @@ MatchRoutineEM64T<TCHAR>::MatchRoutineEM64T(const asmjit::CodeInfo& codeinfo, co
 {
     code.init(codeinfo);
 
+    asmjit::X86Compiler compiler(&code);
+
+    compiler.addFunc(asmjit::FuncSignature1<const void *, const void *>());
+
 	MatchRoutineBuilderEM64T<TCHAR> builder(code, str);
+
+    compiler.endFunc();
+    compiler.finalize();
 }
 
 template<typename TCHAR>
@@ -478,7 +512,14 @@ SkipRoutineEM64T<TCHAR>::SkipRoutineEM64T(const asmjit::CodeInfo& codeinfo, cons
 {
     code.init(codeinfo);
 
+    asmjit::X86Compiler compiler(&code);
+
+    compiler.addFunc(asmjit::FuncSignature1<const void *, const void *>());
+
     SkipRoutineBuilderEM64T<TCHAR> builder(code, cc);
+
+    compiler.endFunc();
+    compiler.finalize();
 }
 
 template class DFARoutineEM64T<char>;

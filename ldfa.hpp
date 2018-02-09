@@ -194,6 +194,22 @@ public:
 	{
 		return m_states.size();
 	}
+    int get_color_num() const
+    {
+        int max_color_index = 0;
+
+        for (const auto& state : m_states)
+        {
+            for (const auto& tr : state.get_transitions())
+            {
+                if (tr.dest() < 0)
+                {
+                    max_color_index = std::max(max_color_index, -tr.dest());
+                }
+            }
+        }
+        return max_color_index;
+    }
 	int run(const std::basic_string<TCHAR>& seq, int index = 0, int input_pos = 0) const
 	{
 		if (input_pos == seq.size())

@@ -316,6 +316,14 @@ public:
     virtual ~ATNMachine()
     {
     }
+    typename std::vector<ATNNode<TCHAR> >::const_iterator begin() const
+    {
+        return m_nodes.cbegin();
+    }
+    typename std::vector<ATNNode<TCHAR> >::const_iterator end() const
+    {
+        return m_nodes.cend();
+    }
 };
 
 template<typename TCHAR>

@@ -138,5 +138,9 @@ public:
     {
         return m_networks;
     }
+    int get_machine_num() const
+    {
+        return m_networks.size();
+    }
 };
 }
