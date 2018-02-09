@@ -205,6 +205,10 @@ public:
     {
         return m_transitions;
     }
+    const ATNTransition<TCHAR>& get_transition(int index) const
+    {
+        return m_transitions[index];
+    }
     bool is_nonterminal() const
     {
         return m_type == ATNNodeType::Nonterminal;
