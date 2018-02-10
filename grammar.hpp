@@ -142,5 +142,9 @@ public:
     {
         return m_networks.size();
     }
+    const Identifier& get_root_id() const
+    {
+        return m_root_id;
+    }
 };
 }
