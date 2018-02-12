@@ -53,21 +53,22 @@ class BaseParserEM64T
     asmjit::X86Assembler m_as;
     asmjit::ConstPool *m_pool;
     asmjit::FuncFrameLayout m_layout;
-    asmjit::Label m_escapelabel, m_finishlabel;
-    asmjit::Label m_stackbackup, m_poollabel;
+    asmjit::Label m_finishlabel;
+    asmjit::Label m_poollabel;
 protected:
     void init()
     {
         asmjit::FuncDetail func;
-        func.init(asmjit::FuncSignature1<const void *, const void *>(asmjit::CallConv::kIdHost));
+        func.init(asmjit::FuncSignature2<const void *, const void *, jmp_buf>(asmjit::CallConv::kIdHost));
 
         asmjit::FuncFrameInfo ffi;
         ffi.setDirtyRegs(asmjit::X86Reg::kKindVec, asmjit::Utils::mask(0, 1));
 
         asmjit::X86Gp inputreg = get_input_reg();
+        asmjit::X86Gp jmpreg = get_jmpbuf_reg();
 
         asmjit::FuncArgsMapper mapper(&func);
-        mapper.assignAll(inputreg);
+        mapper.assignAll(inputreg, jmpreg);
         mapper.updateFrameInfo(ffi);
 
         m_layout.init(func, ffi);
@@ -78,31 +79,15 @@ protected:
         //A constant pool is shared among all the machines
         m_pool = m_as.newConstPool();
 
-        m_escapelabel = m_as.newLabel();
-        m_finishlabel = m_as.newLabel();
-
-        m_stackbackup = m_as.newLabel();
-        m_as.mov(asmjit::X86Mem(m_stackbackup, 0), m_as.zsp());
-
         m_poollabel = m_as.newLabel();
     }
     void finalize()
     {
-        //This place is reached when one of the "reject trampolines" is stepped upon.
-        m_as.bind(m_escapelabel);
-        //Rewind the stack to the saved position.
-        m_as.mov(m_as.zsp(), asmjit::X86Mem(m_stackbackup, 0));
-        m_as.mov(get_input_reg(), 0);
-
-        m_as.bind(m_finishlabel);
         m_as.mov(m_as.zax(), get_input_reg());
         asmjit::FuncUtils::emitEpilog(&m_as, m_layout);
 
-        m_as.align(asmjit::kAlignZero, 8);
-        m_as.bind(m_stackbackup);
-        m_as.embed(NULL, 8);
-
-        m_as.embedConstPool()
+        m_as.align(asmjit::kAlignZero, 32);
+        m_as.embedConstPool(m_poollabel, m_pool);
     }
 public:
     BaseParserEM64T()
@@ -114,14 +99,6 @@ public:
     {
         return m_as;
     }
-    asmjit::Label& get_escape_label()
-    {
-        return m_escapelabel;
-    }
-    asmjit::Label& get_finish_label()
-    {
-        return m_finishlabel;
-    }
     asmjit::ConstPool *get_const_pool()
     {
         return m_pool;
@@ -131,42 +108,46 @@ public:
         //Input position is tracked by RCX/ECX throughout the parser
         return m_as.zcx();
     }
+    asmjit::X86Gp get_jmpbuf_reg()
+    {
+        //The sjlj context is held in RSI/ESI throughout the parser
+        return m_as.zsi();
+    }
     asmjit::X86Mem add_xmm_const(asmjit::Data128& data)
     {
         size_t offset;
         m_pool->add(data.ub, 16, offset);
-        return 
+        return asmjit::X86Mem(m_poollabel, offset);
     }
 };
 
 template<typename TCHAR>
 class ParserEM64T : public BaseParserEM64T<TCHAR>
 {
+    using BaseParserEM64T<TCHAR>::init;
+    using BaseParserEM64T<TCHAR>::finalize;
+
     const Grammar<TCHAR>& m_grammar;
     std::unordered_map<Identifier, asmjit::Label> m_machinelabels;
 public:
     ParserEM64T(const Grammar<TCHAR>& grammar)
         : m_grammar(grammar)
     {
+        init();
+
         for (const auto& p : grammar.get_machines())
         {
             m_machinelabels.emplace(p.first, m_as.newLabel());
         }
 
         asmjit::Label finishlabel = m_as.newLabel();
-        asmjit::Label stackbackup = m_as.newLabel();
 
         //The parsing starts by calling the root machine.
         //It returns only if the parsing reached EOF.
         m_as.call(m_machinelabels[grammar.get_root_id()]);
         //Jump to the epilog as we reached EOF.
         m_as.jmp(finishlabel);
-
-        m_as.bind(finishlabel);
-        m_as.mov(m_as.zax(), inputreg);
-
         
-
         for (const auto& p : grammar.get_machines())
         {
             m_machinelabels.emplace(p.first, m_as.newLabel());
@@ -177,19 +158,24 @@ public:
 
             emit_machine(p.second);
         }
+
+        m_as.bind(finishlabel);
+        m_as.mov(m_as.zax(), inputreg);
+
+        finalize();
     }
     virtual ~ParserEM64T() {}
-    const void *(*getRoutine)(const void *)()
+    const void *(*getRoutine)(const void *, jmp_buf)()
     {
-        const void *(*routine)(const void *);
+        const void *(*routine)(const void *, jmp_buf);
         runtime.add(&routine, &code);
         return routine;
     }
-    const void *run(const void *buf)
+    const void *run(const void *buf, jmp_buf jb)
     {
-        const void *(*routine)(const void *) = getRoutine();
+        const void *(*routine)(const void *, jmp_buf) = getRoutine();
 
-        return routine(buf);
+        return routine(buf, jb);
     }
 };
 
