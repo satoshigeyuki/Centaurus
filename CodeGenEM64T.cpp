@@ -46,87 +46,8 @@ asmjit::Data128 pack_charclass(const CharClass<wchar_t>& cc)
 }
 
 template<typename TCHAR>
-class BaseParserEM64T
+class ParserEM64T : public BaseParserEM64T
 {
-    asmjit::JitRuntime runtime;
-    asmjit::CodeHolder code;
-    asmjit::X86Assembler m_as;
-    asmjit::ConstPool *m_pool;
-    asmjit::FuncFrameLayout m_layout;
-    asmjit::Label m_finishlabel;
-    asmjit::Label m_poollabel;
-protected:
-    void init()
-    {
-        asmjit::FuncDetail func;
-        func.init(asmjit::FuncSignature2<const void *, const void *, jmp_buf>(asmjit::CallConv::kIdHost));
-
-        asmjit::FuncFrameInfo ffi;
-        ffi.setDirtyRegs(asmjit::X86Reg::kKindVec, asmjit::Utils::mask(0, 1));
-
-        asmjit::X86Gp inputreg = get_input_reg();
-        asmjit::X86Gp jmpreg = get_jmpbuf_reg();
-
-        asmjit::FuncArgsMapper mapper(&func);
-        mapper.assignAll(inputreg, jmpreg);
-        mapper.updateFrameInfo(ffi);
-
-        m_layout.init(func, ffi);
-
-        asmjit::FuncUtils::emitProlog(&m_as, m_layout);
-        asmjit::FuncUtils::allocArgs(&m_as, m_layout, mapper);
-
-        //A constant pool is shared among all the machines
-        m_pool = m_as.newConstPool();
-
-        m_poollabel = m_as.newLabel();
-    }
-    void finalize()
-    {
-        m_as.mov(m_as.zax(), get_input_reg());
-        asmjit::FuncUtils::emitEpilog(&m_as, m_layout);
-
-        m_as.align(asmjit::kAlignZero, 32);
-        m_as.embedConstPool(m_poollabel, m_pool);
-    }
-public:
-    BaseParserEM64T()
-        : runtime(), code(runtime.getCodeInfo()), m_as(&code)
-    {
-        
-    }
-    asmjit::X86Emitter& get_emitter()
-    {
-        return m_as;
-    }
-    asmjit::ConstPool *get_const_pool()
-    {
-        return m_pool;
-    }
-    asmjit::X86Gp get_input_reg()
-    {
-        //Input position is tracked by RCX/ECX throughout the parser
-        return m_as.zcx();
-    }
-    asmjit::X86Gp get_jmpbuf_reg()
-    {
-        //The sjlj context is held in RSI/ESI throughout the parser
-        return m_as.zsi();
-    }
-    asmjit::X86Mem add_xmm_const(asmjit::Data128& data)
-    {
-        size_t offset;
-        m_pool->add(data.ub, 16, offset);
-        return asmjit::X86Mem(m_poollabel, offset);
-    }
-};
-
-template<typename TCHAR>
-class ParserEM64T : public BaseParserEM64T<TCHAR>
-{
-    using BaseParserEM64T<TCHAR>::init;
-    using BaseParserEM64T<TCHAR>::finalize;
-
     const Grammar<TCHAR>& m_grammar;
     std::unordered_map<Identifier, asmjit::Label> m_machinelabels;
 public:
@@ -135,32 +56,29 @@ public:
     {
         init();
 
+        asmjit::X86Emitter& em = get_emitter();
+
         for (const auto& p : grammar.get_machines())
         {
-            m_machinelabels.emplace(p.first, m_as.newLabel());
+            m_machinelabels.emplace(p.first, em.newLabel());
         }
 
-        asmjit::Label finishlabel = m_as.newLabel();
+        asmjit::Label finishlabel = em.newLabel();
 
         //The parsing starts by calling the root machine.
         //It returns only if the parsing reached EOF.
-        m_as.call(m_machinelabels[grammar.get_root_id()]);
+        em.call(m_machinelabels[grammar.get_root_id()]);
         //Jump to the epilog as we reached EOF.
-        m_as.jmp(finishlabel);
+        em.jmp(finishlabel);
         
         for (const auto& p : grammar.get_machines())
         {
-            m_machinelabels.emplace(p.first, m_as.newLabel());
-        }
-        for (const auto& p : grammar.get_machines())
-        {
-            m_as.bind(m_machinelabels[p.first]);
+            em.bind(m_machinelabels[p.first]);
 
-            emit_machine(p.second);
+            ATNMachineEM64T<TCHAR>::build(*this, p.second);
         }
 
-        m_as.bind(finishlabel);
-        m_as.mov(m_as.zax(), inputreg);
+        em.bind(finishlabel);
 
         finalize();
     }
@@ -177,12 +95,16 @@ public:
 
         return routine(buf, jb);
     }
+    asmjit::Label get_machine_label(const Identifier& id)
+    {
+        return m_machinelabels[id];
+    }
 };
 
 template<typename TCHAR>
 class ATNMachineEM64T
 {
-    asmjit::X86Emitter m_as;
+    ParserEM64T<TCHAR>& m_parser;
     std::vector<asmjit::Label> m_statelabels;
     const ATNMachine<TCHAR>& m_machine;
 private:
@@ -260,8 +182,6 @@ public:
 	{
         asmjit::X86Emitter& em = m_parser.get_emitter();
 
-        //Input cursor assigned to RCX/ECX
-        m_inputReg = em.zcx();
         //Backup register, which stores the last accepted position, assigned to RDX/EDX
         m_backupReg = em.zdx();
 
