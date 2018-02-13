@@ -6,66 +6,15 @@
 
 namespace Centaurus
 {
-
-/*
- * Base class for all parsing functions
- * Provides interface to the JIT (and AOT in the future) assembler
- */
-/*class BaseParserEM64T
+template<typename TCHAR>
+class ParserEM64T
 {
-    asmjit::JitRuntime runtime;
-    asmjit::CodeHolder code;
-    asmjit::X86Compiler m_cc;
-    asmjit::Label m_finishlabel;
-    asmjit::X86Gp m_inputreg, m_jmpreg;
-protected:
-    void init()
-    {
-        m_cc.addFunc(asmjit::FuncSignature2<const void *, const void *, void *>(asmjit::CallConv::kIdHost));
-
-        m_inputreg = m_cc.newIntPtr();
-        m_cc.setArg(0, m_inputreg);
-
-        m_jmpreg = m_cc.newIntPtr();
-        m_cc.setArg(1, m_jmpreg);
-    }
-    void finalize()
-    {
-        m_cc.ret(m_inputreg);
-        m_cc.endFunc();
-        m_cc.finalize();
-    }
+    asmjit::JitRuntime m_runtime;
+    asmjit::CodeHolder m_code;
 public:
-    BaseParserEM64T()
-        : m_cc(&code)
-    {
-        code.init(runtime.getCodeInfo());
-    }
-    asmjit::X86Emitter& get_emitter()
-    {
-        return m_cc;
-    }
-    asmjit::X86Gp get_input_reg()
-    {
-        return m_inputreg;
-    }
-    asmjit::X86Gp get_jmpbuf_reg()
-    {
-        return m_jmpreg;
-    }
-    asmjit::X86Mem add_xmm_const(asmjit::Data128& data)
-    {
-        return m_cc.newXmmConst(asmjit::kConstScopeGlobal, data);
-    }
-    asmjit::X86Gp new_pointer_reg()
-    {
-        return m_cc.newIntPtr();
-    }
-    asmjit::X86Gp new_integer_reg()
-    {
-        return m_cc.newGpz();
-    }
-};*/
+    ParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *logger = NULL);
+    virtual ~ParserEM64T() {}
+};
 
 template<typename TCHAR>
 class DryParserEM64T

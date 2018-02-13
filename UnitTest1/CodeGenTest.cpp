@@ -111,7 +111,7 @@ public:
 
         //Logger::WriteMessage(logger.getString());
 
-        char *json = LoadTextAligned("C:/Users/ihara/Downloads/citylots.json");
+        char *json = LoadTextAligned("C:\\Users\\ihara\\Downloads\\sf-city-lots-json-master\\sf-city-lots-json-master\\citylots.json");
 
         clock_t start_time = clock();
 

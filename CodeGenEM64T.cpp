@@ -46,128 +46,50 @@ asmjit::Data128 pack_charclass(const CharClass<wchar_t>& cc)
     return d128;
 }
 
-#if 0
 template<typename TCHAR>
-class ParserEM64T : public BaseParserEM64T
+ParserEM64T<TCHAR>::ParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *logger = NULL)
 {
-    const Grammar<TCHAR>& m_grammar;
-    std::unordered_map<Identifier, asmjit::Label> m_machinelabels;
-public:
-    ParserEM64T(const Grammar<TCHAR>& grammar)
-        : m_grammar(grammar)
+    m_code.init(m_runtime.getCodeInfo());
+    if (logger != NULL)
+        m_code.setLogger(logger);
+
+    asmjit::X86Compiler cc(&m_code);
+
+    cc.addFunc(asmjit::FuncSignature2<const void *, const void *, void *>(asmjit::CallConv::kIdHost));
+
+    asmjit::X86Gp inputreg = cc.newIntPtr();
+    cc.setArg(0, inputreg);
+    asmjit::X86Gp outputreg = cc.newIntPtr();
+    cc.setArg(1, outputreg);
+
+    std::unordered_map<Identifier, asmjit::CCFunc*> machine_map;
+
+    for (const auto& p : grammar.get_machines())
     {
-        init();
-
-        asmjit::X86Emitter& em = get_emitter();
-
-        for (const auto& p : grammar.get_machines())
-        {
-            m_machinelabels.emplace(p.first, em.newLabel());
-        }
-
-        asmjit::Label finishlabel = em.newLabel();
-
-        //The parsing starts by calling the root machine.
-        //It returns only if the parsing reached EOF.
-        em.call(m_machinelabels[grammar.get_root_id()]);
-        //Jump to the epilog as we reached EOF.
-        em.jmp(finishlabel);
-        
-        for (const auto& p : grammar.get_machines())
-        {
-            em.bind(m_machinelabels[p.first]);
-
-            ATNMachineEM64T<TCHAR>::build(*this, p.second);
-        }
-
-        em.bind(finishlabel);
-
-        finalize();
+        machine_map.emplace(p.first, cc.newFunc(asmjit::FuncSignature2<const void *, const void *, void *>(asmjit::CallConv::kIdHost)));
     }
-    virtual ~ParserEM64T() {}
-    const void *(*getRoutine)(const void *, jmp_buf)()
+
+    asmjit::CCFuncCall *root_call = cc.call(machine_map[grammar.get_root_id()]->getLabel(), asmjit::FuncSignature2<const void *, const void *, void *>(asmjit::CallConv::kIdHost));
+    root_call->setArg(0, inputreg);
+    root_call->setArg(1, outputreg);
+    root_call->setRet(0, inputreg);
+
+    cc.ret(inputreg);
+    cc.endFunc();
+
+    CompositeATN<TCHAR> catn(grammar);
+
+    for (const auto& p : grammar.get_machines())
     {
-        const void *(*routine)(const void *, jmp_buf);
-        runtime.add(&routine, &code);
-        return routine;
-    }
-    const void *run(const void *buf, jmp_buf jb)
-    {
-        const void *(*routine)(const void *, jmp_buf) = getRoutine();
+        cc.addFunc(machine_map[p.first]);
 
-        return routine(buf, jb);
-    }
-    asmjit::Label get_machine_label(const Identifier& id)
-    {
-        return m_machinelabels[id];
-    }
-};
+        DryParserEM64T<TCHAR>::emit_machine(cc, p.second, machine_map, catn, p.first);
 
-template<typename TCHAR>
-class ATNMachineEM64T
-{
-    ParserEM64T<TCHAR>& m_parser;
-    std::vector<asmjit::Label> m_statelabels;
-    const ATNMachine<TCHAR>& m_machine;
-private:
-    void emit_state(int index)
-    {
-        const ATNNode<TCHAR>& state = m_machine.get_node(index);
-
-        switch (state.type())
-        {
-        case ATNNodeType::Blank:
-            //Do nothing. Just continue to the next node within the flow.
-            break;
-        case ATNNodeType::LiteralTerminal:
-            MatchRoutineBuilderEM64T<TCHAR>::build(m_as, *m_pool, state.get_literal());
-            break;
-        case ATNNodeType::Nonterminal:
-            m_as.call(m_machinelabels[state.get_invoke()]);
-            break;
-        case ATNNodeType::RegularTerminal:
-            DFARoutineBuilderEM64T<TCHAR>::build(m_as, state.get_nfa());
-            break;
-        case ATNNodeType::WhiteSpace:
-            SkipRoutineBuilderEM64T<TCHAR>::build(m_as, m_whitespacelabel);
-            break;
-        }
-
-        if (state.get_transitions().size() == 1)
-        {
-            m_as.jmp(m_statelabels[state.get_transitions(0).dest()]);
-        }
-        else if (state.get_transitions().empty())
-        {
-            assert(index == m_machine.get_node_num() - 1);
-        }
-        else
-        {
-            LDFARoutineBuilderEM64T<TCHAR>::build()
-        }
+        cc.endFunc();
     }
-public:
-    ATNMachineEM64T(asmjit::X86Emitter& emitter, const ATNMachine<TCHAR>& machine)
-        : m_as(emitter), m_machine(machine)
-    {
-        for (int i = 0; i < machine.get_node_num(); i++)
-        {
-            m_statelabels.push_back(m_as.newLabel());
-        }
 
-        for (int i = 0; i < machine.get_node_num(); i++)
-        {
-            emit_state(i);
-        }
-        m_as.ret();
-    }
-    virtual ~ATNMachineEM64T() {}
-    static void build(asmjit::X86Emitter& emitter, const ATNMachine<TCHAR>& machine)
-    {
-        ATNMachineEM64T<TCHAR> builder(emitter, machine);
-    }
-};
-#endif
+    cc.finalize();
+}
 
 template<typename TCHAR>
 DryParserEM64T<TCHAR>::DryParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *logger = NULL)
@@ -701,6 +623,8 @@ SkipRoutineEM64T<TCHAR>::SkipRoutineEM64T(const CharClass<TCHAR>& filter, asmjit
     cc.finalize();
 }
 
+template class ParserEM64T<char>;
+template class ParserEM64T<wchar_t>;
 template class DryParserEM64T<char>;
 template class DryParserEM64T<wchar_t>;
 template class DFARoutineEM64T<char>;

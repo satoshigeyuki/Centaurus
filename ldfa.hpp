@@ -73,30 +73,6 @@ public:
 	}
 };
 
-/*template<typename TCHAR>
-class LDFAEquivalenceTable : public std::vector<std::pair<CharClass<TCHAR>, CATNClosure> >
-{
-public:
-    LDFAEquivalenceTable()
-    {
-    }
-    virtual ~LDFAEquivalenceTable()
-    {
-    }
-    void add_transition(const Range<TCHAR>& r, const CATNClosure& dests) const
-    {
-        for (auto& item : *this)
-        {
-            if (std::equal(item.second.cbegin(), item.second.cend(), dests.cbegin()))
-            {
-                item.first |= r;
-                return;
-            }
-        }
-        emplace_back(CharClass<TCHAR>(r), dests);
-    }
-};*/
-
 template<typename TCHAR>
 class LookaheadDFA : public NFABase<TCHAR>
 {
