@@ -7,6 +7,7 @@ namespace Centaurus
 {
 template class CharClass<char>;
 template class CharClass<char16_t>;
+template class CharClass<wchar_t>;
 
 template<typename TCHAR>
 void CharClass<TCHAR>::parse(Stream& stream)
@@ -45,6 +46,12 @@ void CharClass<TCHAR>::parse(Stream& stream)
                 break;
             case u'-':
                 ch = u'-';
+                break;
+            case u'[':
+                ch = u'[';
+                break;
+            case u']':
+                ch = u']';
                 break;
             case u't':
             case u'T':
@@ -293,8 +300,10 @@ std::wostream& operator<<(std::wostream& os, const CharClass<TCHAR>& cc)
 }
 template std::ostream& operator<<(std::ostream& os, const CharClass<char>& cc);
 template std::ostream& operator<<(std::ostream& os, const CharClass<char16_t>& cc);
+template std::ostream& operator<<(std::ostream& os, const CharClass<wchar_t>& cc);
 template std::wostream& operator<<(std::wostream& os, const CharClass<char>& cc);
 template std::wostream& operator<<(std::wostream& os, const CharClass<char16_t>& cc);
+template std::wostream& operator<<(std::wostream& os, const CharClass<wchar_t>& cc);
 }
 
 namespace Microsoft

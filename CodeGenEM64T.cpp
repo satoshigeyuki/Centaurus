@@ -1,4 +1,5 @@
 #include "dfa.hpp"
+#include "atn.hpp"
 #include "asmjit/asmjit.h"
 #include "CodeGenEM64T.hpp"
 
@@ -167,6 +168,125 @@ public:
     }
 };
 #endif
+
+template<typename TCHAR>
+DryParserEM64T<TCHAR>::DryParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *logger = NULL)
+{
+    m_code.init(m_runtime.getCodeInfo());
+    if (logger != NULL)
+        m_code.setLogger(logger);
+
+    asmjit::X86Compiler cc(&m_code);
+
+    cc.addFunc(asmjit::FuncSignature1<const void *, const void *>(asmjit::CallConv::kIdHost));
+
+    asmjit::X86Gp inputreg = cc.newIntPtr();
+    cc.setArg(0, inputreg);
+    
+    std::unordered_map<Identifier, asmjit::CCFunc*> machine_map;
+
+    for (const auto& p : grammar.get_machines())
+    {
+        machine_map.emplace(p.first, cc.newFunc(asmjit::FuncSignature1<const void *, const void *>(asmjit::CallConv::kIdHost)));
+    }
+
+    asmjit::CCFuncCall *root_call = cc.call(machine_map[grammar.get_root_id()]->getLabel(), asmjit::FuncSignature1<const void *, const void *>(asmjit::CallConv::kIdHost));
+    root_call->setArg(0, inputreg);
+    root_call->setRet(0, inputreg);
+
+    cc.ret(inputreg);
+    cc.endFunc();
+
+    CompositeATN<TCHAR> catn(grammar);
+
+    for (const auto& p : grammar.get_machines())
+    {
+        cc.addFunc(machine_map[p.first]);
+
+        emit_machine(cc, p.second, machine_map, catn, p.first);
+
+        cc.endFunc();
+    }
+
+    cc.finalize();
+}
+
+template<> CharClass<char> DryParserEM64T<char>::m_skipfilter({' ', '\t', '\r', '\n'});
+template<> CharClass<wchar_t> DryParserEM64T<wchar_t>::m_skipfilter({L' ', L'\t', L'\r', L'\n'});
+
+template<typename TCHAR>
+void DryParserEM64T<TCHAR>::emit_machine(asmjit::X86Compiler& cc, const ATNMachine<TCHAR>& machine, std::unordered_map<Identifier, asmjit::CCFunc*>& machine_map, const CompositeATN<TCHAR>& catn, const Identifier& id)
+{
+    asmjit::X86Gp inputreg = cc.newIntPtr();
+    cc.setArg(0, inputreg);
+
+    std::vector<asmjit::Label> statelabels;
+
+    for (int i = 0; i < machine.get_node_num(); i++)
+    {
+        statelabels.push_back(cc.newLabel());
+    }
+
+    asmjit::Label rejectlabel = cc.newLabel();
+
+    for (int i = 0; i < machine.get_node_num(); i++)
+    {
+        cc.bind(statelabels[i]);
+
+        const ATNNode<TCHAR>& node = machine.get_node(i);
+
+        switch (node.type())
+        {
+        case ATNNodeType::Blank:
+            break;
+        case ATNNodeType::LiteralTerminal:
+            MatchRoutineEM64T<TCHAR>::emit(cc, inputreg, rejectlabel, node.get_literal());
+            break;
+        case ATNNodeType::Nonterminal: {
+            asmjit::CCFuncCall *nt_call = cc.call(machine_map[node.get_invoke()]->getLabel(), asmjit::FuncSignature1<const void *, const void *>(asmjit::CallConv::kIdHost));
+            nt_call->setArg(0, inputreg);
+            nt_call->setRet(0, inputreg);
+
+            cc.cmp(inputreg, 0);
+            cc.jz(rejectlabel);
+            } break;
+        case ATNNodeType::RegularTerminal:
+            DFARoutineEM64T<TCHAR>::emit(cc, inputreg, rejectlabel, DFA<TCHAR>(node.get_nfa()));
+            break;
+        case ATNNodeType::WhiteSpace:
+            SkipRoutineEM64T<TCHAR>::emit(cc, inputreg, m_skipfilter);
+            break;
+        }
+
+        int outbound_num = node.get_transitions().size();
+        if (outbound_num == 0)
+        {
+            cc.ret(inputreg);
+        }
+        else if (outbound_num == 1)
+        {
+            cc.jmp(statelabels[node.get_transition(0).dest()]);
+        }
+        else
+        {
+            std::vector<asmjit::Label> exitlabels;
+
+            for (int i = 0; i < outbound_num; i++)
+            {
+                exitlabels.push_back(statelabels[node.get_transition(i).dest()]);
+            }
+
+            asmjit::X86Gp peekreg = cc.newIntPtr();
+            cc.mov(peekreg, inputreg);
+
+            LDFARoutineEM64T<TCHAR>::emit(cc, peekreg, rejectlabel, LookaheadDFA<TCHAR>(catn, ATNPath(id, i)), exitlabels);
+        }
+    }
+
+    cc.bind(rejectlabel);
+    cc.mov(inputreg, 0);
+    cc.ret(inputreg);
+}
 
 template<typename TCHAR>
 DFARoutineEM64T<TCHAR>::DFARoutineEM64T(const DFA<TCHAR>& dfa, asmjit::Logger *logger)
@@ -581,6 +701,8 @@ SkipRoutineEM64T<TCHAR>::SkipRoutineEM64T(const CharClass<TCHAR>& filter, asmjit
     cc.finalize();
 }
 
+template class DryParserEM64T<char>;
+template class DryParserEM64T<wchar_t>;
 template class DFARoutineEM64T<char>;
 template class DFARoutineEM64T<wchar_t>;
 template class LDFARoutineEM64T<char>;

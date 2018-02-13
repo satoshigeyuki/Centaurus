@@ -107,6 +107,10 @@ public:
     Grammar()
     {
     }
+    Grammar(Grammar&& old)
+        : m_networks(std::move(old.m_networks)), m_root_id(old.m_root_id)
+    {
+    }
     ~Grammar()
     {
     }

@@ -68,6 +68,24 @@ public:
 };*/
 
 template<typename TCHAR>
+class DryParserEM64T
+{
+    asmjit::JitRuntime m_runtime;
+    asmjit::CodeHolder m_code;
+    static CharClass<TCHAR> m_skipfilter;
+public:
+    static void emit_machine(asmjit::X86Compiler& cc, const ATNMachine<TCHAR>& machine, std::unordered_map<Identifier, asmjit::CCFunc*>& machine_map, const CompositeATN<TCHAR>& catn, const Identifier& id);
+    DryParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *logger = NULL);
+    virtual ~DryParserEM64T() {}
+    const void *operator()(const void *input)
+    {
+        const void *(*func)(const void *);
+        m_runtime.add(&func, &m_code);
+        return func(input);
+    }
+};
+
+template<typename TCHAR>
 class DFARoutineEM64T
 {
     asmjit::JitRuntime m_runtime;

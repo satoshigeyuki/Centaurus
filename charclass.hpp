@@ -458,7 +458,7 @@ public:
 	{
 		return m_ranges.cend();
 	}
-    const Range<TCHAR>& operator[](int index) const
+    Range<TCHAR> operator[](int index) const
     {
         if (index >= 0 && index < m_ranges.size())
             return m_ranges[index];
