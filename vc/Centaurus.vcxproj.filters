@@ -30,9 +30,6 @@
     <ClInclude Include="..\charclass.hpp">
       <Filter>ソース ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="..\codegen.hpp">
-      <Filter>ソース ファイル</Filter>
-    </ClInclude>
     <ClInclude Include="..\dfa.hpp">
       <Filter>ソース ファイル</Filter>
     </ClInclude>

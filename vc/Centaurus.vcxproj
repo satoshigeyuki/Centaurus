@@ -168,7 +168,6 @@
     <ClInclude Include="..\catn2.hpp" />
     <ClInclude Include="..\JitParser.hpp" />
     <ClInclude Include="..\charclass.hpp" />
-    <ClInclude Include="..\codegen.hpp" />
     <ClInclude Include="..\dfa.hpp" />
     <ClInclude Include="..\CodeGenEM64T.hpp" />
     <ClInclude Include="..\exception.hpp" />
