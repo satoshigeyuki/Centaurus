@@ -17,7 +17,7 @@ TEST_CLASS(LDFATest)
 public:
 	TEST_METHOD_INITIALIZE(LDFATestInitialize)
 	{
-		//std::cout.set_rdbuf(&m_narrowstreambuf);
+		std::cout.set_rdbuf(&m_narrowstreambuf);
 	}
 	TEST_METHOD(LDFAConstructionTest)
 	{

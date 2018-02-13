@@ -252,7 +252,7 @@ public:
         }
         return true;
     }
-    void add(const CharClass<TCHAR>& cc, const ATNPath& path, int color)
+    /*void add(const CharClass<TCHAR>& cc, const CATNClosure& closure)
     {
         for (auto i = this->begin(); i != this->end(); i++)
         {
@@ -282,7 +282,7 @@ public:
         CATNClosure closure;
         closure.emplace(path, color);
         this->emplace_back(cc, closure);
-    }
+    }*/
 };
 
 template<typename TCHAR>
@@ -301,6 +301,63 @@ std::ostream& operator<<(std::ostream& os, const CATNDepartureSet<TCHAR>& deptse
 }
 
 template<typename TCHAR>
+class CATNDepartureSetFactory
+{
+    std::vector<std::tuple<CharClass<TCHAR>, ATNPath, int> > m_departures;
+public:
+    CATNDepartureSetFactory()
+    {
+
+    }
+    virtual ~CATNDepartureSetFactory()
+    {
+
+    }
+    void add(const CharClass<TCHAR>& cc, const ATNPath& path, int color)
+    {
+        m_departures.emplace_back(cc, path, color);
+    }
+    CATNDepartureSet<TCHAR> build_departure_set()
+    {
+        std::set<int> borders;
+
+        for (const auto& t : m_departures)
+        {
+            IndexVector borders_for_one_tr = std::get<CharClass<TCHAR> >(t).collect_borders();
+
+            borders.insert(borders_for_one_tr.cbegin(), borders_for_one_tr.cend());
+        }
+
+        CATNDepartureSet<TCHAR> deptset;
+
+        for (auto i = borders.cbegin(); i != borders.cend();)
+        {
+            TCHAR atomic_range_start = *i;
+            if (++i == borders.cend()) break;
+            TCHAR atomic_range_end = *i;
+
+            Range<TCHAR> atomic_range(atomic_range_start, atomic_range_end);
+
+            CATNClosure closure;
+
+            for (const auto& t : m_departures)
+            {
+                if (std::get<CharClass<TCHAR> >(t).includes(atomic_range))
+                {
+                    closure.emplace(std::get<ATNPath>(t), std::get<int>(t));
+                }
+            }
+
+            if (!closure.empty())
+            {
+                deptset.emplace_back(atomic_range, closure);
+            }
+        }
+        return deptset;
+    }
+};
+
+template<typename TCHAR>
 class CompositeATN
 {
     std::unordered_map<Identifier, CATNMachine<TCHAR> > m_dict;
@@ -310,7 +367,7 @@ private:
      */
     void build_wildcard_closure(CATNClosure& closure, const Identifier& id, int color, ATNStateStack& stack) const
     {
-        std::cout << "Wildcard " << id.narrow() << ":" << color << std::endl;
+        //std::cout << "Wildcard " << id.narrow() << ":" << color << std::endl;
 
         for (const auto& p : m_dict)
         {
@@ -339,11 +396,11 @@ private:
     {
         const CATNNode<TCHAR>& node = get_node(path);
 
-        std::cout << "Exclusive " << path << ":" << color << std::endl;
+        //std::cout << "Exclusive " << path << ":" << color << std::endl;
 
         if (node.is_stop_node())
         {
-            std::cout << "Stop node " << path << std::endl;
+            //std::cout << "Stop node " << path << std::endl;
 
             ATNPath parent = path.parent_path();
 
@@ -358,7 +415,7 @@ private:
         }
         else
         {
-            std::cout << "Intermediate node " << path << std::endl;
+            //std::cout << "Intermediate node " << path << std::endl;
 
             for (const auto& tr : node.get_transitions())
             {
@@ -397,7 +454,7 @@ private:
             build_closure_inclusive(closure, path.add(node.get_submachine(), 0), color, stack);
         }
     }
-    void build_wildcard_departure_set(CATNDepartureSet<TCHAR>& deptset, const Identifier& id, int color, ATNStateStack& stack) const
+    void build_wildcard_departure_set(CATNDepartureSetFactory<TCHAR>& deptset_factory, const Identifier& id, int color, ATNStateStack& stack) const
     {
         for (const auto& p : m_dict)
         {
@@ -411,13 +468,13 @@ private:
                         continue;
                     }
                     stack.push(p.first, i);
-                    build_departure_set_r(deptset, ATNPath(p.first, i), color, stack);
+                    build_departure_set_r(deptset_factory, ATNPath(p.first, i), color, stack);
                     stack.pop();
                 }
             }
         }
     }
-    void build_departure_set_r(CATNDepartureSet<TCHAR>& deptset, const ATNPath& path, int color, ATNStateStack& stack) const
+    void build_departure_set_r(CATNDepartureSetFactory<TCHAR>& deptset_factory, const ATNPath& path, int color, ATNStateStack& stack) const
     {
         const CATNNode<TCHAR>& node = get_node(path);
 
@@ -427,11 +484,11 @@ private:
 
             if (parent_path.depth() == 0)
             {
-                build_wildcard_departure_set(deptset, path.leaf_id(), color, stack);
+                build_wildcard_departure_set(deptset_factory, path.leaf_id(), color, stack);
             }
             else
             {
-                build_departure_set_r(deptset, parent_path, color, stack);
+                build_departure_set_r(deptset_factory, parent_path, color, stack);
             }
         }
         else
@@ -440,7 +497,7 @@ private:
             {
                 if (!tr.is_epsilon())
                 {
-                    deptset.add(tr.label(), path.replace_index(tr.dest()), color);
+                    deptset_factory.add(tr.label(), path.replace_index(tr.dest()), color);
                 }
             }
         }
@@ -527,16 +584,16 @@ public:
      */
     CATNDepartureSet<TCHAR> build_departure_set(const CATNClosure& closure) const
     {
-        CATNDepartureSet<TCHAR> deptset;
+        CATNDepartureSetFactory<TCHAR> deptset_factory;
 
         ATNStateStack stack;
 
         for (const auto& p : closure)
         {
-            build_departure_set_r(deptset, p.first, p.second, stack);
+            build_departure_set_r(deptset_factory, p.first, p.second, stack);
         }
 
-        return deptset;
+        return deptset_factory.build_departure_set();
     }
 };
 }

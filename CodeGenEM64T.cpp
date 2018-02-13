@@ -172,31 +172,20 @@ template<typename TCHAR>
 DFARoutineEM64T<TCHAR>::DFARoutineEM64T(const DFA<TCHAR>& dfa, asmjit::Logger *logger)
 {
     m_code.init(m_runtime.getCodeInfo());
-    m_code.setLogger(logger);
+    if (logger != NULL)
+        m_code.setLogger(logger);
 
     asmjit::X86Compiler cc(&m_code);
 
-    cc.addFunc(asmjit::FuncSignature2<const void *, const void *, void *>(asmjit::CallConv::kIdHost));
+    cc.addFunc(asmjit::FuncSignature1<const void *, const void *>(asmjit::CallConv::kIdHost));
 
     asmjit::X86Gp inputreg = cc.newIntPtr();
     cc.setArg(0, inputreg);
-    asmjit::X86Gp jmpreg = cc.newIntPtr();
-    cc.setArg(1, jmpreg);
     asmjit::Label rejectlabel = cc.newLabel();
 
-    asmjit::Label finishlabel = cc.newLabel();
     emit(cc, inputreg, rejectlabel, dfa);
-    //cc.jmp(finishlabel);
 
-    cc.bind(rejectlabel);
-
-    asmjit::CCFuncCall *longjmp_call = cc.call((uint64_t)longjmp, asmjit::FuncSignature2<void, void *, int>());
-    longjmp_call->setArg(0, jmpreg);
-    longjmp_call->setArg(1, asmjit::Imm(1));
-
-    cc.bind(finishlabel);
     cc.ret(inputreg);
-
     cc.endFunc();
     cc.finalize();
 }
@@ -223,8 +212,6 @@ void DFARoutineEM64T<TCHAR>::emit(asmjit::X86Compiler& cc, asmjit::X86Gp& inputr
         emit_state(cc, inputreg, backupreg, finishlabel, dfa[i], statelabels);
     }
     cc.bind(finishlabel);
-    cc.cmp(backupreg, 0);
-    cc.jz(rejectlabel);
     cc.mov(inputreg, backupreg);
 }
 
@@ -307,18 +294,18 @@ void DFARoutineEM64T<wchar_t>::emit_state(asmjit::X86Compiler& cc, asmjit::X86Gp
 }
 
 template<typename TCHAR>
-LDFARoutineEM64T<TCHAR>::LDFARoutineEM64T(const LookaheadDFA<TCHAR>& ldfa)
+LDFARoutineEM64T<TCHAR>::LDFARoutineEM64T(const LookaheadDFA<TCHAR>& ldfa, asmjit::Logger *logger)
 {
     m_code.init(m_runtime.getCodeInfo());
+    if (logger != NULL)
+        m_code.setLogger(logger);
 
     asmjit::X86Compiler cc(&m_code);
 
-    cc.addFunc(asmjit::FuncSignature2<int, const void *, void *>(asmjit::CallConv::kIdHost));
+    cc.addFunc(asmjit::FuncSignature1<int, const void *>(asmjit::CallConv::kIdHost));
 
     asmjit::X86Gp inputreg = cc.newIntPtr();
     cc.setArg(0, inputreg);
-    asmjit::X86Gp jmpreg = cc.newIntPtr();
-    cc.setArg(1, jmpreg);
     asmjit::Label rejectlabel = cc.newLabel();
 
     std::vector<asmjit::Label> exitlabels;
@@ -335,14 +322,13 @@ LDFARoutineEM64T<TCHAR>::LDFARoutineEM64T(const LookaheadDFA<TCHAR>& ldfa)
     for (int i = 0; i < decision_num; i++)
     {
         cc.bind(exitlabels[i]);
-        cc.mov(inputreg, asmjit::Imm(i));
+        cc.mov(inputreg, asmjit::Imm(i + 1));
         cc.ret(inputreg);
     }
 
     cc.bind(rejectlabel);
-    asmjit::CCFuncCall *longjmp_call = cc.call((uint64_t)longjmp, asmjit::FuncSignature2<void, void *, int>(asmjit::CallConv::kIdHost));
-    longjmp_call->setArg(0, jmpreg);
-    longjmp_call->setArg(1, asmjit::Imm(1));
+    cc.mov(inputreg, 0);
+    cc.ret(inputreg);
     
     cc.endFunc();
     cc.finalize();
@@ -457,9 +443,11 @@ void LDFARoutineEM64T<wchar_t>::emit_state(asmjit::X86Compiler& cc, asmjit::X86G
 }
 
 template<typename TCHAR>
-MatchRoutineEM64T<TCHAR>::MatchRoutineEM64T(const std::basic_string<TCHAR>& str)
+MatchRoutineEM64T<TCHAR>::MatchRoutineEM64T(const std::basic_string<TCHAR>& str, asmjit::Logger *logger)
 {
     m_code.init(m_runtime.getCodeInfo());
+    if (logger != NULL)
+        m_code.setLogger(logger);
 
     asmjit::X86Compiler cc(&m_code);
 
@@ -467,8 +455,6 @@ MatchRoutineEM64T<TCHAR>::MatchRoutineEM64T(const std::basic_string<TCHAR>& str)
 
     asmjit::X86Gp inputreg = cc.newIntPtr();
     cc.setArg(0, inputreg);
-    asmjit::X86Gp jmpreg = cc.newIntPtr();
-    cc.setArg(1, jmpreg);
     asmjit::Label rejectlabel = cc.newLabel();
 
     emit(cc, inputreg, rejectlabel, str);
@@ -476,12 +462,9 @@ MatchRoutineEM64T<TCHAR>::MatchRoutineEM64T(const std::basic_string<TCHAR>& str)
     cc.ret(inputreg);
 
     cc.bind(rejectlabel);
+    cc.mov(inputreg, 0);
+    cc.ret(inputreg);
     
-    asmjit::CCFuncCall *longjmp_call = cc.call((uint64_t)longjmp, asmjit::FuncSignature2<void, void *, int>(asmjit::CallConv::kIdHost));
-
-    longjmp_call->setArg(0, jmpreg);
-    longjmp_call->setArg(1, asmjit::Imm(1));
-
     cc.endFunc();
     cc.finalize();
 }
@@ -539,7 +522,7 @@ template<typename TCHAR>
 void SkipRoutineEM64T<TCHAR>::emit(asmjit::X86Compiler& cc, asmjit::X86Gp& inputreg, const CharClass<TCHAR>& filter)
 {
     asmjit::X86Xmm filterreg = cc.newXmm();
-    asmjit::X86Mem filtermem = cc.newXmmConst(asmjit::kConstScopeLocal, pack_charclass(filter));
+    asmjit::X86Mem filtermem = cc.newXmmConst(asmjit::kConstScopeGlobal, pack_charclass(filter));
     
     cc.vmovdqa(filterreg, filtermem);
 
@@ -578,9 +561,11 @@ void SkipRoutineEM64T<wchar_t>::emit_core(asmjit::X86Compiler& cc, asmjit::X86Gp
 }
 
 template<typename TCHAR>
-SkipRoutineEM64T<TCHAR>::SkipRoutineEM64T(const CharClass<TCHAR>& filter)
+SkipRoutineEM64T<TCHAR>::SkipRoutineEM64T(const CharClass<TCHAR>& filter, asmjit::Logger *logger = NULL)
 {
     m_code.init(m_runtime.getCodeInfo());
+    if (logger != NULL)
+        m_code.setLogger(logger);
 
     asmjit::X86Compiler cc(&m_code);
 

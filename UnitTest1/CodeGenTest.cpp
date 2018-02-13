@@ -31,24 +31,15 @@ public:
         fopen_s(&logfile, "dfaroutine.asm", "w");
         asmjit::FileLogger logger(logfile);
 
-        DFARoutineEM64T<char> dfa_routine(dfa, &logger);
+        DFARoutineEM64T<char> dfa_routine(dfa);
 
         fflush(logfile);
 
         const char buf[] = "abcabcabcdef";
         const char buf2[] = "abcabcde";
 
-        int result;
-        jmp_buf jb;
-        if ((result = setjmp(jb)) == 0)
-        {
-            Assert::AreEqual((const void *)(buf + sizeof(buf) - 1), dfa_routine(buf, jb));
-            dfa_routine(buf2, jb);
-        }
-        else
-        {
-            Assert::AreEqual(1, result);
-        }
+        Assert::AreEqual((const void *)(buf + sizeof(buf) - 1), dfa_routine(buf));
+        Assert::AreEqual((const void *)NULL, dfa_routine(buf2));
     }
     TEST_METHOD(LDFACodeGenTest1)
     {
@@ -60,16 +51,7 @@ public:
 
         LDFARoutineEM64T<char> ldfa_routine(ldfa);
 
-        int result;
-        jmp_buf jb;
-        if ((result = setjmp(jb)) == 0)
-        {
-            Assert::IsTrue(ldfa_routine("{", jb) > 0);
-        }
-        else
-        {
-            Assert::Fail(L"long jump from the parsing routine.");
-        }
+        Assert::AreEqual(ldfa.run("{"), ldfa_routine("{"));
     }
     TEST_METHOD(MatchCodeGenTest1)
     {
@@ -82,16 +64,7 @@ public:
         char *buf = (char *)malloc((sizeof(str1) + 15) / 16 * 16);
         memcpy(buf, str1, sizeof(str1));
 
-        int result;
-        jmp_buf jb;
-        if ((result = setjmp(jb)) == 0)
-        {
-            Assert::AreEqual((const void *)(buf + sizeof(str1) - 1), match_routine(buf, jb));
-        }
-        else
-        {
-            Assert::Fail(L"long jump from the parsing routine.");
-        }
+        Assert::AreEqual((const void *)(buf + sizeof(str1) - 1), match_routine(buf));
     }
     TEST_METHOD(SkipCodeGenTest1)
     {
@@ -99,23 +72,15 @@ public:
 
         const char str1[] = " \t\n\rabcdefg";
 
-        Stream filter_source(u" \\t\\r\\n]");
-        CharClass<char> filter(filter_source);
+        CharClass<char> filter({' ', '\t', '\r', '\n'});
 
-        Logger::WriteMessage(ToString(filter).c_str());
+        asmjit::StringLogger logger;
 
-        SkipRoutineEM64T<char> skip_routine(filter);
+        SkipRoutineEM64T<char> skip_routine(filter, &logger);
 
-        /*int result;
-        jmp_buf buf;
-        if ((result = setjmp(buf)) == 0)
-        {
-            Assert::AreEqual((const void *)(str1 + sizeof(str1) - 1), skip_routine(str1));
-        }
-        else
-        {
-            Assert::Fail(L"long jump from the parsing routine.");
-        }*/
+        Logger::WriteMessage(logger.getString());
+
+        Assert::AreEqual((const void *)(str1 + 4), skip_routine(str1));
     }
 };
 }

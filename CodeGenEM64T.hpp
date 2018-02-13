@@ -1,6 +1,5 @@
 #pragma once
 
-#include <setjmp.h>
 #include "dfa.hpp"
 #include "ldfa.hpp"
 #include "asmjit/asmjit.h"
@@ -68,12 +67,6 @@ public:
     }
 };*/
 
-typedef const void *(*DFARoutineFunc)(const void *, jmp_buf);
-extern "C" static const void *call_dfaroutine(DFARoutineFunc func, const void *p, jmp_buf b) noexcept
-{
-    return func(p, b);
-}
-
 template<typename TCHAR>
 class DFARoutineEM64T
 {
@@ -83,13 +76,13 @@ private:
     static void emit_state(asmjit::X86Compiler& cc, asmjit::X86Gp& inputreg, asmjit::X86Gp& backupreg, asmjit::Label& rejectlabel, const DFAState<TCHAR>& state, std::vector<asmjit::Label>& labels);
 public:
     static void emit(asmjit::X86Compiler& cc, asmjit::X86Gp& inputreg, asmjit::Label& rejectlabel, const DFA<TCHAR>& dfa);
-	DFARoutineEM64T(const DFA<TCHAR>& dfa, asmjit::Logger *logger);
+	DFARoutineEM64T(const DFA<TCHAR>& dfa, asmjit::Logger *logger = NULL);
 	virtual ~DFARoutineEM64T() {}
-    const void *operator()(const void *input, jmp_buf buf)
+    const void *operator()(const void *input)
     {
-        DFARoutineFunc func;
+        const void *(*func)(const void *);
         m_runtime.add(&func, &m_code);
-        return call_dfaroutine(func, input, buf);
+        return func(input);
     }
 };
 
@@ -102,13 +95,13 @@ private:
     static void emit_state(asmjit::X86Compiler& cc, asmjit::X86Gp& inputreg, asmjit::Label& rejectlabel, const LDFAState<TCHAR>& state, std::vector<asmjit::Label>& labels, std::vector<asmjit::Label>& exitlabels);
 public:
     static void emit(asmjit::X86Compiler& cc, asmjit::X86Gp& inputreg, asmjit::Label& rejectlabel, const LookaheadDFA<TCHAR>& ldfa, std::vector<asmjit::Label>& exitlabels);
-    LDFARoutineEM64T(const LookaheadDFA<TCHAR>& ldfa);
+    LDFARoutineEM64T(const LookaheadDFA<TCHAR>& ldfa, asmjit::Logger *logger = NULL);
 	virtual ~LDFARoutineEM64T() {}
-    int operator()(const void *input, jmp_buf buf)
+    int operator()(const void *input)
     {
-        int (*func)(const void *, jmp_buf);
+        int (*func)(const void *);
         m_runtime.add(&func, &m_code);
-        return func(input, buf);
+        return func(input);
     }
 };
 template<typename TCHAR>
@@ -118,13 +111,13 @@ class MatchRoutineEM64T
 	asmjit::CodeHolder m_code;
 public:
     static void emit(asmjit::X86Compiler& cc, asmjit::X86Gp& inputreg, asmjit::Label& rejectlabel, const std::basic_string<TCHAR>& str);
-	MatchRoutineEM64T(const std::basic_string<TCHAR>& str);
+	MatchRoutineEM64T(const std::basic_string<TCHAR>& str, asmjit::Logger *logger = NULL);
 	virtual ~MatchRoutineEM64T() {}
-    const void *operator()(const void *input, jmp_buf buf)
+    const void *operator()(const void *input)
     {
-        const void *(*func)(const void *, jmp_buf);
+        const void *(*func)(const void *);
         m_runtime.add(&func, &m_code);
-        return func(input, buf);
+        return func(input);
     }
 };
 template<typename TCHAR>
@@ -136,7 +129,7 @@ private:
     static void emit_core(asmjit::X86Compiler& cc, asmjit::X86Gp& inputreg, asmjit::X86Xmm& filterreg);
 public:
     static void emit(asmjit::X86Compiler& cc, asmjit::X86Gp& inputreg, const CharClass<TCHAR>& filter);
-    SkipRoutineEM64T(const CharClass<TCHAR>& cc);
+    SkipRoutineEM64T(const CharClass<TCHAR>& cc, asmjit::Logger *logger = NULL);
     virtual ~SkipRoutineEM64T() {}
     const void *operator()(const void *input)
     {

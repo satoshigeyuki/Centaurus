@@ -271,9 +271,8 @@ public:
 	}
 	void add(const NFATransition<TCHAR>& tr)
 	{
-		if (tr.is_epsilon()) return;
-
-		m_transitions.push_back(tr);
+		if (!tr.is_epsilon())
+		    m_transitions.push_back(tr);
 	}
 	NFADepartureSet<TCHAR> build_departure_set()
 	{

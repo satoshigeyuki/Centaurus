@@ -73,7 +73,7 @@ public:
 	}
 };
 
-template<typename TCHAR>
+/*template<typename TCHAR>
 class LDFAEquivalenceTable : public std::vector<std::pair<CharClass<TCHAR>, CATNClosure> >
 {
 public:
@@ -95,7 +95,7 @@ public:
         }
         emplace_back(CharClass<TCHAR>(r), dests);
     }
-};
+};*/
 
 template<typename TCHAR>
 class LookaheadDFA : public NFABase<TCHAR>
