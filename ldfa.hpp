@@ -234,5 +234,9 @@ public:
 			return -1;
 		}
 	}
+    const LDFAState<TCHAR>& operator[](int index) const
+    {
+        return m_states[index];
+    }
 };
 }

@@ -7,12 +7,12 @@
 
 namespace Centaurus
 {
-typedef const void *(*DFARoutine)(const void *, jmp_buf);
-typedef int (*LDFARoutine)(const void *, jmp_buf);
-typedef const void *(*MatchRoutine)(const void *, jmp_buf);
-typedef const void *(*SkipRoutine)(const void *, jmp_buf);
 
-class BaseParserEM64T
+/*
+ * Base class for all parsing functions
+ * Provides interface to the JIT (and AOT in the future) assembler
+ */
+/*class BaseParserEM64T
 {
     asmjit::JitRuntime runtime;
     asmjit::CodeHolder code;
@@ -22,19 +22,18 @@ class BaseParserEM64T
 protected:
     void init()
     {
-        m_cc.addFunc(asmjit::FuncSignature2<const void *, const void *, jmp_buf>(asmjit::CallConv::kIdHost));
+        m_cc.addFunc(asmjit::FuncSignature2<const void *, const void *, void *>(asmjit::CallConv::kIdHost));
 
         m_inputreg = m_cc.newIntPtr();
         m_cc.setArg(0, m_inputreg);
 
         m_jmpreg = m_cc.newIntPtr();
         m_cc.setArg(1, m_jmpreg);
-
-        m_cc.spill(m_jmpreg);
     }
     void finalize()
     {
         m_cc.ret(m_inputreg);
+        m_cc.endFunc();
         m_cc.finalize();
     }
 public:
@@ -67,62 +66,77 @@ public:
     {
         return m_cc.newGpz();
     }
+};*/
+
+template<typename TCHAR>
+class DFARoutineEM64T
+{
+    asmjit::JitRuntime m_runtime;
+    asmjit::CodeHolder m_code;
+private:
+    static void emit_state(asmjit::X86Compiler& cc, asmjit::X86Gp& inputreg, asmjit::X86Gp& backupreg, asmjit::Label& rejectlabel, const DFAState<TCHAR>& state, std::vector<asmjit::Label>& labels);
+public:
+    static void emit(asmjit::X86Compiler& cc, asmjit::X86Gp& inputreg, asmjit::Label& rejectlabel, const DFA<TCHAR>& dfa);
+	DFARoutineEM64T(const DFA<TCHAR>& dfa);
+	virtual ~DFARoutineEM64T() {}
+    const void *operator()(const void *input, jmp_buf buf)
+    {
+        const void *(*func)(const void *, jmp_buf);
+        m_runtime.add(&func, &m_code);
+        return func(input, buf);
+    }
 };
 
 template<typename TCHAR>
-class DFARoutineEM64T : public BaseParserEM64T
+class LDFARoutineEM64T
 {
-	asmjit::CodeHolder code;
+    asmjit::JitRuntime m_runtime;
+    asmjit::CodeHolder m_code;
+private:
+    static void emit_state(asmjit::X86Compiler& cc, asmjit::X86Gp& inputreg, asmjit::Label& rejectlabel, const LDFAState<TCHAR>& state, std::vector<asmjit::Label>& labels, std::vector<asmjit::Label>& exitlabels);
 public:
-	DFARoutineEM64T(const asmjit::CodeInfo& codeinfo, const DFA<TCHAR>& dfa);
-	virtual ~DFARoutineEM64T() {}
-    DFARoutine getRoutine(asmjit::JitRuntime& runtime)
-    {
-        DFARoutine routine;
-        runtime.add(&routine, &code);
-        return routine;
-    }
-};
-template<typename TCHAR>
-class LDFARoutineEM64T : public BaseParserEM64T
-{
-	asmjit::CodeHolder code;
-public:
-    LDFARoutineEM64T(const asmjit::CodeInfo& codeinfo, const LookaheadDFA<TCHAR>& ldfa);
+    static void emit(asmjit::X86Compiler& cc, asmjit::X86Gp& inputreg, asmjit::Label& rejectlabel, const LookaheadDFA<TCHAR>& ldfa, std::vector<asmjit::Label>& exitlabels);
+    LDFARoutineEM64T(const LookaheadDFA<TCHAR>& ldfa);
 	virtual ~LDFARoutineEM64T() {}
-    LDFARoutine getRoutine(asmjit::JitRuntime& runtime)
+    int operator()(const void *input, jmp_buf buf)
     {
-        LDFARoutine routine;
-        runtime.add(&routine, &code);
-        return routine;
+        int (*func)(const void *, jmp_buf);
+        m_runtime.add(&func, &m_code);
+        return func(input, buf);
     }
 };
 template<typename TCHAR>
-class MatchRoutineEM64T : public BaseParserEM64T
+class MatchRoutineEM64T
 {
-	asmjit::CodeHolder code;
+    asmjit::JitRuntime m_runtime;
+	asmjit::CodeHolder m_code;
 public:
-	MatchRoutineEM64T(const asmjit::CodeInfo& codeinfo, const std::basic_string<TCHAR>& str);
+    static void emit(asmjit::X86Compiler& cc, asmjit::X86Gp& inputreg, asmjit::Label& rejectlabel, const std::basic_string<TCHAR>& str);
+	MatchRoutineEM64T(const std::basic_string<TCHAR>& str);
 	virtual ~MatchRoutineEM64T() {}
-    MatchRoutine getRoutine(asmjit::JitRuntime& runtime)
+    const void *operator()(const void *input, jmp_buf buf)
     {
-        MatchRoutine routine;
-        runtime.add(&routine, &code);
-        return routine;
+        const void *(*func)(const void *, jmp_buf);
+        m_runtime.add(&func, &m_code);
+        return func(input, buf);
     }
 };
 template<typename TCHAR>
-class SkipRoutineEM64T : public BaseParserEM64T
+class SkipRoutineEM64T
 {
-    asmjit::CodeHolder code;
+    asmjit::JitRuntime m_runtime;
+    asmjit::CodeHolder m_code;
+private:
+    static void emit_core(asmjit::X86Compiler& cc, asmjit::X86Gp& inputreg, asmjit::X86Xmm& filterreg);
 public:
-    SkipRoutineEM64T(const asmjit::CodeInfo& codeinfo, const CharClass<TCHAR>& cc);
+    static void emit(asmjit::X86Compiler& cc, asmjit::X86Gp& inputreg, const CharClass<TCHAR>& filter);
+    SkipRoutineEM64T(const CharClass<TCHAR>& cc);
     virtual ~SkipRoutineEM64T() {}
-    SkipRoutine getRoutine(asmjit::JitRuntime& runtime)
+    const void *operator()(const void *input)
     {
-        SkipRoutine routine;
-        runtime.add(&routine, &code);
-        return routine;
+        const void *(*func)(const void *);
+        m_runtime.add(&func, &m_code);
+        return func(input);
     }
 };
 }

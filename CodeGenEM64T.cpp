@@ -45,6 +45,7 @@ asmjit::Data128 pack_charclass(const CharClass<wchar_t>& cc)
     return d128;
 }
 
+#if 0
 template<typename TCHAR>
 class ParserEM64T : public BaseParserEM64T
 {
@@ -165,478 +166,406 @@ public:
         ATNMachineEM64T<TCHAR> builder(emitter, machine);
     }
 };
+#endif
 
 template<typename TCHAR>
-class DFARoutineBuilderEM64T
+DFARoutineEM64T<TCHAR>::DFARoutineEM64T(const DFA<TCHAR>& dfa)
 {
-    ParserEM64T<TCHAR>& m_parser;
-	const DFA<TCHAR>& m_dfa;
-	std::vector<asmjit::Label> m_labels;
-	asmjit::Label m_rejectlabel;
-	asmjit::X86Gp m_inputReg, m_backupReg;
-private:
-	void emit_state(int index);
-public:
-    DFARoutineBuilderEM64T(ParserEM64T<TCHAR>& parser, const DFA<TCHAR>& dfa)
-		: m_parser(parser), m_dfa(dfa)
-	{
-        asmjit::X86Emitter& em = m_parser.get_emitter();
+    m_code.init(m_runtime.getCodeInfo());
 
-        //Backup register, which stores the last accepted position, assigned to RDX/EDX
-        m_backupReg = em.zdx();
+    asmjit::X86Compiler cc(&m_code);
 
-		//Set the backup position to NULL (no backup candidates)
-		em.mov(m_backupReg, 0);
+    cc.addFunc(asmjit::FuncSignature2<const void *, const void *, void *>(asmjit::CallConv::kIdHost));
 
-		//Prepare one label for each state entry
-		for (int i = 0; i < m_dfa.get_state_num(); i++)
-			m_labels.push_back(em.newLabel());
+    asmjit::X86Gp inputreg = cc.newIntPtr();
+    cc.setArg(0, inputreg);
+    asmjit::X86Gp jmpreg = cc.newIntPtr();
+    cc.setArg(1, jmpreg);
+    asmjit::Label rejectlabel = cc.newLabel();
 
-		//Label for reject state
-		m_rejectlabel = em.newLabel();
+    emit(cc, inputreg, rejectlabel, dfa);
+    cc.ret(inputreg);
 
-		for (int i = 0; i < m_dfa.get_state_num(); i++)
-		{
-            em.bind(m_labels[index]);
+    cc.bind(rejectlabel);
 
-			emit_state(i);
-		}
-		
-		em.bind(m_rejectlabel);
+    asmjit::CCFuncCall *longjmp_call = cc.call((uint64_t)longjmp, asmjit::FuncSignature2<void, void *, int>(asmjit::CallConv::kIdHost));
+    longjmp_call->setArg(0, jmpreg);
+    longjmp_call->setArg(1, asmjit::Imm(1));
 
-        //The backup register contains 0 if the accept states are never reached
-        em.cmp(m_backupReg, 0);
+    cc.endFunc();
+    cc.finalize();
+}
 
-        //Jump to the escape label when the input is rejected
-        //(Reject trampoline)
-        em.jz(m_parser.get_escape_label());
-
-        //Proceed to the next node within the machine
-	}
-	virtual ~DFARoutineBuilderEM64T() {}
-};
-
-template<> void DFARoutineBuilderEM64T<char>::emit_state(int index)
+template<typename TCHAR>
+void DFARoutineEM64T<TCHAR>::emit(asmjit::X86Compiler& cc, asmjit::X86Gp& inputreg, asmjit::Label& rejectlabel, const DFA<TCHAR>& dfa)
 {
-    asmjit::X86Emitter& em = m_parser.get_emitter();
+    std::vector<asmjit::Label> statelabels;
 
-    //The character is first read into RAX/EAX from the stream
-	asmjit::X86Gp cReg = em.zax();
-    //RBX/EBX is used for evacuating the character temporarily
-	asmjit::X86Gp c2Reg = em.zbx();
+    for (int i = 0; i < dfa.get_state_num(); i++)
+    {
+        statelabels.push_back(cc.newLabel());
+    }
+
+    asmjit::Label finishlabel = cc.newLabel();
+    asmjit::X86Gp backupreg = cc.newIntPtr();
+
+    cc.mov(backupreg, 0);
+
+    for (int i = 0; i < dfa.get_state_num(); i++)
+    {
+        cc.bind(statelabels[i]);
+
+        emit_state(cc, inputreg, backupreg, finishlabel, dfa[i], statelabels);
+    }
+    cc.bind(finishlabel);
+    cc.cmp(backupreg, 0);
+    cc.jz(rejectlabel);
+    cc.mov(inputreg, backupreg);
+}
+
+template<>
+void DFARoutineEM64T<char>::emit_state(asmjit::X86Compiler& cc, asmjit::X86Gp& inputreg, asmjit::X86Gp& backupreg, asmjit::Label& rejectlabel, const DFAState<char>& state, std::vector<asmjit::Label>& labels)
+{
+    //The character is first read into a register from the stream
+    asmjit::X86Gp cReg = cc.newGpz();
+    //Another register is used for evacuating the character temporarily
+	asmjit::X86Gp c2Reg = cc.newGpz();
 
     //Read the character from stream and advance the input position
-	em.movzx(cReg, asmjit::x86::byte_ptr(m_inputReg, 0));
-	em.mov(c2Reg, cReg);
-	if (m_dfa.is_accept_state(index))
-		em.mov(m_backupReg, m_inputReg);
-	em.inc(m_inputReg);
+	cc.movzx(cReg, asmjit::x86::byte_ptr(inputreg, 0));
+	cc.mov(c2Reg, cReg);
+	if (state.is_accept_state())
+		cc.mov(backupreg, inputreg);
+	cc.inc(inputreg);
 
-	for (const auto& tr : m_dfa.get_transitions(index))
+	for (const auto& tr : state.get_transitions())
 	{
 		for (const auto& r : tr.label())
 		{
 			if (r.start() + 1 == r.end())
 			{
                 //The range consists of one character: test for equality and jump
-				em.cmp(cReg, r.start());
-				em.je(m_labels[tr.dest()]);
+				cc.cmp(cReg, r.start());
+				cc.je(labels[tr.dest()]);
 			}
 			else
 			{
                 //The range consists of multiple characters: range check and jump
-				em.sub(cReg, r.start());
-				em.cmp(cReg, r.end() - r.start());
-				em.jb(m_labels[tr.dest()]);
-				em.mov(cReg, c2Reg);
+				cc.sub(cReg, r.start());
+				cc.cmp(cReg, r.end() - r.start());
+				cc.jb(labels[tr.dest()]);
+				cc.mov(cReg, c2Reg);
 			}
 		}
 	}
     //Jump to the "reject trampoline" and check if the input has ever been accepted
-	em.jmp(m_rejectlabel);
+	cc.jmp(rejectlabel);
 }
 
-template<> void DFARoutineBuilderEM64T<wchar_t>::emit_state(int index)
+template<>
+void DFARoutineEM64T<wchar_t>::emit_state(asmjit::X86Compiler& cc, asmjit::X86Gp& inputreg, asmjit::X86Gp& backupreg, asmjit::Label& rejectlabel, const DFAState<wchar_t>& state, std::vector<asmjit::Label>& labels)
 {
-    //The above function overloaded for wide characters
-    asmjit::X86Emitter& em = m_parser.get_emitter();
+    //The character is first read into a register from the stream
+    asmjit::X86Gp cReg = cc.newGpz();
+    //Another register is used for evacuating the character temporarily
+    asmjit::X86Gp c2Reg = cc.newGpz();
 
-	asmjit::X86Gp cReg = em.zax();
-	asmjit::X86Gp c2Reg = em.zbx();
+    //Read the character from stream and advance the input position
+    cc.movzx(cReg, asmjit::x86::word_ptr(inputreg, 0));
+    cc.mov(c2Reg, cReg);
+    if (state.is_accept_state())
+        cc.mov(backupreg, inputreg);
+    cc.add(inputreg, 2);
 
-    //The source pointer is designated to be word wide
-	em.movzx(cReg, asmjit::x86::word_ptr(m_inputReg, 0));
-	em.mov(c2Reg, cReg);
-    //The input position advances by two bytes
-	if (m_dfa.is_accept_state(index))
-		em.mov(m_backupReg, m_inputReg);
-	em.add(m_inputReg, 2);
-
-    //There is nothing different below
-	for (const auto& tr : m_dfa.get_transitions(index))
-	{
-		for (const auto& r : tr.label())
-		{
-			if (r.start() + 1 == r.end())
-			{
-				em.cmp(cReg, r.start());
-				em.je(m_labels[tr.dest()]);
-			}
-			else
-			{
-				em.sub(cReg, r.start());
-				em.cmp(cReg, r.end() - r.start());
-				em.jb(m_labels[tr.dest()]);
-				em.mov(cReg, c2Reg);
-			}
-		}
-	}
-	em.jmp(m_rejectlabel);
+    for (const auto& tr : state.get_transitions())
+    {
+        for (const auto& r : tr.label())
+        {
+            if (r.start() + 1 == r.end())
+            {
+                //The range consists of one character: test for equality and jump
+                cc.cmp(cReg, r.start());
+                cc.je(labels[tr.dest()]);
+            }
+            else
+            {
+                //The range consists of multiple characters: range check and jump
+                cc.sub(cReg, r.start());
+                cc.cmp(cReg, r.end() - r.start());
+                cc.jb(labels[tr.dest()]);
+                cc.mov(cReg, c2Reg);
+            }
+        }
+    }
+    //Jump to the "reject trampoline" and check if the input has ever been accepted
+    cc.jmp(rejectlabel);
 }
 
 template<typename TCHAR>
-class LDFARoutineBuilderEM64T
+LDFARoutineEM64T<TCHAR>::LDFARoutineEM64T(const LookaheadDFA<TCHAR>& ldfa)
 {
-    ParserEM64T<TCHAR>& m_parser;
-	const LookaheadDFA<TCHAR>& m_ldfa;
-	asmjit::X86Gp m_inputReg;
-	std::vector<asmjit::Label> m_exitlabels;
-	std::vector<asmjit::Label> m_labels;
-private:
-	void emit_state(int index);
-public:
-	LDFARoutineBuilderEM64T(ParserEM64T<TCHAR>& parser, const LookaheadDFA<TCHAR>& ldfa)
-		: m_parser(parser), m_ldfa(ldfa)
-	{
-        asmjit::X86Emitter& em = m_parser.get_emitter();
+    m_code.init(m_runtime.getCodeInfo());
 
-        //The input pointer assigned to RCX/ECX
-        m_inputReg = em.zcx();
+    asmjit::X86Compiler cc(&m_code);
 
-        //Allocate one label for each decision
-        int decision_num = m_ldfa.get_color_num();
-        for (int i = 0; i < decision_num; i++)
-        {
-            m_exitlabels.push_back(em.newLabel());
-        }
+    cc.addFunc(asmjit::FuncSignature2<int, const void *, void *>(asmjit::CallConv::kIdHost));
 
-        //Allocate one label for each state
-		for (int i = 0; i < m_ldfa.get_state_num(); i++)
-		{
-			m_labels.push_back(em.newLabel());
-		}
-
-		for (int i = 0; i < m_ldfa.get_state_num(); i++)
-		{
-            em.bind(m_labels[index]);
-
-			emit_state(i);
-		}
-	}
-	virtual ~LDFARoutineBuilderEM64T() {}
-};
-
-template<> void LDFARoutineBuilderEM64T<char>::emit_state(int index)
-{
-    asmjit::X86Emitter& em = m_parser.get_emitter();
-
-    //The character is first read into RAX/EAX
-	asmjit::X86Gp cReg = em.zax();
-    //RBX/EBX is used for evacuating the character temporarily
-	asmjit::X86Gp c2Reg = em.zbx();
-
-    //Read the character from stream and advance the pointer
-    //We do not need to remember the accept states
-	em.movzx(cReg, asmjit::x86::byte_ptr(m_inputReg, 0));
-	em.mov(c2Reg, cReg);
-	em.inc(m_inputReg);
-
-	for (const auto& tr : m_ldfa.get_transitions(index))
-	{
-		for (const auto& r : tr.label())
-		{
-			if (r.start() + 1 == r.end())
-			{
-                //The range consists of just one character
-				em.cmp(cReg, r.start());
-				if (tr.dest() >= 0)
-				{
-                    //Transition to the next state within LDFA
-					em.je(m_labels[tr.dest()]);
-				}
-				else
-				{
-                    //Lookahead is finished. We jump to some unbound label
-                    em.je(m_exitlabels[-tr.dest() - 1]);
-				}
-			}
-			else
-			{
-                //The range consists of multiple characters
-				em.sub(cReg, r.start());
-				em.cmp(cReg, r.end() - r.start());
-				if (tr.dest() >= 0)
-				{
-					em.jb(m_labels[tr.dest()]);
-				}
-				else
-				{
-                    em.jb(m_exitlabels[-tr.dest() - 1]);
-				}
-                //Restore the evacuated character
-				em.mov(cReg, c2Reg);
-			}
-		}
-	}
-    //The input sequence may be rejected even during lookahead. (Early reject)
-    //We need the "reject trampoline" in the LDFA routine too.
-    em.jmp(m_parser.get_escape_label());
+    asmjit::X86Gp inputreg = cc.newIntPtr();
+    cc.setArg(0, inputreg);
+    asmjit::X86Gp jmpreg = cc.newIntPtr();
+    cc.setArg(1, jmpreg);
+    asmjit::Label rejectlabel = cc.newLabel();
+    
+    cc.endFunc();
+    cc.finalize();
 }
 
-template<> void LDFARoutineBuilderEM64T<wchar_t>::emit_state(int index)
+template<typename TCHAR>
+void LDFARoutineEM64T<TCHAR>::emit(asmjit::X86Compiler& cc, asmjit::X86Gp& inputreg, asmjit::Label& rejectlabel, const LookaheadDFA<TCHAR>& ldfa, std::vector<asmjit::Label>& exitlabels)
+{
+    std::vector<asmjit::Label> statelabels;
+
+    for (int i = 0; i < ldfa.get_state_num(); i++)
+    {
+        statelabels.push_back(cc.newLabel());
+    }
+    for (int i = 0; i < ldfa.get_state_num(); i++)
+    {
+        cc.bind(statelabels[i]);
+        emit_state(cc, inputreg, rejectlabel, ldfa[i], statelabels, exitlabels);
+    }
+}
+
+template<>
+void LDFARoutineEM64T<char>::emit_state(asmjit::X86Compiler& cc, asmjit::X86Gp& inputreg, asmjit::Label& rejectlabel, const LDFAState<char>& state, std::vector<asmjit::Label>& labels, std::vector<asmjit::Label>& exitlabels)
+{
+    asmjit::X86Gp cReg = cc.newGpz();
+    asmjit::X86Gp c2Reg = cc.newGpz();
+
+    cc.movzx(cReg, asmjit::x86::byte_ptr(inputreg, 0));
+    cc.mov(c2Reg, cReg);
+    cc.inc(inputreg);
+
+    for (const auto& tr : state.get_transitions())
+    {
+        for (const auto& r : tr.label())
+        {
+            if (r.start() + 1 == r.end())
+            {
+                cc.cmp(cReg, r.start());
+                if (tr.dest() >= 0)
+                {
+                    cc.je(labels[tr.dest()]);
+                }
+                else
+                {
+                    cc.je(exitlabels[-tr.dest() - 1]);
+                }
+            }
+            else
+            {
+                cc.sub(cReg, r.start());
+                cc.cmp(cReg, r.end() - r.start());
+                if (tr.dest() >= 0)
+                {
+                    cc.jb(labels[tr.dest()]);
+                }
+                else
+                {
+                    cc.jb(exitlabels[-tr.dest() - 1]);
+                }
+                cc.mov(cReg, c2Reg);
+            }
+        }
+    }
+    cc.jmp(rejectlabel);
+}
+
+template<>
+void LDFARoutineEM64T<wchar_t>::emit_state(asmjit::X86Compiler& cc, asmjit::X86Gp& inputreg, asmjit::Label& rejectlabel, const LDFAState<wchar_t>& state, std::vector<asmjit::Label>& labels, std::vector<asmjit::Label>& exitlabels)
 {
     //Nothing to note here. Just another specialization.
 
-    asmjit::X86Emitter& em = m_parser.get_emitter();
+	asmjit::X86Gp cReg = cc.newGpz();
+	asmjit::X86Gp c2Reg = cc.newGpz();
 
-	asmjit::X86Gp cReg = em.zax();
-	asmjit::X86Gp c2Reg = em.zbx();
+	cc.movzx(cReg, asmjit::x86::word_ptr(inputreg, 0));
+	cc.mov(c2Reg, cReg);
+	cc.add(inputreg, 2);
 
-	em.movzx(cReg, asmjit::x86::word_ptr(m_inputReg, 0));
-	em.mov(c2Reg, cReg);
-	em.add(m_inputReg, 2);
-
-	for (const auto& tr : m_ldfa.get_transitions(index))
+	for (const auto& tr : state.get_transitions())
 	{
 		for (const auto& r : tr.label())
 		{
 			if (r.start() + 1 == r.end())
 			{
-				em.cmp(cReg, r.start());
+				cc.cmp(cReg, r.start());
 				if (tr.dest() >= 0)
 				{
-					em.je(m_labels[tr.dest()]);
+					cc.je(labels[tr.dest()]);
 				}
 				else
 				{
-                    em.je(m_exitlabels[-tr.dest() - 1]);
+                    cc.je(exitlabels[-tr.dest() - 1]);
 				}
 			}
 			else
 			{
-				em.sub(cReg, r.start());
-				em.cmp(cReg, r.end() - r.start());
+				cc.sub(cReg, r.start());
+				cc.cmp(cReg, r.end() - r.start());
 				if (tr.dest() >= 0)
 				{
-					em.jb(m_labels[tr.dest()]);
+					cc.jb(labels[tr.dest()]);
 				}
 				else
 				{
-                    em.jb(m_exitlabels[-tr.dest() - 1]);
+                    cc.jb(exitlabels[-tr.dest() - 1]);
 				}
-				em.mov(cReg, c2Reg);
+				cc.mov(cReg, c2Reg);
 			}
 		}
 	}
-    em.jmp(m_parser.get_escape_label());
+    cc.jmp(rejectlabel);
 }
 
 template<typename TCHAR>
-class MatchRoutineBuilderEM64T
+MatchRoutineEM64T<TCHAR>::MatchRoutineEM64T(const std::basic_string<TCHAR>& str)
 {
-    ParserEM64T<TCHAR>& m_parser;
-	const std::basic_string<TCHAR>& m_str;
-	asmjit::X86Gp m_inputReg;
-    asmjit::Label m_rejectlabel;
-private:
-	void emit();
-public:
-	MatchRoutineBuilderEM64T(ParserEM64T<TCHAR>& parser, const std::basic_string<TCHAR>& str)
-		: m_parser(parser), m_str(str)
-	{
-        asmjit::X86Emitter& em = m_parser.get_emitter();
+    m_code.init(m_runtime.getCodeInfo());
 
-        m_inputReg = em.zcx();
-        m_rejectlabel = em.newLabel();
+    asmjit::X86Compiler cc(&m_code);
 
-		emit();
+    cc.addFunc(asmjit::FuncSignature2<const void *, const void *, void *>(asmjit::CallConv::kIdHost));
 
-        //Reject trampoline.
-        em.bind(m_rejectlabel);
-        em.jmp(m_parser.get_escape_label());
-	}
-	virtual ~MatchRoutineBuilderEM64T() {}
-};
+    asmjit::X86Gp inputreg = cc.newIntPtr();
+    cc.setArg(0, inputreg);
+    asmjit::X86Gp jmpreg = cc.newIntPtr();
+    cc.setArg(1, jmpreg);
+    asmjit::Label rejectlabel = cc.newLabel();
 
-template<> void MatchRoutineBuilderEM64T<char>::emit()
+    emit(cc, inputreg, rejectlabel, str);
+
+    cc.ret(inputreg);
+
+    cc.bind(rejectlabel);
+    
+    asmjit::CCFuncCall *longjmp_call = cc.call((uint64_t)longjmp, asmjit::FuncSignature2<void, void *, int>(asmjit::CallConv::kIdHost));
+
+    longjmp_call->setArg(0, jmpreg);
+    longjmp_call->setArg(1, asmjit::Imm(1));
+
+    cc.endFunc();
+    cc.finalize();
+}
+
+template<>
+void MatchRoutineEM64T<char>::emit(asmjit::X86Compiler& cc, asmjit::X86Gp& inputreg, asmjit::Label& rejectlabel, const std::basic_string<char>& str)
 {
-    asmjit::X86Emitter& em = m_parser.get_emitter();
+	asmjit::X86Gp mireg = cc.newIntPtr();
+    asmjit::X86Xmm loadreg = cc.newXmm();
 
-	asmjit::X86Gp miReg = em.zcx();
-    asmjit::X86Xmm loadReg = asmjit::x86::xmm(0);
-
-	for (int i = 0; i < m_str.size(); i += 16)
+	for (int i = 0; i < str.size(); i += 16)
 	{
-		int l1 = std::min(m_str.size() - i, (size_t)16);
+		int l1 = std::min(str.size() - i, (size_t)16);
 
 		asmjit::Data128 d1;
 
 		for (int j = 0; j < l1; j++)
 		{
-			d1.ub[j] = m_str[i + j];
+			d1.ub[j] = str[i + j];
 		}
 		
-		em.vmovdqu(loadReg, asmjit::X86Mem(m_inputReg, 0));
-		em.vpcmpistri(loadReg, patMem, asmjit::Imm(0x18), miReg);
-		em.cmp(miReg, asmjit::Imm(l1));
-		em.jb(m_rejectlabel);
-		em.add(m_inputReg, l1);
+		cc.vmovdqu(loadreg, asmjit::X86Mem(inputreg, 0));
+		cc.vpcmpistri(loadreg, cc.newXmmConst(asmjit::kConstScopeGlobal, d1), asmjit::Imm(0x18), mireg);
+		cc.cmp(mireg, asmjit::Imm(l1));
+		cc.jb(rejectlabel);
+		cc.add(inputreg, l1);
 	}
 }
-template<> void MatchRoutineBuilderEM64T<wchar_t>::emit()
+template<>
+void MatchRoutineEM64T<wchar_t>::emit(asmjit::X86Compiler& cc, asmjit::X86Gp& inputreg, asmjit::Label& rejectlabel, const std::basic_string<wchar_t>& str)
 {
-    asmjit::X86Emitter& em = m_parser.get_emitter();
+	asmjit::X86Gp mireg = cc.newIntPtr();
+    asmjit::X86Xmm loadreg = cc.newXmm();
 
-	asmjit::X86Gp miReg = em.zcx();
-    asmjit::X86Xmm loadReg = asmjit::x86::xmm(0);
-
-	for (int i = 0; i < m_str.size(); i += 8)
+	for (int i = 0; i < str.size(); i += 8)
 	{
-		int l1 = std::min(m_str.size() - i, (size_t)8);
+		int l1 = std::min(str.size() - i, (size_t)8);
 
 		asmjit::Data128 d1;
 
 		for (int j = 0; j < l1; j++)
 		{
-			d1.uw[j] = m_str[i + j];
+			d1.uw[j] = str[i + j];
 		}
 
-		em.vmovdqu(loadReg, asmjit::X86Mem(m_inputReg, 0));
-		em.vpcmpistri(loadReg, patMem, asmjit::Imm(0x18), miReg);
-		em.cmp(miReg, asmjit::Imm(l1));
-		em.jb(m_rejectlabel);
-		em.add(m_inputReg, l1);
+		cc.vmovdqu(loadreg, asmjit::X86Mem(inputreg, 0));
+		cc.vpcmpistri(loadreg, cc.newXmmConst(asmjit::kConstScopeGlobal, d1), asmjit::Imm(0x18), mireg);
+		cc.cmp(mireg, asmjit::Imm(l1));
+		cc.jb(rejectlabel);
+		cc.add(inputreg, l1);
 	}
 }
 
 template<typename TCHAR>
-class SkipRoutineBuilderEM64T
+void SkipRoutineEM64T<TCHAR>::emit(asmjit::X86Compiler& cc, asmjit::X86Gp& inputreg, const CharClass<TCHAR>& filter)
 {
-    ParserEM64T<TCHAR>& m_parser;
-    CharClass<TCHAR> m_filter;
-    asmjit::X86Gp m_inputReg;
-    asmjit::X86Xmm m_filterReg;
-private:
-    void emit();
-public:
-    SkipRoutineBuilderEM64T(ParserEM64T<TCHAR>& parser, const CharClass<TCHAR>& cc)
-        : m_parser(parser), m_filter(cc)
-    {
-        asmjit::X86Emitter& em = m_parser.get_emitter();
+    asmjit::X86Xmm filterreg = cc.newXmm();
+    asmjit::X86Mem filtermem = cc.newXmmConst(asmjit::kConstScopeLocal, pack_charclass(filter));
+    
+    cc.vmovdqa(filterreg, filtermem);
 
-        m_inputReg = em.zcx();
+    asmjit::Label looplabel = cc.newLabel();
 
-        m_filterReg = asmjit::x86::xmm(0);
+    cc.bind(looplabel);
 
-        asmjit::X86Mem filterMem = m_cc.newXmmConst(asmjit::kConstScopeLocal, pack_charclass(m_filter));
-        em.vmovdqa(m_filterReg, filterMem);
+    emit_core(cc, inputreg, filterreg);
 
-        asmjit::Label looplabel = em.newLabel();
-
-        em.bind(looplabel);
-
-        emit();
-
-        em.jg(looplabel);
-    }
-    virtual ~SkipRoutineBuilderEM64T() {}
-};
-
-template<> void SkipRoutineBuilderEM64T<char>::emit()
-{
-    asmjit::X86Emitter& em = m_parser.get_emitter();
-
-    asmjit::X86Xmm loadReg = asmjit::x86::xmm(1);
-    asmjit::X86Gp miReg = em.zcx();
-
-    em.vmovdqu(loadReg, asmjit::X86Mem(m_inputReg, 0));
-    em.vpcmpistri(m_filterReg, loadReg, asmjit::Imm(0x14), miReg);
-    em.add(m_inputReg, miReg);
-    em.cmp(miReg, 15);
+    cc.jg(looplabel);
 }
 
-template<> void SkipRoutineBuilderEM64T<wchar_t>::emit()
+template<>
+void SkipRoutineEM64T<char>::emit_core(asmjit::X86Compiler& cc, asmjit::X86Gp& inputreg, asmjit::X86Xmm& filterreg)
 {
-    asmjit::X86Emitter& em = m_parser.get_emitter();
+    asmjit::X86Xmm loadreg = cc.newXmm();
+    asmjit::X86Gp mireg = cc.newGpz();
 
-    asmjit::X86Xmm loadReg = asmjit::x86::xmm(1);
-    asmjit::X86Gp miReg = em.zcx();
+    cc.vmovdqu(loadreg, asmjit::X86Mem(inputreg, 0));
+    cc.vpcmpistri(filterreg, loadreg, asmjit::Imm(0x14), mireg);
+    cc.add(inputreg, mireg);
+    cc.cmp(mireg, 15);
+}
 
-    em.vmovdqu(loadReg, asmjit::X86Mem(m_inputReg, 0));
-    em.vpcmpistri(m_filterReg, loadReg, asmjit::Imm(0x15), miReg);
-    em.sal(miReg, 1);
-    em.add(m_inputReg, miReg);
-    em.cmp(miReg, 14);
+template<>
+void SkipRoutineEM64T<wchar_t>::emit_core(asmjit::X86Compiler& cc, asmjit::X86Gp& inputreg, asmjit::X86Xmm& filterreg)
+{
+    asmjit::X86Xmm loadreg = cc.newXmm();
+    asmjit::X86Gp mireg = cc.newGpz();
+
+    cc.vmovdqu(loadreg, asmjit::X86Mem(inputreg, 0));
+    cc.vpcmpistri(filterreg, loadreg, asmjit::Imm(0x15), mireg);
+    cc.sal(mireg, 1);
+    cc.add(inputreg, mireg);
+    cc.cmp(mireg, 14);
 }
 
 template<typename TCHAR>
-DFARoutineEM64T<TCHAR>::DFARoutineEM64T(const asmjit::CodeInfo& codeinfo, const DFA<TCHAR>& dfa)
+SkipRoutineEM64T<TCHAR>::SkipRoutineEM64T(const CharClass<TCHAR>& filter)
 {
-    code.init(codeinfo);
+    m_code.init(m_runtime.getCodeInfo());
 
-    asmjit::X86Compiler compiler(&code);
+    asmjit::X86Compiler cc(&m_code);
 
-    compiler.addFunc(asmjit::FuncSignature1<const void *, const void *>());
+    cc.addFunc(asmjit::FuncSignature1<const void *, const void *>(asmjit::CallConv::kIdHost));
 
-	DFARoutineBuilderEM64T<TCHAR> builder(code, dfa);
+    asmjit::X86Gp inputreg = cc.newIntPtr();
+    cc.setArg(0, inputreg);
+    
+    emit(cc, inputreg, filter);
 
-    compiler.endFunc();
-    compiler.finalize();
-}
-
-template<typename TCHAR>
-LDFARoutineEM64T<TCHAR>::LDFARoutineEM64T(const asmjit::CodeInfo& codeinfo, const LookaheadDFA<TCHAR>& ldfa)
-{
-    code.init(codeinfo);
-
-    asmjit::X86Compiler compiler(&code);
-
-    compiler.addFunc(asmjit::FuncSignature1<int, const void *>());
-
-	LDFARoutineBuilderEM64T<TCHAR> builder(code, ldfa);
-
-    compiler.endFunc();
-    compiler.finalize();
-}
-
-template<typename TCHAR>
-MatchRoutineEM64T<TCHAR>::MatchRoutineEM64T(const asmjit::CodeInfo& codeinfo, const std::basic_string<TCHAR>& str)
-{
-    code.init(codeinfo);
-
-    asmjit::X86Compiler compiler(&code);
-
-    compiler.addFunc(asmjit::FuncSignature1<const void *, const void *>());
-
-	MatchRoutineBuilderEM64T<TCHAR> builder(code, str);
-
-    compiler.endFunc();
-    compiler.finalize();
-}
-
-template<typename TCHAR>
-SkipRoutineEM64T<TCHAR>::SkipRoutineEM64T(const asmjit::CodeInfo& codeinfo, const CharClass<TCHAR>& cc)
-{
-    code.init(codeinfo);
-
-    asmjit::X86Compiler compiler(&code);
-
-    compiler.addFunc(asmjit::FuncSignature1<const void *, const void *>());
-
-    SkipRoutineBuilderEM64T<TCHAR> builder(code, cc);
-
-    compiler.endFunc();
-    compiler.finalize();
+    cc.ret(inputreg);
+    cc.endFunc();
+    cc.finalize();
 }
 
 template class DFARoutineEM64T<char>;

@@ -10,7 +10,20 @@
 namespace Centaurus
 {
 template<typename TCHAR> using DFATransition = NFATransition<TCHAR>;
-template<typename TCHAR> using DFAState = NFABaseState<TCHAR, IndexVector>;
+template<typename TCHAR> class DFAState : public NFABaseState<TCHAR, IndexVector>
+{
+public:
+    DFAState(const IndexVector& label)
+        : NFABaseState<TCHAR, IndexVector>(label) {}
+    bool is_accept_state() const
+    {
+        for (const auto& tr : get_transitions())
+        {
+            if (tr.dest() == -1) return true;
+        }
+        return false;
+    }
+};
 
 template<typename TCHAR> class DFA : public NFABase<DFAState<TCHAR> >
 {
@@ -128,5 +141,17 @@ public:
 		}
 		return false;
 	}
+    typename std::vector<DFAState<TCHAR> >::const_iterator begin() const
+    {
+        return m_states.cbegin();
+    }
+    typename std::vector<DFAState<TCHAR> >::const_iterator end() const
+    {
+        return m_states.cend();
+    }
+    const DFAState<TCHAR>& operator[](int index) const
+    {
+        return m_states[index];
+    }
 };
 }
