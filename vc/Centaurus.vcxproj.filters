@@ -27,9 +27,6 @@
     <ClInclude Include="..\catn2.hpp">
       <Filter>ソース ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="..\cfgraph.hpp">
-      <Filter>ソース ファイル</Filter>
-    </ClInclude>
     <ClInclude Include="..\charclass.hpp">
       <Filter>ソース ファイル</Filter>
     </ClInclude>
@@ -59,9 +56,6 @@
     </ClInclude>
     <ClInclude Include="..\util.hpp">
       <Filter>ソース ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="..\sdfa.hpp">
-      <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="..\CodeGenEM64T.hpp">
       <Filter>ヘッダー ファイル</Filter>

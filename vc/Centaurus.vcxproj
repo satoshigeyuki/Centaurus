@@ -167,7 +167,6 @@
     <ClInclude Include="..\atn.hpp" />
     <ClInclude Include="..\catn2.hpp" />
     <ClInclude Include="..\JitParser.hpp" />
-    <ClInclude Include="..\cfgraph.hpp" />
     <ClInclude Include="..\charclass.hpp" />
     <ClInclude Include="..\codegen.hpp" />
     <ClInclude Include="..\dfa.hpp" />
@@ -177,7 +176,6 @@
     <ClInclude Include="..\identifier.hpp" />
     <ClInclude Include="..\ldfa.hpp" />
     <ClInclude Include="..\nfa.hpp" />
-    <ClInclude Include="..\sdfa.hpp" />
     <ClInclude Include="..\stream.hpp" />
     <ClInclude Include="..\util.hpp" />
     <ClInclude Include="stdafx.h" />

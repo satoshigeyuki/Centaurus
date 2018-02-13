@@ -252,37 +252,6 @@ public:
         }
         return true;
     }
-    /*void add(const CharClass<TCHAR>& cc, const CATNClosure& closure)
-    {
-        for (auto i = this->begin(); i != this->end(); i++)
-        {
-            if (i->first.overlaps(cc))
-            {
-                std::array<CharClass<TCHAR>, 3> diset = i->first.diff_and_int(cc);
-
-                if (diset[0])
-                {
-                    this->emplace_back(diset[0], i->second);
-                }
-                if (diset[2])
-                {
-                    CATNClosure new_closure = i->second;
-                    new_closure.emplace(path, color);
-                    this->emplace_back(diset[2], new_closure);
-                }
-
-                i = this->erase(i);
-                if (diset[1])
-                {
-                    this->add(cc, path, color);
-                }
-                return;
-            }
-        }
-        CATNClosure closure;
-        closure.emplace(path, color);
-        this->emplace_back(cc, closure);
-    }*/
 };
 
 template<typename TCHAR>
