@@ -169,9 +169,10 @@ public:
 #endif
 
 template<typename TCHAR>
-DFARoutineEM64T<TCHAR>::DFARoutineEM64T(const DFA<TCHAR>& dfa)
+DFARoutineEM64T<TCHAR>::DFARoutineEM64T(const DFA<TCHAR>& dfa, asmjit::Logger *logger)
 {
     m_code.init(m_runtime.getCodeInfo());
+    m_code.setLogger(logger);
 
     asmjit::X86Compiler cc(&m_code);
 
@@ -183,14 +184,18 @@ DFARoutineEM64T<TCHAR>::DFARoutineEM64T(const DFA<TCHAR>& dfa)
     cc.setArg(1, jmpreg);
     asmjit::Label rejectlabel = cc.newLabel();
 
+    asmjit::Label finishlabel = cc.newLabel();
     emit(cc, inputreg, rejectlabel, dfa);
-    cc.ret(inputreg);
+    //cc.jmp(finishlabel);
 
     cc.bind(rejectlabel);
 
-    asmjit::CCFuncCall *longjmp_call = cc.call((uint64_t)longjmp, asmjit::FuncSignature2<void, void *, int>(asmjit::CallConv::kIdHost));
+    asmjit::CCFuncCall *longjmp_call = cc.call((uint64_t)longjmp, asmjit::FuncSignature2<void, void *, int>());
     longjmp_call->setArg(0, jmpreg);
     longjmp_call->setArg(1, asmjit::Imm(1));
+
+    cc.bind(finishlabel);
+    cc.ret(inputreg);
 
     cc.endFunc();
     cc.finalize();
@@ -315,6 +320,29 @@ LDFARoutineEM64T<TCHAR>::LDFARoutineEM64T(const LookaheadDFA<TCHAR>& ldfa)
     asmjit::X86Gp jmpreg = cc.newIntPtr();
     cc.setArg(1, jmpreg);
     asmjit::Label rejectlabel = cc.newLabel();
+
+    std::vector<asmjit::Label> exitlabels;
+
+    int decision_num = ldfa.get_color_num();
+    for (int i = 0; i < decision_num; i++)
+    {
+        exitlabels.push_back(cc.newLabel());
+    }
+
+    emit(cc, inputreg, rejectlabel, ldfa, exitlabels);
+    cc.jmp(rejectlabel);
+
+    for (int i = 0; i < decision_num; i++)
+    {
+        cc.bind(exitlabels[i]);
+        cc.mov(inputreg, asmjit::Imm(i));
+        cc.ret(inputreg);
+    }
+
+    cc.bind(rejectlabel);
+    asmjit::CCFuncCall *longjmp_call = cc.call((uint64_t)longjmp, asmjit::FuncSignature2<void, void *, int>(asmjit::CallConv::kIdHost));
+    longjmp_call->setArg(0, jmpreg);
+    longjmp_call->setArg(1, asmjit::Imm(1));
     
     cc.endFunc();
     cc.finalize();

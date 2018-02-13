@@ -68,6 +68,12 @@ public:
     }
 };*/
 
+typedef const void *(*DFARoutineFunc)(const void *, jmp_buf);
+extern "C" static const void *call_dfaroutine(DFARoutineFunc func, const void *p, jmp_buf b) noexcept
+{
+    return func(p, b);
+}
+
 template<typename TCHAR>
 class DFARoutineEM64T
 {
@@ -77,13 +83,13 @@ private:
     static void emit_state(asmjit::X86Compiler& cc, asmjit::X86Gp& inputreg, asmjit::X86Gp& backupreg, asmjit::Label& rejectlabel, const DFAState<TCHAR>& state, std::vector<asmjit::Label>& labels);
 public:
     static void emit(asmjit::X86Compiler& cc, asmjit::X86Gp& inputreg, asmjit::Label& rejectlabel, const DFA<TCHAR>& dfa);
-	DFARoutineEM64T(const DFA<TCHAR>& dfa);
+	DFARoutineEM64T(const DFA<TCHAR>& dfa, asmjit::Logger *logger);
 	virtual ~DFARoutineEM64T() {}
     const void *operator()(const void *input, jmp_buf buf)
     {
-        const void *(*func)(const void *, jmp_buf);
+        DFARoutineFunc func;
         m_runtime.add(&func, &m_code);
-        return func(input, buf);
+        return call_dfaroutine(func, input, buf);
     }
 };
 
