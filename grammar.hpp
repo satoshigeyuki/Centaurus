@@ -22,6 +22,7 @@ public:
     }
 };
 class CppAlienCode : public AlienCode
+
 {
     using AlienCode::m_str;
 private:

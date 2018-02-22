@@ -14,6 +14,12 @@ class ParserEM64T
 public:
     ParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *logger = NULL);
     virtual ~ParserEM64T() {}
+    const void *operator()(const void *input, void **output)
+    {
+        const void *(*func)(const void *, void **);
+        m_runtime.add(&func, &m_code);
+        return func(input, output);
+    }
 };
 
 template<typename TCHAR>

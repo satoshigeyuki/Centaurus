@@ -30,12 +30,14 @@ class CATNNode
 {
     std::vector<CATNTransition<TCHAR> > m_transitions;
     Identifier m_submachine;
+    int m_source;
 public:
-    CATNNode()
+    CATNNode(int source)
+        : m_source(source)
     {
     }
     CATNNode(const Identifier& id)
-        : m_submachine(id)
+        : m_submachine(id), m_source(-1)
     {
     }
     virtual ~CATNNode()

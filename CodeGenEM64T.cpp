@@ -55,7 +55,7 @@ ParserEM64T<TCHAR>::ParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *l
 
     asmjit::X86Compiler cc(&m_code);
 
-    cc.addFunc(asmjit::FuncSignature2<const void *, const void *, void *>(asmjit::CallConv::kIdHost));
+    cc.addFunc(asmjit::FuncSignature2<const void *, const void *, void **>(asmjit::CallConv::kIdHost));
 
     asmjit::X86Gp inputreg = cc.newIntPtr();
     cc.setArg(0, inputreg);
@@ -66,10 +66,10 @@ ParserEM64T<TCHAR>::ParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *l
 
     for (const auto& p : grammar.get_machines())
     {
-        machine_map.emplace(p.first, cc.newFunc(asmjit::FuncSignature2<const void *, const void *, void *>(asmjit::CallConv::kIdHost)));
+        machine_map.emplace(p.first, cc.newFunc(asmjit::FuncSignature2<const void *, const void *, void **>(asmjit::CallConv::kIdHost)));
     }
 
-    asmjit::CCFuncCall *root_call = cc.call(machine_map[grammar.get_root_id()]->getLabel(), asmjit::FuncSignature2<const void *, const void *, void *>(asmjit::CallConv::kIdHost));
+    asmjit::CCFuncCall *root_call = cc.call(machine_map[grammar.get_root_id()]->getLabel(), asmjit::FuncSignature2<const void *, const void *, void **>(asmjit::CallConv::kIdHost));
     root_call->setArg(0, inputreg);
     root_call->setArg(1, outputreg);
     root_call->setRet(0, inputreg);
@@ -193,9 +193,9 @@ void DryParserEM64T<TCHAR>::emit_machine(asmjit::X86Compiler& cc, const ATNMachi
         {
             std::vector<asmjit::Label> exitlabels;
 
-            for (int i = 0; i < outbound_num; i++)
+            for (int j = 0; j < outbound_num; j++)
             {
-                exitlabels.push_back(statelabels[node.get_transition(i).dest()]);
+                exitlabels.push_back(statelabels[node.get_transition(j).dest()]);
             }
 
             asmjit::X86Gp peekreg = cc.newIntPtr();
