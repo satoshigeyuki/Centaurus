@@ -22,7 +22,6 @@ public:
     }
 };
 class CppAlienCode : public AlienCode
-
 {
     using AlienCode::m_str;
 private:
@@ -82,6 +81,8 @@ template<typename TCHAR> class Grammar
 public:
     void parse(Stream& stream)
     {
+        int machine_id = 0;
+
         while (1)
         {
             char16_t ch = stream.skip_whitespace();
@@ -89,8 +90,11 @@ public:
             if (ch == u'\0')
                 break;
 
+            if (machine_id >= 65536)
+                throw stream.toomany(65535);
+
             Identifier id(stream);
-            ATNMachine<TCHAR> atn(stream);
+            ATNMachine<TCHAR> atn(machine_id++, stream);
 
             if (m_root_id.str().empty())
                 m_root_id = id;

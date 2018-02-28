@@ -11,7 +11,9 @@ class ParserEM64T
 {
     asmjit::JitRuntime m_runtime;
     asmjit::CodeHolder m_code;
+    static CharClass<TCHAR> m_skipfilter;
 public:
+    static void emit_machine(asmjit::X86Compiler& cc, const ATNMachine<TCHAR>& machine, std::unordered_map<Identifier, asmjit::CCFunc*>& machine_map, const CompositeATN<TCHAR>& catn, const Identifier& id);
     ParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *logger = NULL);
     virtual ~ParserEM64T() {}
     const void *operator()(const void *input, void **output)

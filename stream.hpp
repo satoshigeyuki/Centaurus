@@ -182,5 +182,13 @@ public:
 
         return StreamException(stream.str());
     }
+    StreamException toomany(int count)
+    {
+        std::ostringstream stream;
+
+        stream << "Line " << m_line << ", Pos " << m_pos << ": The number of rules exceeded " << std::dec << count;
+
+        return StreamException(stream.str());
+    }
 };
 }

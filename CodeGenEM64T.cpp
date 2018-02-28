@@ -54,28 +54,33 @@ ParserEM64T<TCHAR>::ParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *l
         m_code.setLogger(logger);
 
     asmjit::X86Compiler cc(&m_code);
+    std::unordered_map<Identifier, asmjit::CCFunc*> machine_map;
 
     cc.addFunc(asmjit::FuncSignature2<const void *, const void *, void **>(asmjit::CallConv::kIdHost));
 
-    asmjit::X86Gp inputreg = cc.newIntPtr();
-    cc.setArg(0, inputreg);
-    asmjit::X86Gp outputreg = cc.newIntPtr();
-    cc.setArg(1, outputreg);
-
-    std::unordered_map<Identifier, asmjit::CCFunc*> machine_map;
-
-    for (const auto& p : grammar.get_machines())
     {
-        machine_map.emplace(p.first, cc.newFunc(asmjit::FuncSignature2<const void *, const void *, void **>(asmjit::CallConv::kIdHost)));
+        asmjit::X86Gp inputreg = cc.newIntPtr();
+        cc.setArg(0, inputreg);
+        asmjit::X86Gp outputreg = cc.newIntPtr();
+        cc.setArg(1, outputreg);
+        asmjit::X86Gp depthreg = cc.newGpz();
+
+        for (const auto& p : grammar.get_machines())
+        {
+            machine_map.emplace(p.first, cc.newFunc(asmjit::FuncSignature3<const void *, const void *, void **, int>(asmjit::CallConv::kIdHost)));
+        }
+
+        cc.mov(depthreg, 0);
+
+        asmjit::CCFuncCall *root_call = cc.call(machine_map[grammar.get_root_id()]->getLabel(), asmjit::FuncSignature3<const void *, const void *, void **, int>(asmjit::CallConv::kIdHost));
+        root_call->setArg(0, inputreg);
+        root_call->setArg(1, outputreg);
+        root_call->setArg(2, depthreg);
+        root_call->setRet(0, inputreg);
+
+        cc.ret(inputreg);
+        cc.endFunc();
     }
-
-    asmjit::CCFuncCall *root_call = cc.call(machine_map[grammar.get_root_id()]->getLabel(), asmjit::FuncSignature2<const void *, const void *, void **>(asmjit::CallConv::kIdHost));
-    root_call->setArg(0, inputreg);
-    root_call->setArg(1, outputreg);
-    root_call->setRet(0, inputreg);
-
-    cc.ret(inputreg);
-    cc.endFunc();
 
     CompositeATN<TCHAR> catn(grammar);
 
@@ -83,7 +88,7 @@ ParserEM64T<TCHAR>::ParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *l
     {
         cc.addFunc(machine_map[p.first]);
 
-        DryParserEM64T<TCHAR>::emit_machine(cc, p.second, machine_map, catn, p.first);
+        emit_machine(cc, p.second, machine_map, catn, p.first);
 
         cc.endFunc();
     }
@@ -133,8 +138,93 @@ DryParserEM64T<TCHAR>::DryParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Log
     cc.finalize();
 }
 
+template<> CharClass<char> ParserEM64T<char>::m_skipfilter({ ' ', '\t', '\r', '\n' });
+template<> CharClass<wchar_t> ParserEM64T<wchar_t>::m_skipfilter({ L' ', L'\t', L'\r', L'\n' });
+
 template<> CharClass<char> DryParserEM64T<char>::m_skipfilter({' ', '\t', '\r', '\n'});
 template<> CharClass<wchar_t> DryParserEM64T<wchar_t>::m_skipfilter({L' ', L'\t', L'\r', L'\n'});
+
+template<typename TCHAR>
+void ParserEM64T<TCHAR>::emit_machine(asmjit::X86Compiler& cc, const ATNMachine<TCHAR>& machine, std::unordered_map<Identifier, asmjit::CCFunc*>& machine_map, const CompositeATN<TCHAR>& catn, const Identifier& id)
+{
+    asmjit::X86Gp inputreg = cc.newIntPtr();
+    cc.setArg(0, inputreg);
+    asmjit::X86Gp outputreg = cc.newIntPtr();
+    cc.setArg(1, outputreg);
+    asmjit::X86Gp depthreg = cc.newGpz();
+    cc.setArg(2, depthreg);
+
+    std::vector<asmjit::Label> statelabels;
+
+    for (int i = 0; i < machine.get_node_num(); i++)
+    {
+        statelabels.push_back(cc.newLabel());
+    }
+
+    asmjit::Label rejectlabel = cc.newLabel();
+
+    for (int i = 0; i < machine.get_node_num(); i++)
+    {
+        cc.bind(statelabels[i]);
+
+        const ATNNode<TCHAR>& node = machine.get_node(i);
+
+        switch (node.type())
+        {
+        case ATNNodeType::Blank:
+            break;
+        case ATNNodeType::LiteralTerminal:
+            MatchRoutineEM64T<TCHAR>::emit(cc, inputreg, rejectlabel, node.get_literal());
+            break;
+        case ATNNodeType::Nonterminal:
+        {
+            asmjit::CCFuncCall *nt_call = cc.call(machine_map[node.get_invoke()]->getLabel(), asmjit::FuncSignature3<const void *, const void *, void **, int>(asmjit::CallConv::kIdHost));
+            nt_call->setArg(0, inputreg);
+            nt_call->setArg(1, outputreg);
+            nt_call->setArg(2, depthreg);
+            nt_call->setRet(0, inputreg);
+
+            cc.cmp(inputreg, 0);
+            cc.jz(rejectlabel);
+        }
+            break;
+        case ATNNodeType::RegularTerminal:
+            DFARoutineEM64T<TCHAR>::emit(cc, inputreg, rejectlabel, DFA<TCHAR>(node.get_nfa()));
+            break;
+        case ATNNodeType::WhiteSpace:
+            SkipRoutineEM64T<TCHAR>::emit(cc, inputreg, m_skipfilter);
+            break;
+        }
+
+        int outbound_num = node.get_transitions().size();
+        if (outbound_num == 0)
+        {
+            cc.ret(inputreg);
+        }
+        else if (outbound_num == 1)
+        {
+            cc.jmp(statelabels[node.get_transition(0).dest()]);
+        }
+        else
+        {
+            std::vector<asmjit::Label> exitlabels;
+
+            for (int j = 0; j < outbound_num; j++)
+            {
+                exitlabels.push_back(statelabels[node.get_transition(j).dest()]);
+            }
+
+            asmjit::X86Gp peekreg = cc.newIntPtr();
+            cc.mov(peekreg, inputreg);
+
+            LDFARoutineEM64T<TCHAR>::emit(cc, peekreg, rejectlabel, LookaheadDFA<TCHAR>(catn, catn.convert_atn_path(ATNPath(id, i))), exitlabels);
+        }
+    }
+
+    cc.bind(rejectlabel);
+    cc.mov(inputreg, 0);
+    cc.ret(inputreg);
+}
 
 template<typename TCHAR>
 void DryParserEM64T<TCHAR>::emit_machine(asmjit::X86Compiler& cc, const ATNMachine<TCHAR>& machine, std::unordered_map<Identifier, asmjit::CCFunc*>& machine_map, const CompositeATN<TCHAR>& catn, const Identifier& id)

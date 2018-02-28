@@ -244,6 +244,7 @@ template<typename TCHAR> class ATNMachine
     friend class ATNPrinter<TCHAR>;
 
     std::vector<ATNNode<TCHAR> > m_nodes;
+    int m_globalid;
 public:
     void parse(Stream& stream)
     {
@@ -303,18 +304,15 @@ public:
     {
         return m_nodes.size();
     }
-    ATNMachine(Stream& stream)
+    ATNMachine(int id, Stream& stream)
+        : m_globalid(id)
     {
         m_nodes.emplace_back();
 
         parse(stream);
     }
-    ATNMachine()
-    {
-        m_nodes.emplace_back();
-    }
     ATNMachine(ATNMachine&& atn)
-        : m_nodes(std::move(atn.m_nodes))
+        : m_nodes(std::move(atn.m_nodes)), m_globalid(atn.m_globalid)
     {
     }
     virtual ~ATNMachine()
@@ -327,6 +325,10 @@ public:
     typename std::vector<ATNNode<TCHAR> >::const_iterator end() const
     {
         return m_nodes.cend();
+    }
+    int get_unique_id() const
+    {
+        return m_globalid;
     }
 };
 
