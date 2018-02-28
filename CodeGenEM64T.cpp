@@ -201,7 +201,7 @@ void DryParserEM64T<TCHAR>::emit_machine(asmjit::X86Compiler& cc, const ATNMachi
             asmjit::X86Gp peekreg = cc.newIntPtr();
             cc.mov(peekreg, inputreg);
 
-            LDFARoutineEM64T<TCHAR>::emit(cc, peekreg, rejectlabel, LookaheadDFA<TCHAR>(catn, ATNPath(id, i)), exitlabels);
+            LDFARoutineEM64T<TCHAR>::emit(cc, peekreg, rejectlabel, LookaheadDFA<TCHAR>(catn, catn.convert_atn_path(ATNPath(id, i))), exitlabels);
         }
     }
 

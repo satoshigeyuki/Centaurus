@@ -32,8 +32,8 @@ class CATNNode
     Identifier m_submachine;
     int m_source;
 public:
-    CATNNode(int source)
-        : m_source(source)
+    CATNNode()
+        : m_source(-1)
     {
     }
     CATNNode(const Identifier& id)
@@ -71,6 +71,14 @@ public:
     {
         //Returns an empty Identifier if the node is terminal
         return m_submachine;
+    }
+    void set_source(int source)
+    {
+        m_source = source;
+    }
+    int get_source() const
+    {
+        return m_source;
     }
     void print(std::ostream& os, int from) const
     {
@@ -141,7 +149,7 @@ private:
     {
         return add_node(CATNNode<TCHAR>(id), origin);
     }
-    int import_atn_node(const ATNMachine<TCHAR>& atn, int index, int origin, std::vector<int>& node_map)
+    void import_atn_node(const ATNMachine<TCHAR>& atn, int index, int origin, std::vector<int>& node_map)
     {
         const ATNNode<TCHAR>& node = atn.get_node(index);
 
@@ -166,15 +174,15 @@ private:
             break;
         }
 
-        int next = origin;
+        m_nodes[origin].set_source(index);
+
         for (const auto& tr : node.get_transitions())
         {
             if (node_map[tr.dest()] < 0)
-                next = import_atn_node(atn, tr.dest(), origin, node_map);
+                import_atn_node(atn, tr.dest(), origin, node_map);
             else
                 m_nodes[origin].add_transition(CharClass<TCHAR>(), node_map[tr.dest()]);
         }
-        return next;
     }
 public:
     CATNMachine(const ATNMachine<TCHAR>& atn)
@@ -193,6 +201,14 @@ public:
     int get_num_nodes() const
     {
         return m_nodes.size();
+    }
+    int convert_atn_index(int index) const
+    {
+        for (int i = 0; i < m_nodes.size(); i++)
+        {
+            if (m_nodes[i].get_source() == index) return i;
+        }
+        return -1;
     }
     void print(std::ostream& os, const std::string& name) const
     {
@@ -503,6 +519,12 @@ public:
     const std::vector<CATNTransition<TCHAR> >& get_transitions(const ATNPath& path) const
     {
         return get_node(path).get_transitions();
+    }
+    const ATNPath convert_atn_path(const ATNPath& path) const
+    {
+        const CATNMachine<TCHAR>& machine = m_dict.at(path.leaf_id());
+
+        return path.replace_index(machine.convert_atn_index(path.leaf_index()));
     }
     CATNClosure build_closure(const CATNClosure& closure) const
     {
