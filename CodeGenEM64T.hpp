@@ -9,24 +9,19 @@ namespace Centaurus
 template<typename TCHAR>
 class ParserEM64T
 {
+    static constexpr int64_t AST_BUF_SIZE = 64 * 1024 * 1024;
     asmjit::JitRuntime m_runtime;
     asmjit::CodeHolder m_code;
     static CharClass<TCHAR> m_skipfilter;
-    void *m_ast_buffer;
+    void emit_machine(asmjit::X86Compiler& cc, const ATNMachine<TCHAR>& machine, std::unordered_map<Identifier, asmjit::CCFunc*>& machine_map, const CompositeATN<TCHAR>& catn, const Identifier& id, asmjit::X86Mem astbuf_base, asmjit::X86Mem astbuf_head);
 public:
-    static void emit_machine(asmjit::X86Compiler& cc, const ATNMachine<TCHAR>& machine, std::unordered_map<Identifier, asmjit::CCFunc*>& machine_map, const CompositeATN<TCHAR>& catn, const Identifier& id, void **output_ptr);
-    ParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *logger = NULL);
+    ParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *logger = NULL, asmjit::ErrorHandler *errhandler = NULL);
     virtual ~ParserEM64T() {}
-    void **set_ast_buffer(void *buffer)
+    const void *operator()(const void *input, void *output)
     {
-        m_ast_buffer = buffer;
-        return &m_ast_buffer;
-    }
-    const void *operator()(const void *input)
-    {
-        const void *(*func)(const void *);
+        const void *(*func)(const void *, void *);
         m_runtime.add(&func, &m_code);
-        return func(input);
+        return func(input, output);
     }
 };
 

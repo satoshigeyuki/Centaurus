@@ -29,30 +29,6 @@ DWORD WINAPI DryParserRunner(LPVOID param)
     ExitThread(0);
 }
 
-//Pointer to the end of the AST buffer.
-__declspec(thread) void *buffer_eptr;
-//Pointer to the pointer to the current AST output position.
-__declspec(thread) void **buffer_pptr;
-
-void ParserSignalHandler(unsigned int code, struct _EXCEPTION_POINTERS *pointers)
-{
-    struct _EXCEPTION_RECORD *record = pointers->ExceptionRecord;
-
-    if (record->ExceptionCode == EXCEPTION_ACCESS_VIOLATION)
-    {
-        ULONG_PTR violation_flags = record->ExceptionInformation[0];
-        ULONG_PTR violation_address = record->ExceptionInformation[1];
-
-        if (violation_flags == (ULONG_PTR)1)
-        {
-            if ((void *)violation_address == buffer_eptr)
-            {
-                Logger::WriteMessage("Buffer overrun detected.");
-            }
-        }
-    }
-}
-
 struct ParserContext
 {
     Centaurus::ParserEM64T<char>& parser;
@@ -64,28 +40,36 @@ DWORD WINAPI ParserRunner(LPVOID param)
 {
     ParserContext *context = (ParserContext *)param;
 
-    _set_se_translator(ParserSignalHandler);
+    size_t buffer_size = 64 * 1024 * 1024;
+    
+    HANDLE hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, buffer_size, L"ASTBuffer");
 
-    size_t buffer_size = 1048576;
-    char *buffer = (char *)malloc(buffer_size);
-
-    //Set values used by the SE translator to TLS
-    buffer_eptr = buffer + buffer_size;
-    buffer_pptr = context->parser.set_ast_buffer(buffer);
+    void *buffer = MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, buffer_size);
 
     __try
     {
-        context->result = context->parser(context->memory);
+        context->result = context->parser(context->memory, buffer);
     }
-    __finally
+    __except(EXCEPTION_CONTINUE_EXECUTION)
     {
-        Logger::WriteMessage("Parser execution completed");
     }
 
-    free(buffer);
+    UnmapViewOfFile(buffer);
+
+    CloseHandle(hMapFile);
 
     ExitThread(0);
 }
+
+class MyErrorHandler : public asmjit::ErrorHandler
+{
+public:
+    virtual bool handleError(asmjit::Error err, const char *msg, asmjit::CodeEmitter *src) override
+    {
+        Logger::WriteMessage(msg);
+        Assert::Fail();
+    }
+};
 
 TEST_CLASS(CodeGenTest)
 {
@@ -170,13 +154,13 @@ public:
 
         //char *json = LoadTextAligned("C:\\Users\\ihara\\Downloads\\sf-city-lots-json-master\\sf-city-lots-json-master\\citylots.json");
 
-        char *json = LoadTextAligned("C:\\Users\\ihara\\Documents\\test1.json");
+        char *json = LoadTextAligned("C:\\Users\\ihara\\Downloads\\citylots.json");
 
         clock_t start_time = clock();
 
         DryParserContext context{parser, json, NULL};
 
-        HANDLE hThread = CreateThread(NULL, 256*1024*1024, DryParserRunner, (LPVOID)&context, 0, NULL);
+        HANDLE hThread = CreateThread(NULL, 1024*1024*1024, DryParserRunner, (LPVOID)&context, 0, NULL);
 
         WaitForSingleObject(hThread, INFINITE);
 
@@ -198,19 +182,21 @@ public:
 
         asmjit::StringLogger logger;
 
-        ParserEM64T<char> parser(grammar, &logger);
+        MyErrorHandler errhandler;
+
+        ParserEM64T<char> parser(grammar, &logger, &errhandler);
 
         //Logger::WriteMessage(logger.getString());
 
         //char *json = LoadTextAligned("C:\\Users\\ihara\\Downloads\\sf-city-lots-json-master\\sf-city-lots-json-master\\citylots.json");
 
-        char *json = LoadTextAligned("C:\\Users\\ihara\\Documents\\test1.json");
+        char *json = LoadTextAligned("C:\\Users\\ihara\\Downloads\\citylots.json");
 
         clock_t start_time = clock();
 
         ParserContext context{ parser, json, NULL };
 
-        HANDLE hThread = CreateThread(NULL, 256 * 1024 * 1024, ParserRunner, (LPVOID)&context, 0, NULL);
+        HANDLE hThread = CreateThread(NULL, 1024 * 1024 * 1024, ParserRunner, (LPVOID)&context, 0, NULL);
 
         WaitForSingleObject(hThread, INFINITE);
 

@@ -47,20 +47,33 @@ asmjit::Data128 pack_charclass(const CharClass<wchar_t>& cc)
 }
 
 template<typename TCHAR>
-ParserEM64T<TCHAR>::ParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *logger = NULL)
+ParserEM64T<TCHAR>::ParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *logger = NULL, asmjit::ErrorHandler *errhandler = NULL)
 {
     m_code.init(m_runtime.getCodeInfo());
     if (logger != NULL)
         m_code.setLogger(logger);
+    if (errhandler != NULL)
+        m_code.setErrorHandler(errhandler);
 
     asmjit::X86Compiler cc(&m_code);
     std::unordered_map<Identifier, asmjit::CCFunc*> machine_map;
 
-    cc.addFunc(asmjit::FuncSignature1<const void *, const void *>(asmjit::CallConv::kIdHost));
+    asmjit::Label datalabel = cc.newLabel();
+    asmjit::CBNode *datanode = cc.newDataNode(NULL, 64);
+
+    asmjit::X86Mem astbuf_base(datalabel, 0);
+    asmjit::X86Mem astbuf_head(datalabel, 8);
+
+    cc.addFunc(asmjit::FuncSignature2<const void *, const void *, void *>(asmjit::CallConv::kIdHost));
 
     {
         asmjit::X86Gp inputreg = cc.newIntPtr();
         cc.setArg(0, inputreg);
+        asmjit::X86Gp outputreg = cc.newIntPtr();
+        cc.setArg(1, outputreg);
+
+        cc.mov(astbuf_base, outputreg);
+        cc.mov(astbuf_head, outputreg);
 
         for (const auto& p : grammar.get_machines())
         {
@@ -81,10 +94,13 @@ ParserEM64T<TCHAR>::ParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *l
     {
         cc.addFunc(machine_map[p.first]);
 
-        emit_machine(cc, p.second, machine_map, catn, p.first, &m_ast_buffer);
+        emit_machine(cc, p.second, machine_map, catn, p.first, astbuf_base, astbuf_head);
 
         cc.endFunc();
     }
+
+    cc.bind(datalabel);
+    cc.addNode(datanode);
 
     cc.finalize();
 }
@@ -138,7 +154,7 @@ template<> CharClass<char> DryParserEM64T<char>::m_skipfilter({' ', '\t', '\r', 
 template<> CharClass<wchar_t> DryParserEM64T<wchar_t>::m_skipfilter({L' ', L'\t', L'\r', L'\n'});
 
 template<typename TCHAR>
-void ParserEM64T<TCHAR>::emit_machine(asmjit::X86Compiler& cc, const ATNMachine<TCHAR>& machine, std::unordered_map<Identifier, asmjit::CCFunc*>& machine_map, const CompositeATN<TCHAR>& catn, const Identifier& id, void **output_ptr)
+void ParserEM64T<TCHAR>::emit_machine(asmjit::X86Compiler& cc, const ATNMachine<TCHAR>& machine, std::unordered_map<Identifier, asmjit::CCFunc*>& machine_map, const CompositeATN<TCHAR>& catn, const Identifier& id, asmjit::X86Mem astbuf_base, asmjit::X86Mem astbuf_head)
 {
     asmjit::X86Gp inputreg = cc.newIntPtr();
     cc.setArg(0, inputreg);
@@ -154,7 +170,12 @@ void ParserEM64T<TCHAR>::emit_machine(asmjit::X86Compiler& cc, const ATNMachine<
 
     {
         asmjit::X86Gp output_ptr_reg = cc.newIntPtr();
-        cc.mov(output_ptr_reg, asmjit::X86Mem((uint64_t)output_ptr, 0));
+        cc.mov(output_ptr_reg, astbuf_head);
+        asmjit::X86Gp output_base_reg = cc.newIntPtr();
+        cc.mov(output_base_reg, astbuf_base);
+        asmjit::X86Gp output_bound_reg = cc.newIntPtr();
+        cc.mov(output_bound_reg, output_base_reg);
+        cc.add(output_bound_reg, AST_BUF_SIZE);
 
         //Write the start marker to the AST buffer.
         //Structure of the start marker (128 bits, Little Endian):
@@ -167,12 +188,11 @@ void ParserEM64T<TCHAR>::emit_machine(asmjit::X86Compiler& cc, const ATNMachine<
 
         // <=== Access Violation is handled here ===>
 
-        //Reload the output pointer and start over, in case it is rewritten in the exception handler.
-        cc.mov(output_ptr_reg, asmjit::X86Mem((uint64_t)output_ptr, 0));
-        cc.mov(asmjit::X86Mem(output_ptr_reg, 0), inputreg);
         cc.mov(asmjit::x86::qword_ptr(output_ptr_reg, 8), asmjit::Imm((uint64_t)machine.get_unique_id() | ((uint64_t)1 << 63)));
         cc.add(output_ptr_reg, 16);
-        cc.mov(asmjit::X86Mem((uint64_t)output_ptr, 0), output_ptr_reg);
+        cc.cmp(output_ptr_reg, output_bound_reg);
+        cc.cmovge(output_ptr_reg, output_base_reg);
+        cc.mov(astbuf_head, output_ptr_reg);
     }
 
     for (int i = 0; i < machine.get_node_num(); i++)
@@ -217,18 +237,22 @@ void ParserEM64T<TCHAR>::emit_machine(asmjit::X86Compiler& cc, const ATNMachine<
             //+---+----------+-----------+--------+--------------+
 
             asmjit::X86Gp output_ptr_reg = cc.newIntPtr();
-            cc.mov(output_ptr_reg, asmjit::X86Mem((uint64_t)output_ptr, 0));
+            cc.mov(output_ptr_reg, astbuf_head);
+            asmjit::X86Gp output_base_reg = cc.newIntPtr();
+            cc.mov(output_base_reg, astbuf_base);
+            asmjit::X86Gp output_bound_reg = cc.newIntPtr();
+            cc.mov(output_bound_reg, output_base_reg);
+            cc.add(output_bound_reg, AST_BUF_SIZE);
+
             cc.mov(asmjit::X86Mem(output_ptr_reg, 0), inputreg);
 
             // <=== Access Violation is handled here ===>
 
-            //Reload the output pointer and start over, in case it is rewritten in the exception handler.
-
-            cc.mov(output_ptr_reg, asmjit::X86Mem((uint64_t)output_ptr, 0));
-            cc.mov(asmjit::X86Mem(output_ptr_reg, 0), inputreg);
             cc.mov(asmjit::x86::qword_ptr(output_ptr_reg, 8), asmjit::Imm(machine.get_unique_id()));
             cc.add(output_ptr_reg, 16);
-            cc.mov(asmjit::X86Mem((uint64_t)output_ptr, 0), output_ptr_reg);
+            cc.cmp(output_ptr_reg, output_bound_reg);
+            cc.cmove(output_ptr_reg, output_base_reg);
+            cc.mov(astbuf_head, output_ptr_reg);
 
             cc.ret(inputreg);
         }

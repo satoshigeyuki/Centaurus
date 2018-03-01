@@ -116,7 +116,7 @@
       <MinimalRebuild>false</MinimalRebuild>
       <OpenMPSupport>true</OpenMPSupport>
       <DisableSpecificWarnings>4267;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-      <ExceptionHandling>Async</ExceptionHandling>
+      <ExceptionHandling>Sync</ExceptionHandling>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
