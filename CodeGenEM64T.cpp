@@ -56,26 +56,19 @@ ParserEM64T<TCHAR>::ParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *l
     asmjit::X86Compiler cc(&m_code);
     std::unordered_map<Identifier, asmjit::CCFunc*> machine_map;
 
-    cc.addFunc(asmjit::FuncSignature2<const void *, const void *, void **>(asmjit::CallConv::kIdHost));
+    cc.addFunc(asmjit::FuncSignature1<const void *, const void *>(asmjit::CallConv::kIdHost));
 
     {
         asmjit::X86Gp inputreg = cc.newIntPtr();
         cc.setArg(0, inputreg);
-        asmjit::X86Gp outputreg = cc.newIntPtr();
-        cc.setArg(1, outputreg);
-        asmjit::X86Gp depthreg = cc.newGpz();
 
         for (const auto& p : grammar.get_machines())
         {
-            machine_map.emplace(p.first, cc.newFunc(asmjit::FuncSignature3<const void *, const void *, void **, int>(asmjit::CallConv::kIdHost)));
+            machine_map.emplace(p.first, cc.newFunc(asmjit::FuncSignature1<const void *, const void *>(asmjit::CallConv::kIdHost)));
         }
 
-        cc.mov(depthreg, 0);
-
-        asmjit::CCFuncCall *root_call = cc.call(machine_map[grammar.get_root_id()]->getLabel(), asmjit::FuncSignature3<const void *, const void *, void **, int>(asmjit::CallConv::kIdHost));
+        asmjit::CCFuncCall *root_call = cc.call(machine_map[grammar.get_root_id()]->getLabel(), asmjit::FuncSignature1<const void *, const void *>(asmjit::CallConv::kIdHost));
         root_call->setArg(0, inputreg);
-        root_call->setArg(1, outputreg);
-        root_call->setArg(2, depthreg);
         root_call->setRet(0, inputreg);
 
         cc.ret(inputreg);
@@ -88,7 +81,7 @@ ParserEM64T<TCHAR>::ParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *l
     {
         cc.addFunc(machine_map[p.first]);
 
-        emit_machine(cc, p.second, machine_map, catn, p.first);
+        emit_machine(cc, p.second, machine_map, catn, p.first, &m_ast_buffer);
 
         cc.endFunc();
     }
@@ -145,14 +138,10 @@ template<> CharClass<char> DryParserEM64T<char>::m_skipfilter({' ', '\t', '\r', 
 template<> CharClass<wchar_t> DryParserEM64T<wchar_t>::m_skipfilter({L' ', L'\t', L'\r', L'\n'});
 
 template<typename TCHAR>
-void ParserEM64T<TCHAR>::emit_machine(asmjit::X86Compiler& cc, const ATNMachine<TCHAR>& machine, std::unordered_map<Identifier, asmjit::CCFunc*>& machine_map, const CompositeATN<TCHAR>& catn, const Identifier& id)
+void ParserEM64T<TCHAR>::emit_machine(asmjit::X86Compiler& cc, const ATNMachine<TCHAR>& machine, std::unordered_map<Identifier, asmjit::CCFunc*>& machine_map, const CompositeATN<TCHAR>& catn, const Identifier& id, void **output_ptr)
 {
     asmjit::X86Gp inputreg = cc.newIntPtr();
     cc.setArg(0, inputreg);
-    asmjit::X86Gp outputreg = cc.newIntPtr();
-    cc.setArg(1, outputreg);
-    asmjit::X86Gp depthreg = cc.newGpz();
-    cc.setArg(2, depthreg);
 
     std::vector<asmjit::Label> statelabels;
 
@@ -162,6 +151,29 @@ void ParserEM64T<TCHAR>::emit_machine(asmjit::X86Compiler& cc, const ATNMachine<
     }
 
     asmjit::Label rejectlabel = cc.newLabel();
+
+    {
+        asmjit::X86Gp output_ptr_reg = cc.newIntPtr();
+        cc.mov(output_ptr_reg, asmjit::X86Mem((uint64_t)output_ptr, 0));
+
+        //Write the start marker to the AST buffer.
+        //Structure of the start marker (128 bits, Little Endian):
+        //128 127        112         80       64               0
+        //+---+----------+-----------+--------+----------------+
+        //| 1 | Reserved | Reserved2 | ATN ID | Start Position |
+        //+---+----------+-----------+--------+----------------+
+
+        cc.mov(asmjit::X86Mem(output_ptr_reg, 0), inputreg);
+
+        // <=== Access Violation is handled here ===>
+
+        //Reload the output pointer and start over, in case it is rewritten in the exception handler.
+        cc.mov(output_ptr_reg, asmjit::X86Mem((uint64_t)output_ptr, 0));
+        cc.mov(asmjit::X86Mem(output_ptr_reg, 0), inputreg);
+        cc.mov(asmjit::x86::qword_ptr(output_ptr_reg, 8), asmjit::Imm((uint64_t)machine.get_unique_id() | ((uint64_t)1 << 63)));
+        cc.add(output_ptr_reg, 16);
+        cc.mov(asmjit::X86Mem((uint64_t)output_ptr, 0), output_ptr_reg);
+    }
 
     for (int i = 0; i < machine.get_node_num(); i++)
     {
@@ -178,10 +190,8 @@ void ParserEM64T<TCHAR>::emit_machine(asmjit::X86Compiler& cc, const ATNMachine<
             break;
         case ATNNodeType::Nonterminal:
         {
-            asmjit::CCFuncCall *nt_call = cc.call(machine_map[node.get_invoke()]->getLabel(), asmjit::FuncSignature3<const void *, const void *, void **, int>(asmjit::CallConv::kIdHost));
+            asmjit::CCFuncCall *nt_call = cc.call(machine_map[node.get_invoke()]->getLabel(), asmjit::FuncSignature1<const void *, const void *>(asmjit::CallConv::kIdHost));
             nt_call->setArg(0, inputreg);
-            nt_call->setArg(1, outputreg);
-            nt_call->setArg(2, depthreg);
             nt_call->setRet(0, inputreg);
 
             cc.cmp(inputreg, 0);
@@ -199,6 +209,27 @@ void ParserEM64T<TCHAR>::emit_machine(asmjit::X86Compiler& cc, const ATNMachine<
         int outbound_num = node.get_transitions().size();
         if (outbound_num == 0)
         {
+            //Write the end marker to the AST buffer.
+            //Structure of the end marker:
+            //128 127        112         80       64             0
+            //+---+----------+-----------+--------+--------------+
+            //| 0 | Reserved | Reserved2 | ATN ID | End Position |
+            //+---+----------+-----------+--------+--------------+
+
+            asmjit::X86Gp output_ptr_reg = cc.newIntPtr();
+            cc.mov(output_ptr_reg, asmjit::X86Mem((uint64_t)output_ptr, 0));
+            cc.mov(asmjit::X86Mem(output_ptr_reg, 0), inputreg);
+
+            // <=== Access Violation is handled here ===>
+
+            //Reload the output pointer and start over, in case it is rewritten in the exception handler.
+
+            cc.mov(output_ptr_reg, asmjit::X86Mem((uint64_t)output_ptr, 0));
+            cc.mov(asmjit::X86Mem(output_ptr_reg, 0), inputreg);
+            cc.mov(asmjit::x86::qword_ptr(output_ptr_reg, 8), asmjit::Imm(machine.get_unique_id()));
+            cc.add(output_ptr_reg, 16);
+            cc.mov(asmjit::X86Mem((uint64_t)output_ptr, 0), output_ptr_reg);
+
             cc.ret(inputreg);
         }
         else if (outbound_num == 1)
