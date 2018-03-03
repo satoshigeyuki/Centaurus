@@ -29,40 +29,31 @@ DWORD WINAPI DryParserRunner(LPVOID param)
     ExitThread(0);
 }
 
+class SlaveASTRingBuffer
+{
+    HANDLE m_handle;
+public:
+    SlaveASTRingBuffer(LPCTSTR name)
+    {
+        m_handle = OpenFileMapping(PAGE_READONLY, FALSE, name);
+
+        Assert::AreNotEqual((void *)NULL, (void *)m_handle);
+
+
+    }
+    virtual ~SlaveASTRingBuffer()
+    {
+        if (m_handle != NULL)
+            CloseHandle(m_handle);
+    }
+};
+
 class MasterASTRingBuffer
 {
     HANDLE m_handle;
     void *m_buffer;
     size_t m_bank_size;
     int m_bank_num, m_current_bank;
-private:
-    void protect_bank(int bank_index)
-    {
-        void *protect_addr = (char *)m_buffer + (m_bank_size * bank_index);
-
-        DWORD dwOldProtect;
-
-        VirtualProtect(protect_addr, m_bank_size, PAGE_READWRITE | PAGE_GUARD, &dwOldProtect);
-    }
-    void unprotect_bank(int bank_index)
-    {
-        void *protect_addr = (char *)m_buffer + (m_bank_size * bank_index);
-
-        DWORD dwOldProtect;
-
-        VirtualProtect(protect_addr, m_bank_size, PAGE_READWRITE, &dwOldProtect);
-    }
-    void select_bank(int bank_index)
-    {
-        m_current_bank = bank_index;
-
-        unprotect_bank(bank_index);
-        for (int i = 0; i < m_bank_num; i++)
-        {
-            if (i != bank_index)
-                protect_bank(i);
-        }
-    }
 public:
     MasterASTRingBuffer(size_t bank_size, int bank_num)
         : m_handle(INVALID_HANDLE_VALUE), m_buffer(NULL), m_bank_size(bank_size), m_bank_num(bank_num)
@@ -76,56 +67,26 @@ public:
         m_buffer = MapViewOfFile(m_handle, FILE_MAP_ALL_ACCESS, 0, 0, buffer_size);
 
         Assert::AreNotEqual((void *)NULL, m_buffer);
-
-        select_bank(0);
     }
     virtual ~MasterASTRingBuffer()
     {
         if (m_buffer != NULL)
             UnmapViewOfFile(m_buffer);
-        if (m_handle != INVALID_HANDLE_VALUE)
+        if (m_handle != NULL)
             CloseHandle(m_handle);
     }
     void *get_buffer()
     {
         return m_buffer;
     }
-    void select_next_bank()
-    {
-        select_bank((m_current_bank + 1) % m_bank_num);
-    }
 };
 
 struct ParserContext
 {
     Centaurus::ParserEM64T<char>& parser;
-    MasterASTRingBuffer& buffer;
     const void *memory;
     const void *result;
 };
-
-LONG WINAPI HandleParserException(LPEXCEPTION_POINTERS exc_info)
-{
-    LPEXCEPTION_RECORD exc_record = exc_info->ExceptionRecord;
-
-    char buf[128];
-
-    switch (exc_record->ExceptionCode)
-    {
-    case STATUS_GUARD_PAGE_VIOLATION:
-        //context->buffer.select_next_bank();
-        snprintf(buf, sizeof(buf), "Access violation at 0x%016X\r\n", exc_record->ExceptionInformation[1]);
-        Logger::WriteMessage(buf);
-        break;
-    default:
-    //case EXCEPTION_GUARD_PAGE:
-        snprintf(buf, sizeof(buf), "Exception %d at 0x%016X\r\n", exc_record->ExceptionCode, exc_record->ExceptionAddress);
-        Logger::WriteMessage(buf);
-        break;
-    }
-
-    return EXCEPTION_EXECUTE_HANDLER;
-}
 
 DWORD WINAPI ParserRunner(LPVOID param)
 {
@@ -134,7 +95,24 @@ DWORD WINAPI ParserRunner(LPVOID param)
     size_t bank_size = 8 * 1024 * 1024;
     int bank_num = 8;
 
-    context->result = context->parser(context->memory, context->buffer.get_buffer());
+    MasterASTRingBuffer ring_buffer(bank_size, bank_num);
+
+    context->parser.set_buffer(ring_buffer.get_buffer());
+
+    clock_t start_time = clock();
+
+    context->result = context->parser(context->memory);
+
+    clock_t end_time = clock();
+
+    long flipcount = context->parser.get_flipcount();
+
+    char buf[64];
+    snprintf(buf, 64, "Elapsed time = %lf[ms]\r\n", (double)(end_time - start_time) * 1000.0 / CLOCKS_PER_SEC);
+    Logger::WriteMessage(buf);
+
+    snprintf(buf, 64, "Flipcount = %ld\r\n", flipcount);
+    Logger::WriteMessage(buf);
 
     ExitThread(0);
 }
@@ -230,9 +208,9 @@ public:
 
         //Logger::WriteMessage(logger.getString());
 
-        //char *json = LoadTextAligned("C:\\Users\\ihara\\Downloads\\sf-city-lots-json-master\\sf-city-lots-json-master\\citylots.json");
+        char *json = LoadTextAligned("C:\\Users\\ihara\\Downloads\\sf-city-lots-json-master\\sf-city-lots-json-master\\citylots.json");
 
-        char *json = LoadTextAligned("C:\\Users\\ihara\\Downloads\\citylots.json");
+        //char *json = LoadTextAligned("C:\\Users\\ihara\\Downloads\\citylots.json");
 
         clock_t start_time = clock();
 
@@ -254,8 +232,6 @@ public:
     }
     TEST_METHOD(ParserGenTest1)
     {
-        SetUnhandledExceptionFilter(HandleParserException);
-
         using namespace Centaurus;
 
         Grammar<char> grammar = LoadGrammar("../../../json.cgr");
@@ -272,21 +248,11 @@ public:
 
         //char *json = LoadTextAligned("C:\\Users\\ihara\\Downloads\\citylots.json");
 
-        MasterASTRingBuffer ring_buffer(8 * 1024 * 1024, 8);
-
-        clock_t start_time = clock();
-
-        ParserContext context{ parser, ring_buffer, json, NULL };
+        ParserContext context{ parser, json, NULL };
 
         HANDLE hThread = CreateThread(NULL, 1024 * 1024 * 1024, ParserRunner, (LPVOID)&context, 0, NULL);
 
         WaitForSingleObject(hThread, INFINITE);
-
-        clock_t end_time = clock();
-
-        char buf[64];
-        snprintf(buf, 64, "Elapsed time = %lf[ms]\r\n", (double)(end_time - start_time) * 1000.0 / CLOCKS_PER_SEC);
-        Logger::WriteMessage(buf);
 
         Assert::AreEqual((const void *)(json + strlen(json)), context.result);
 

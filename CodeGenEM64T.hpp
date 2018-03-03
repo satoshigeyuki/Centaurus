@@ -13,15 +13,26 @@ class ParserEM64T
     asmjit::JitRuntime m_runtime;
     asmjit::CodeHolder m_code;
     static CharClass<TCHAR> m_skipfilter;
-    void emit_machine(asmjit::X86Compiler& cc, const ATNMachine<TCHAR>& machine, std::unordered_map<Identifier, asmjit::CCFunc*>& machine_map, const CompositeATN<TCHAR>& catn, const Identifier& id, asmjit::X86Mem astbuf_base, asmjit::X86Mem astbuf_head);
+    void *m_buffer;
+    const void *(*m_func)(void *context, const void *input, void *output);
+    void emit_machine(asmjit::X86Compiler& cc, const ATNMachine<TCHAR>& machine, std::unordered_map<Identifier, asmjit::CCFunc*>& machine_map, const CompositeATN<TCHAR>& catn, const Identifier& id);
+    static void * __cdecl request_page(void *context);
+    long m_flipcount;
 public:
     ParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *logger = NULL, asmjit::ErrorHandler *errhandler = NULL);
     virtual ~ParserEM64T() {}
-    const void *operator()(const void *input, void *output)
+    const void *operator()(const void *input)
     {
-        const void *(*func)(const void *, void *);
-        m_runtime.add(&func, &m_code);
-        return func(input, output);
+        m_flipcount = 0;
+        return m_func(this, input, m_buffer);
+    }
+    void set_buffer(void *buffer)
+    {
+        m_buffer = buffer;
+    }
+    long get_flipcount() const
+    {
+        return m_flipcount;
     }
 };
 
