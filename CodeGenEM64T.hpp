@@ -6,16 +6,49 @@
 
 namespace Centaurus
 {
+class MyConstPool
+{
+    asmjit::X86Assembler& m_as;
+    asmjit::Zone m_zone;
+    asmjit::ConstPool m_pool;
+    asmjit::Label m_label;
+public:
+    MyConstPool(asmjit::X86Assembler& as)
+        : m_as(as), m_zone(1024), m_pool(&m_zone), m_label(as.newLabel())
+    {
+    }
+    template<typename TCHAR>
+    void load_charclass_filter(asmjit::X86Xmm dest, const CharClass<TCHAR>& cc)
+    {
+        asmjit::Data128 data = pack_charclass(cc);
+
+        size_t offset;
+        m_pool.add(&data, 16, offset);
+
+        m_as.vmovdqa(dest, asmjit::X86Mem(m_label, offset));
+    }
+    void embed()
+    {
+        m_as.embedConstPool(m_label, m_pool);
+    }
+    asmjit::X86Mem add(asmjit::Data128 data)
+    {
+        size_t offset;
+        m_pool.add(&data, 16, offset);
+
+        return asmjit::X86Mem(m_label, offset);
+    }
+};
 template<typename TCHAR>
 class ParserEM64T
 {
-    static constexpr int64_t AST_BUF_SIZE = 64 * 1024 * 1024;
+    static constexpr int64_t AST_BUF_SIZE = 8 * 1024 * 1024;
     asmjit::JitRuntime m_runtime;
     asmjit::CodeHolder m_code;
     static CharClass<TCHAR> m_skipfilter;
     void *m_buffer;
     const void *(*m_func)(void *context, const void *input, void *output);
-    void emit_machine(asmjit::X86Assembler& as, const ATNMachine<TCHAR>& machine, std::unordered_map<Identifier, asmjit::CCFunc*>& machine_map, const CompositeATN<TCHAR>& catn, const Identifier& id);
+    void emit_machine(asmjit::X86Assembler& as, const ATNMachine<TCHAR>& machine, std::unordered_map<Identifier, asmjit::Label>& machine_map, const CompositeATN<TCHAR>& catn, const Identifier& id, asmjit::Label& rejectlabel, MyConstPool& pool);
     static void * __cdecl request_page(void *context);
     long m_flipcount;
 public:
@@ -43,7 +76,7 @@ class DryParserEM64T
     asmjit::CodeHolder m_code;
     static CharClass<TCHAR> m_skipfilter;
 public:
-    static void emit_machine(asmjit::X86Assembler& as, const ATNMachine<TCHAR>& machine, std::unordered_map<Identifier, asmjit::Label>& machine_map, const CompositeATN<TCHAR>& catn, const Identifier& id);
+    static void emit_machine(asmjit::X86Assembler& as, const ATNMachine<TCHAR>& machine, std::unordered_map<Identifier, asmjit::Label>& machine_map, const CompositeATN<TCHAR>& catn, const Identifier& id, asmjit::Label& rejectlabel, MyConstPool& pool);
     DryParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *logger = NULL);
     virtual ~DryParserEM64T() {}
     const void *operator()(const void *input)
@@ -97,7 +130,7 @@ class MatchRoutineEM64T
     asmjit::JitRuntime m_runtime;
 	asmjit::CodeHolder m_code;
 public:
-    static void emit(asmjit::X86Assembler& as, asmjit::Label& rejectlabel, const std::basic_string<TCHAR>& str);
+    static void emit(asmjit::X86Assembler& as, MyConstPool& pool, asmjit::Label& rejectlabel, const std::basic_string<TCHAR>& str);
 	MatchRoutineEM64T(const std::basic_string<TCHAR>& str, asmjit::Logger *logger = NULL);
 	virtual ~MatchRoutineEM64T() {}
     const void *operator()(const void *input)
@@ -114,8 +147,9 @@ class SkipRoutineEM64T
     asmjit::CodeHolder m_code;
 private:
     static void emit_core(asmjit::X86Assembler& as);
+    static CharClass<TCHAR> m_skipfilter;
 public:
-    static void emit(asmjit::X86Assembler& as, const CharClass<TCHAR>& filter);
+    static void emit(asmjit::X86Assembler& as);
     SkipRoutineEM64T(const CharClass<TCHAR>& cc, asmjit::Logger *logger = NULL);
     virtual ~SkipRoutineEM64T() {}
     const void *operator()(const void *input)

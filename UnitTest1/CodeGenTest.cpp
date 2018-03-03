@@ -161,7 +161,7 @@ public:
 
         CompositeATN<char> catn = LoadCATN("../../../json.cgr");
 
-        LookaheadDFA<char> ldfa(catn, ATNPath(u"Object", 0));
+        LookaheadDFA<char> ldfa(catn, catn.convert_atn_path(ATNPath(u"Object", 0)));
 
         LDFARoutineEM64T<char> ldfa_routine(ldfa);
 
@@ -212,11 +212,13 @@ public:
 
         //char *json = LoadTextAligned("C:\\Users\\ihara\\Downloads\\citylots.json");
 
+        //char *json = LoadTextAligned("..\\..\\..\\test2.json");
+
         clock_t start_time = clock();
 
         DryParserContext context{parser, json, NULL};
 
-        HANDLE hThread = CreateThread(NULL, 1024*1024*1024, DryParserRunner, (LPVOID)&context, 0, NULL);
+        HANDLE hThread = CreateThread(NULL, 256*1024*1024, DryParserRunner, (LPVOID)&context, 0, NULL);
 
         WaitForSingleObject(hThread, INFINITE);
 

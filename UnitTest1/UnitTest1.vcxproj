@@ -111,8 +111,8 @@
       <AdditionalDependencies>asmjit.lib;..\vc\x64\Debug\util.obj;..\vc\x64\Debug\atn.obj;..\vc\x64\Debug\charclass.obj;..\vc\x64\Debug\CodeGenEM64T.obj;%(AdditionalDependencies)</AdditionalDependencies>
       <StackReserveSize>
       </StackReserveSize>
-      <OptimizeReferences>true</OptimizeReferences>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>false</OptimizeReferences>
+      <EnableCOMDATFolding>false</EnableCOMDATFolding>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">

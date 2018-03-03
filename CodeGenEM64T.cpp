@@ -3,14 +3,47 @@
 #include "asmjit/asmjit.h"
 #include "CodeGenEM64T.hpp"
 
-asmjit::X86Gp CONTEXT_REG = asmjit::x86::r8;
-asmjit::X86Gp INPUT_REG = asmjit::x86::rsi;
-asmjit::X86Gp OUTPUT_REG = asmjit::x86::rdi;
-asmjit::X86Gp OUTPUT_BOUND_REG = asmjit::x86::r9;
-asmjit::X86Gp BACKUP_REG = asmjit::x86::rbx;
-asmjit::X86Gp PEEK_REG = asmjit::x86::rbx;
-asmjit::X86Gp CHAR_REG = asmjit::x86::rax;
-asmjit::X86Gp CHAR2_REG = asmjit::x86::rcx;
+/*
+ * Register assignment on x86/x86-64 platform
+ * ATN Machine scope
+ *  CONTEXT_REG     MM2/R8
+ *  INPUT_REG       ESI/RSI
+ *  OUTPUT_REG      EDI/RDI
+ *  OUTPUT_BOUND    EDX/RDX
+ *  Stack backup    EBP/RBP
+ * DFA Routine scope
+ *  BACKUP_REG      EBX/RBX
+ *  CHAR_REG        EAX/RAX
+ *  CHAR2_REG       ECX/RCX
+ * LDFA Routine scope
+ *  PEEK_REG        EBX/RBX
+ *  CHAR_REG        EAX/RAX
+ *  CHAR2_REG       ECX/RCX
+ * Match Routine scope
+ *  LOAD_REG        XMM0
+ *  INDEX_REG       ECX/RCX
+ * Skip Routine scope
+ *  LOAD_REG        XMM0
+ *  PATTERN_REG     XMM1
+ *  INDEX_REG       ECX/RCX
+ */
+
+//Parser/Machine scope registers
+#define CONTEXT_REG asmjit::x86::r8
+#define INPUT_REG asmjit::x86::rsi
+#define OUTPUT_REG asmjit::x86::rdi
+#define OUTPUT_BOUND_REG asmjit::x86::rdx
+
+//DFA/LDFA routine scope registers
+#define BACKUP_REG asmjit::x86::rbx
+#define PEEK_REG asmjit::x86::rbx
+#define CHAR_REG asmjit::x86::rax
+#define CHAR2_REG asmjit::x86::rcx
+
+//Match/Skip routine scope registers
+#define LOAD_REG asmjit::x86::xmm0
+#define PATTERN_REG asmjit::x86::xmm1
+#define INDEX_REG asmjit::x86::rcx
 
 namespace Centaurus
 {
@@ -57,7 +90,6 @@ asmjit::Data128 pack_charclass(const CharClass<wchar_t>& cc)
 
 static void emit_parser_prolog(asmjit::X86Assembler& as)
 {
-    as.push(asmjit::x86::r9);
     as.push(asmjit::x86::r8);
     as.push(asmjit::x86::rbp);
     as.push(asmjit::x86::rdi);
@@ -67,17 +99,25 @@ static void emit_parser_prolog(asmjit::X86Assembler& as)
     as.push(asmjit::x86::rbx);
     as.push(asmjit::x86::rax);
 
-    as.mov(CONTEXT_REG, asmjit::X86Mem(asmjit::x86::rsp, 16));
-    as.mov(INPUT_REG, asmjit::X86Mem(asmjit::x86::rsp, 24));
-    as.mov(OUTPUT_REG, asmjit::X86Mem(asmjit::x86::rsp, 56));
+    //Backs up RSP to RBP for bailout
+    as.mov(asmjit::x86::rbp, asmjit::x86::rsp);
 }
 
-static void emit_parser_epilog(asmjit::X86Assembler& as)
+static void emit_parser_epilog(asmjit::X86Assembler& as, asmjit::Label& rejectlabel)
 {
-    as.mov(asmjit::x86::rbx, asmjit::x86::rax);
-    as.pop(asmjit::x86::rax);
-    as.mov(asmjit::x86::rax, asmjit::x86::rbx);
+    asmjit::Label acceptlabel = as.newLabel();
 
+    as.mov(asmjit::x86::rax, INPUT_REG);
+    as.jmp(acceptlabel);
+
+    //Jump to this label is a long jump. Discard everything on the stack.
+    as.bind(rejectlabel);
+    as.mov(asmjit::x86::rax, 0);
+    as.mov(asmjit::x86::rsp, asmjit::x86::rbp);
+
+    as.bind(acceptlabel);
+
+    as.pop(asmjit::x86::rbx);
     as.pop(asmjit::x86::rbx);
     as.pop(asmjit::x86::rcx);
     as.pop(asmjit::x86::rdx);
@@ -85,7 +125,6 @@ static void emit_parser_epilog(asmjit::X86Assembler& as)
     as.pop(asmjit::x86::rdi);
     as.pop(asmjit::x86::rbp);
     as.pop(asmjit::x86::r8);
-    as.pop(asmjit::x86::r9);
 
     as.ret();
 }
@@ -105,8 +144,17 @@ ParserEM64T<TCHAR>::ParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *l
 
     emit_parser_prolog(as);
 
+    as.mov(CONTEXT_REG, asmjit::X86Mem(asmjit::x86::rsp, 16));
+    as.mov(INPUT_REG, asmjit::X86Mem(asmjit::x86::rsp, 24));
+    as.mov(OUTPUT_REG, asmjit::X86Mem(asmjit::x86::rsp, 56));
     as.mov(OUTPUT_BOUND_REG, OUTPUT_REG);
     as.add(OUTPUT_BOUND_REG, asmjit::Imm(AST_BUF_SIZE));
+
+    MyConstPool pool(as);
+
+    pool.load_charclass_filter(PATTERN_REG, m_skipfilter);
+
+    asmjit::Label rejectlabel = as.newLabel();
 
     {
         for (const auto& p : grammar.get_machines())
@@ -117,7 +165,7 @@ ParserEM64T<TCHAR>::ParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *l
         as.call(machine_map[grammar.get_root_id()]);
     }
 
-    emit_parser_epilog(as);
+    emit_parser_epilog(as, rejectlabel);
 
     CompositeATN<TCHAR> catn(grammar);
 
@@ -125,8 +173,10 @@ ParserEM64T<TCHAR>::ParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *l
     {
         as.bind(machine_map[p.first]);
 
-        emit_machine(as, p.second, machine_map, catn, p.first);
+        emit_machine(as, p.second, machine_map, catn, p.first, rejectlabel, pool);
     }
+
+    pool.embed();
 
     as.finalize();
 
@@ -146,6 +196,14 @@ DryParserEM64T<TCHAR>::DryParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Log
 
     emit_parser_prolog(as);
 
+    as.mov(INPUT_REG, asmjit::X86Mem(asmjit::x86::rsp, 16));
+
+    MyConstPool pool(as);
+
+    pool.load_charclass_filter(PATTERN_REG, m_skipfilter);
+
+    asmjit::Label rejectlabel = as.newLabel();
+
     {
         for (const auto& p : grammar.get_machines())
         {
@@ -155,7 +213,7 @@ DryParserEM64T<TCHAR>::DryParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Log
         as.call(machine_map[grammar.get_root_id()]);
     }
 
-    emit_parser_epilog(as);
+    emit_parser_epilog(as, rejectlabel);
 
     CompositeATN<TCHAR> catn(grammar);
 
@@ -163,8 +221,10 @@ DryParserEM64T<TCHAR>::DryParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Log
     {
         as.bind(machine_map[p.first]);
 
-        emit_machine(as, p.second, machine_map, catn, p.first);
+        emit_machine(as, p.second, machine_map, catn, p.first, rejectlabel, pool);
     }
+
+    pool.embed();
 
     as.finalize();
 }
@@ -176,7 +236,7 @@ template<> CharClass<char> DryParserEM64T<char>::m_skipfilter({' ', '\t', '\r', 
 template<> CharClass<wchar_t> DryParserEM64T<wchar_t>::m_skipfilter({L' ', L'\t', L'\r', L'\n'});
 
 template<typename TCHAR>
-void ParserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const ATNMachine<TCHAR>& machine, std::unordered_map<Identifier, asmjit::Label>& machine_map, const CompositeATN<TCHAR>& catn, const Identifier& id)
+void ParserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const ATNMachine<TCHAR>& machine, std::unordered_map<Identifier, asmjit::Label>& machine_map, const CompositeATN<TCHAR>& catn, const Identifier& id, asmjit::Label& rejectlabel, MyConstPool& pool)
 {
     std::vector<asmjit::Label> statelabels;
 
@@ -185,7 +245,6 @@ void ParserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const ATNMachine
         statelabels.push_back(as.newLabel());
     }
 
-    asmjit::Label rejectlabel = as.newLabel();
     asmjit::Label requestpage1_label = as.newLabel();
     asmjit::Label requestpage2_label = as.newLabel();
 
@@ -215,20 +274,16 @@ void ParserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const ATNMachine
         case ATNNodeType::Blank:
             break;
         case ATNNodeType::LiteralTerminal:
-            MatchRoutineEM64T<TCHAR>::emit(as, rejectlabel, node.get_literal());
+            MatchRoutineEM64T<TCHAR>::emit(as, pool, rejectlabel, node.get_literal());
             break;
         case ATNNodeType::Nonterminal:
-        {
             as.call(machine_map[node.get_invoke()]);
-            as.cmp(inputreg, 0);
-            as.jz(rejectlabel);
-        }
             break;
         case ATNNodeType::RegularTerminal:
             DFARoutineEM64T<TCHAR>::emit(as, rejectlabel, DFA<TCHAR>(node.get_nfa()));
             break;
         case ATNNodeType::WhiteSpace:
-            SkipRoutineEM64T<TCHAR>::emit(as, m_skipfilter);
+            SkipRoutineEM64T<TCHAR>::emit(as);
             break;
         }
 
@@ -266,16 +321,36 @@ void ParserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const ATNMachine
         }
     }
 
-    as.bind(rejectlabel);
-    as.mov(inputreg, 0);
-    as.ret();
-
     as.bind(requestpage1_label);
     {
+        as.push(INPUT_REG);
+        as.push(CONTEXT_REG);
+        as.mov(asmjit::x86::rcx, asmjit::X86Mem(asmjit::x86::rsp, 0));
+        as.sub(asmjit::x86::rsp, 32);
+        as.call((uint64_t)request_page);
+        as.add(asmjit::x86::rsp, 32);
+        as.mov(OUTPUT_REG, asmjit::x86::rax);
+        as.mov(OUTPUT_BOUND_REG, OUTPUT_REG);
+        as.add(OUTPUT_BOUND_REG, AST_BUF_SIZE);
+        as.pop(CONTEXT_REG);
+        as.pop(INPUT_REG);
+
         as.jmp(statelabels[0]);
     }
     as.bind(requestpage2_label);
     {
+        as.push(INPUT_REG);
+        as.push(CONTEXT_REG);
+        as.mov(asmjit::x86::rcx, asmjit::X86Mem(asmjit::x86::rsp, 0));
+        as.sub(asmjit::x86::rsp, 32);
+        as.call((uint64_t)request_page);
+        as.add(asmjit::x86::rsp, 32);
+        as.mov(OUTPUT_REG, asmjit::x86::rax);
+        as.mov(OUTPUT_BOUND_REG, OUTPUT_REG);
+        as.add(OUTPUT_BOUND_REG, AST_BUF_SIZE);
+        as.pop(CONTEXT_REG);
+        as.pop(INPUT_REG);
+
         as.ret();
     }
 }
@@ -291,7 +366,7 @@ void * __cdecl ParserEM64T<TCHAR>::request_page(void *context)
 }
 
 template<typename TCHAR>
-void DryParserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const ATNMachine<TCHAR>& machine, std::unordered_map<Identifier, asmjit::Label>& machine_map, const CompositeATN<TCHAR>& catn, const Identifier& id)
+void DryParserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const ATNMachine<TCHAR>& machine, std::unordered_map<Identifier, asmjit::Label>& machine_map, const CompositeATN<TCHAR>& catn, const Identifier& id, asmjit::Label& rejectlabel, MyConstPool& pool)
 {
     std::vector<asmjit::Label> statelabels;
 
@@ -299,8 +374,6 @@ void DryParserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const ATNMach
     {
         statelabels.push_back(as.newLabel());
     }
-
-    asmjit::Label rejectlabel = as.newLabel();
 
     for (int i = 0; i < machine.get_node_num(); i++)
     {
@@ -313,15 +386,16 @@ void DryParserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const ATNMach
         case ATNNodeType::Blank:
             break;
         case ATNNodeType::LiteralTerminal:
-            MatchRoutineEM64T<TCHAR>::emit(as, rejectlabel, node.get_literal());
+            MatchRoutineEM64T<TCHAR>::emit(as, pool, rejectlabel, node.get_literal());
             break;
-        case ATNNodeType::Nonterminal: {
-            } break;
+        case ATNNodeType::Nonterminal:
+            as.call(machine_map[node.get_invoke()]);
+            break;
         case ATNNodeType::RegularTerminal:
             DFARoutineEM64T<TCHAR>::emit(as, rejectlabel, DFA<TCHAR>(node.get_nfa()));
             break;
         case ATNNodeType::WhiteSpace:
-            SkipRoutineEM64T<TCHAR>::emit(as, m_skipfilter);
+            SkipRoutineEM64T<TCHAR>::emit(as);
             break;
         }
 
@@ -346,10 +420,6 @@ void DryParserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const ATNMach
             LDFARoutineEM64T<TCHAR>::emit(as, rejectlabel, LookaheadDFA<TCHAR>(catn, catn.convert_atn_path(ATNPath(id, i))), exitlabels);
         }
     }
-
-    as.bind(rejectlabel);
-    as.mov(inputreg, 0);
-    as.ret();
 }
 
 template<typename TCHAR>
@@ -360,13 +430,17 @@ DFARoutineEM64T<TCHAR>::DFARoutineEM64T(const DFA<TCHAR>& dfa, asmjit::Logger *l
         m_code.setLogger(logger);
 
     asmjit::X86Assembler as(&m_code);
+
     emit_parser_prolog(as);
+
+    as.mov(INPUT_REG, asmjit::X86Mem(asmjit::x86::rsp, 16));
 
     asmjit::Label rejectlabel = as.newLabel();
 
     emit(as, rejectlabel, dfa);
 
-    emit_parser_epilog(as);
+    emit_parser_epilog(as, rejectlabel);
+
     as.finalize();
 }
 
@@ -377,7 +451,7 @@ void DFARoutineEM64T<TCHAR>::emit(asmjit::X86Assembler& as, asmjit::Label& rejec
 
     for (int i = 0; i < dfa.get_state_num(); i++)
     {
-        statelabels.push_back(cc.newLabel());
+        statelabels.push_back(as.newLabel());
     }
 
     asmjit::Label finishlabel = as.newLabel();
@@ -392,6 +466,8 @@ void DFARoutineEM64T<TCHAR>::emit(asmjit::X86Assembler& as, asmjit::Label& rejec
     }
     as.bind(finishlabel);
     as.mov(INPUT_REG, BACKUP_REG);
+    as.cmp(INPUT_REG, 0);
+    as.jz(rejectlabel);
 }
 
 template<>
@@ -463,7 +539,7 @@ void DFARoutineEM64T<wchar_t>::emit_state(asmjit::X86Assembler& as, asmjit::Labe
 }
 
 template<typename TCHAR>
-LDFARoutineEM64T<TCHAR>::LDFARoutineEM64T(const LookaheadDFA<TCHAR>& ldfa, asmjit::Logger *logger)
+LDFARoutineEM64T<TCHAR>::LDFARoutineEM64T(const LookaheadDFA<TCHAR>& ldfa, asmjit::Logger *logger = NULL)
 {
     m_code.init(m_runtime.getCodeInfo());
     if (logger != NULL)
@@ -472,6 +548,8 @@ LDFARoutineEM64T<TCHAR>::LDFARoutineEM64T(const LookaheadDFA<TCHAR>& ldfa, asmji
     asmjit::X86Assembler as(&m_code);
 
     emit_parser_prolog(as);
+
+    as.mov(INPUT_REG, asmjit::X86Mem(asmjit::x86::rsp, 16));
 
     asmjit::Label rejectlabel = as.newLabel();
 
@@ -486,25 +564,26 @@ LDFARoutineEM64T<TCHAR>::LDFARoutineEM64T(const LookaheadDFA<TCHAR>& ldfa, asmji
     emit(as, rejectlabel, ldfa, exitlabels);
     as.jmp(rejectlabel);
 
+    asmjit::Label finishlabel = as.newLabel();
     for (int i = 0; i < decision_num; i++)
     {
         as.bind(exitlabels[i]);
         as.mov(INPUT_REG, asmjit::Imm(i + 1));
-        as.ret();
+        as.jmp(finishlabel);
     }
 
-    as.bind(rejectlabel);
-    as.mov(INPUT_REG, 0);
-
-    emit_parser_epilog(as);
+    as.bind(finishlabel);
+    emit_parser_epilog(as, rejectlabel);
    
     as.finalize();
 }
 
 template<typename TCHAR>
-void LDFARoutineEM64T<TCHAR>::emit(asmjit::X86Compiler& cc, asmjit::Label& rejectlabel, const LookaheadDFA<TCHAR>& ldfa, std::vector<asmjit::Label>& exitlabels)
+void LDFARoutineEM64T<TCHAR>::emit(asmjit::X86Assembler& as, asmjit::Label& rejectlabel, const LookaheadDFA<TCHAR>& ldfa, std::vector<asmjit::Label>& exitlabels)
 {
     std::vector<asmjit::Label> statelabels;
+
+    as.mov(PEEK_REG, INPUT_REG);
 
     for (int i = 0; i < ldfa.get_state_num(); i++)
     {
@@ -520,9 +599,9 @@ void LDFARoutineEM64T<TCHAR>::emit(asmjit::X86Compiler& cc, asmjit::Label& rejec
 template<>
 void LDFARoutineEM64T<char>::emit_state(asmjit::X86Assembler& as, asmjit::Label& rejectlabel, const LDFAState<char>& state, std::vector<asmjit::Label>& labels, std::vector<asmjit::Label>& exitlabels)
 {
-    as.movzx(CHAR_REG, asmjit::x86::byte_ptr(INPUT_REG, 0));
+    as.movzx(CHAR_REG, asmjit::x86::byte_ptr(PEEK_REG, 0));
     as.mov(CHAR2_REG, CHAR_REG);
-    as.inc(INPUT_REG);
+    as.inc(PEEK_REG);
 
     for (const auto& tr : state.get_transitions())
     {
@@ -562,9 +641,9 @@ void LDFARoutineEM64T<char>::emit_state(asmjit::X86Assembler& as, asmjit::Label&
 template<>
 void LDFARoutineEM64T<wchar_t>::emit_state(asmjit::X86Assembler& as, asmjit::Label& rejectlabel, const LDFAState<wchar_t>& state, std::vector<asmjit::Label>& labels, std::vector<asmjit::Label>& exitlabels)
 {
-	as.movzx(CHAR_REG, asmjit::x86::word_ptr(INPUT_REG, 0));
+	as.movzx(CHAR_REG, asmjit::x86::word_ptr(PEEK_REG, 0));
 	as.mov(CHAR2_REG, CHAR_REG);
-	as.add(INPUT_REG, 2);
+	as.add(PEEK_REG, 2);
 
 	for (const auto& tr : state.get_transitions())
 	{
@@ -602,7 +681,7 @@ void LDFARoutineEM64T<wchar_t>::emit_state(asmjit::X86Assembler& as, asmjit::Lab
 }
 
 template<typename TCHAR>
-MatchRoutineEM64T<TCHAR>::MatchRoutineEM64T(const std::basic_string<TCHAR>& str, asmjit::Logger *logger)
+MatchRoutineEM64T<TCHAR>::MatchRoutineEM64T(const std::basic_string<TCHAR>& str, asmjit::Logger *logger = NULL)
 {
     m_code.init(m_runtime.getCodeInfo());
     if (logger != NULL)
@@ -612,21 +691,23 @@ MatchRoutineEM64T<TCHAR>::MatchRoutineEM64T(const std::basic_string<TCHAR>& str,
 
     emit_parser_prolog(as);
 
+    as.mov(INPUT_REG, asmjit::X86Mem(asmjit::x86::rsp, 16));
+
+    MyConstPool pool(as);
+
     asmjit::Label rejectlabel = as.newLabel();
 
-    emit(as, rejectlabel, str);
+    emit(as, pool, rejectlabel, str);
 
-    emit_parser_epilog(as);
+    emit_parser_epilog(as, rejectlabel);
 
-    as.bind(rejectlabel);
-    as.mov(inputreg, 0);
-    as.ret();
+    pool.embed();
     
     as.finalize();
 }
 
 template<>
-void MatchRoutineEM64T<char>::emit(asmjit::X86Assembler& as, asmjit::Label& rejectlabel, const std::basic_string<char>& str)
+void MatchRoutineEM64T<char>::emit(asmjit::X86Assembler& as, MyConstPool& pool, asmjit::Label& rejectlabel, const std::basic_string<char>& str)
 {
 	for (int i = 0; i < str.size(); i += 16)
 	{
@@ -639,15 +720,15 @@ void MatchRoutineEM64T<char>::emit(asmjit::X86Assembler& as, asmjit::Label& reje
 			d1.ub[j] = str[i + j];
 		}
 		
-		as.vmovdqu(asmjit::x86::xmm0, asmjit::X86Mem(INPUT_REG, 0));
-		//as.vpcmpistri(asmjit::x86::xmm0, , asmjit::Imm(0x18));
-		as.cmp(asmjit::x86::rcx, asmjit::Imm(l1));
+		as.vmovdqu(LOAD_REG, asmjit::X86Mem(INPUT_REG, 0));
+		as.vpcmpistri(LOAD_REG, pool.add(d1), asmjit::Imm(0x18));
+		as.cmp(INDEX_REG, asmjit::Imm(l1));
 		as.jb(rejectlabel);
 		as.add(INPUT_REG, l1);
 	}
 }
 template<>
-void MatchRoutineEM64T<wchar_t>::emit(asmjit::X86Assembler& as, asmjit::Label& rejectlabel, const std::basic_string<wchar_t>& str)
+void MatchRoutineEM64T<wchar_t>::emit(asmjit::X86Assembler& as, MyConstPool& pool, asmjit::Label& rejectlabel, const std::basic_string<wchar_t>& str)
 {
 	for (int i = 0; i < str.size(); i += 8)
 	{
@@ -660,47 +741,43 @@ void MatchRoutineEM64T<wchar_t>::emit(asmjit::X86Assembler& as, asmjit::Label& r
 			d1.uw[j] = str[i + j];
 		}
 
-		as.vmovdqu(asmjit::x86::xmm0, asmjit::X86Mem(INPUT_REG, 0));
-		//as.vpcmpistri(loadreg, cc.newXmmConst(asmjit::kConstScopeGlobal, d1), asmjit::Imm(0x18), mireg);
-		as.cmp(asmjit::x86::rcx, asmjit::Imm(l1));
+		as.vmovdqu(LOAD_REG, asmjit::X86Mem(INPUT_REG, 0));
+		as.vpcmpistri(LOAD_REG, pool.add(d1), asmjit::Imm(0x18));
+		as.cmp(INDEX_REG, asmjit::Imm(l1));
 		as.jb(rejectlabel);
 		as.add(INPUT_REG, l1);
 	}
 }
 
-template<typename TCHAR>
-void SkipRoutineEM64T<TCHAR>::emit(asmjit::X86Assembler& as, const CharClass<TCHAR>& filter)
-{
-    asmjit::X86Mem filtermem = cc.newXmmConst(asmjit::kConstScopeGlobal, pack_charclass(filter));
-    
-    cc.vmovdqa(filterreg, filtermem);
-
-    asmjit::Label looplabel = cc.newLabel();
-
-    cc.bind(looplabel);
-
-    emit_core(cc, inputreg, filterreg);
-
-    cc.jg(looplabel);
-}
-
 template<>
 void SkipRoutineEM64T<char>::emit_core(asmjit::X86Assembler& as)
 {
-    as.vmovdqu(asmjit::x86::xmm0, asmjit::X86Mem(INPUT_REG, 0));
-    as.vpcmpistri(filterreg, asmjit::x86::xmm0, asmjit::Imm(0x14));
-    as.add(INPUT_REG, asmjit::x86::rcx);
-    as.cmp(asmjit::x86::rcx, 15);
+    as.vmovdqu(LOAD_REG, asmjit::X86Mem(INPUT_REG, 0));
+    as.vpcmpistri(PATTERN_REG, LOAD_REG, asmjit::Imm(0x14));
+    as.add(INPUT_REG, INDEX_REG);
+    as.cmp(INDEX_REG, 15);
 }
 
 template<>
 void SkipRoutineEM64T<wchar_t>::emit_core(asmjit::X86Assembler& as)
 {
-    as.vmovdqu(asmjit::x86::xmm0, asmjit::X86Mem(INPUT_REG, 0));
-    as.vpcmpistri(filterreg, asmjit::x86::xmm0, asmjit::Imm(0x15));
-    as.sal(asmjit::x86::rcx, 1);
-    as.add(INPUT_REG, asmjit::x86::rcx);
-    as.cmp(asmjit::x86::rcx, 14);
+    as.vmovdqu(LOAD_REG, asmjit::X86Mem(INPUT_REG, 0));
+    as.vpcmpistri(PATTERN_REG, LOAD_REG, asmjit::Imm(0x15));
+    as.sal(INDEX_REG, 1);
+    as.add(INPUT_REG, INDEX_REG);
+    as.cmp(INDEX_REG, 14);
+}
+
+template<typename TCHAR>
+void SkipRoutineEM64T<TCHAR>::emit(asmjit::X86Assembler& as)
+{
+    asmjit::Label looplabel = as.newLabel();
+
+    as.bind(looplabel);
+
+    emit_core(as);
+
+    as.jg(looplabel);
 }
 
 template<typename TCHAR>
@@ -713,10 +790,22 @@ SkipRoutineEM64T<TCHAR>::SkipRoutineEM64T(const CharClass<TCHAR>& filter, asmjit
     asmjit::X86Assembler as(&m_code);
 
     emit_parser_prolog(as);
-    
-    emit(as, filter);
 
-    emit_parser_epilog(as);
+    as.mov(INPUT_REG, asmjit::X86Mem(asmjit::x86::rsp, 16));
+
+    MyConstPool pool(as);
+
+    asmjit::Label rejectlabel = as.newLabel();
+
+    pool.load_charclass_filter(PATTERN_REG, filter);
+    
+    emit(as);
+
+    emit_parser_epilog(as, rejectlabel);
+
+    pool.embed();
+
+    as.finalize();
 }
 
 template class ParserEM64T<char>;
