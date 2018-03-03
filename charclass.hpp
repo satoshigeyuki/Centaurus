@@ -464,6 +464,10 @@ public:
             return m_ranges[index];
         return Range<TCHAR>();
     }
+    int size() const
+    {
+        return m_ranges.size();
+    }
 };
 }
 

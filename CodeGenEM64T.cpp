@@ -10,7 +10,9 @@
  *  INPUT_REG       ESI/RSI
  *  OUTPUT_REG      EDI/RDI
  *  OUTPUT_BOUND    EDX/RDX
- *  Stack backup    EBP/RBP
+ *  Stack backup    MM3/R9
+ * ATN Machine scope (marker writing)
+ *  MARKER_REG      EAX/RAX
  * DFA Routine scope
  *  BACKUP_REG      EBX/RBX
  *  CHAR_REG        EAX/RAX
@@ -22,6 +24,7 @@
  * Match Routine scope
  *  LOAD_REG        XMM0
  *  INDEX_REG       ECX/RCX
+ *  CHAR_REG        EAX/RAX
  * Skip Routine scope
  *  LOAD_REG        XMM0
  *  PATTERN_REG     XMM1
@@ -33,6 +36,9 @@
 #define INPUT_REG asmjit::x86::rsi
 #define OUTPUT_REG asmjit::x86::rdi
 #define OUTPUT_BOUND_REG asmjit::x86::rdx
+#define INPUT_BASE_REG asmjit::x86::rbp
+#define MARKER_REG asmjit::x86::rax
+#define ID_REG asmjit::x86::rbx
 
 //DFA/LDFA routine scope registers
 #define BACKUP_REG asmjit::x86::rbx
@@ -90,6 +96,7 @@ asmjit::Data128 pack_charclass(const CharClass<wchar_t>& cc)
 
 static void emit_parser_prolog(asmjit::X86Assembler& as)
 {
+    as.push(asmjit::x86::r9);
     as.push(asmjit::x86::r8);
     as.push(asmjit::x86::rbp);
     as.push(asmjit::x86::rdi);
@@ -99,8 +106,8 @@ static void emit_parser_prolog(asmjit::X86Assembler& as)
     as.push(asmjit::x86::rbx);
     as.push(asmjit::x86::rax);
 
-    //Backs up RSP to RBP for bailout
-    as.mov(asmjit::x86::rbp, asmjit::x86::rsp);
+    //Save RSP for bailout
+    as.mov(asmjit::x86::r9, asmjit::x86::rsp);
 }
 
 static void emit_parser_epilog(asmjit::X86Assembler& as, asmjit::Label& rejectlabel)
@@ -113,7 +120,7 @@ static void emit_parser_epilog(asmjit::X86Assembler& as, asmjit::Label& rejectla
     //Jump to this label is a long jump. Discard everything on the stack.
     as.bind(rejectlabel);
     as.mov(asmjit::x86::rax, 0);
-    as.mov(asmjit::x86::rsp, asmjit::x86::rbp);
+    as.mov(asmjit::x86::rsp, asmjit::x86::r9);
 
     as.bind(acceptlabel);
 
@@ -125,6 +132,7 @@ static void emit_parser_epilog(asmjit::X86Assembler& as, asmjit::Label& rejectla
     as.pop(asmjit::x86::rdi);
     as.pop(asmjit::x86::rbp);
     as.pop(asmjit::x86::r8);
+    as.pop(asmjit::x86::r9);
 
     as.ret();
 }
@@ -149,6 +157,7 @@ ParserEM64T<TCHAR>::ParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *l
     as.mov(OUTPUT_REG, asmjit::X86Mem(asmjit::x86::rsp, 56));
     as.mov(OUTPUT_BOUND_REG, OUTPUT_REG);
     as.add(OUTPUT_BOUND_REG, asmjit::Imm(AST_BUF_SIZE));
+    as.mov(INPUT_BASE_REG, INPUT_REG);
 
     MyConstPool pool(as);
 
@@ -165,7 +174,8 @@ ParserEM64T<TCHAR>::ParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *l
         as.call(machine_map[grammar.get_root_id()]);
     }
 
-    emit_parser_epilog(as, rejectlabel);
+    asmjit::Label finishlabel = as.newLabel();
+    as.jmp(finishlabel);
 
     CompositeATN<TCHAR> catn(grammar);
 
@@ -175,6 +185,10 @@ ParserEM64T<TCHAR>::ParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *l
 
         emit_machine(as, p.second, machine_map, catn, p.first, rejectlabel, pool);
     }
+
+    as.bind(finishlabel);
+
+    emit_parser_epilog(as, rejectlabel);
 
     pool.embed();
 
@@ -250,15 +264,19 @@ void ParserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const ATNMachine
 
     {
         //Write the start marker to the AST buffer.
-        //Structure of the start marker (128 bits, Little Endian):
-        //128        80  79       64               0
-        //+----------+---+--------+----------------+
-        //| Reserved | 1 | ATN ID | Start Position |
-        //+----------+---+--------+----------------+
-
-        as.mov(asmjit::X86Mem(OUTPUT_REG, 0), INPUT_REG);
-        as.mov(asmjit::x86::word_ptr(OUTPUT_REG, 8), asmjit::Imm((uint64_t)machine.get_unique_id() | ((uint64_t)1 << 15)));
-        as.add(OUTPUT_REG, 16);
+        //Structure of the start marker (64 bits, Little Endian):
+        //64  63       48               0
+        //+---+--------+----------------+
+        //| 1 | ATN ID | Start Position |
+        //+---+--------+----------------+
+        
+        as.mov(MARKER_REG, INPUT_REG);
+        as.sub(MARKER_REG, INPUT_BASE_REG);
+        as.mov(ID_REG, machine.get_unique_id() | (1 << 15));
+        as.shl(ID_REG, 48);
+        as.or_(MARKER_REG, ID_REG);
+        as.movnti(asmjit::X86Mem(OUTPUT_REG, 0), MARKER_REG);
+        as.add(OUTPUT_REG, 8);
         as.cmp(OUTPUT_REG, OUTPUT_BOUND_REG);
         as.je(requestpage1_label);
     }
@@ -292,14 +310,18 @@ void ParserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const ATNMachine
         {
             //Write the end marker to the AST buffer.
             //Structure of the end marker:
-            //128        80  79       64             0
-            //+----------+---+--------+--------------+
-            //| Reserved | 0 | ATN ID | End Position |
-            //+----------+---+--------+--------------+
+            //64  63       48             0
+            //+---+--------+--------------+
+            //| 0 | ATN ID | End Position |
+            //+---+--------+--------------+
 
-            as.mov(asmjit::X86Mem(OUTPUT_REG, 0), INPUT_REG);
-            as.mov(asmjit::x86::word_ptr(OUTPUT_REG, 8), asmjit::Imm(machine.get_unique_id()));
-            as.add(OUTPUT_REG, 16);
+            as.mov(MARKER_REG, INPUT_REG);
+            as.sub(MARKER_REG, INPUT_BASE_REG);
+            as.mov(ID_REG, machine.get_unique_id());
+            as.shl(ID_REG, 48);
+            as.or_(MARKER_REG, ID_REG);
+            as.movnti(asmjit::X86Mem(OUTPUT_REG, 0), MARKER_REG);
+            as.add(OUTPUT_REG, 8);
             as.cmp(OUTPUT_REG, OUTPUT_BOUND_REG);
             as.je(requestpage2_label);
             as.ret();
@@ -457,6 +479,7 @@ void DFARoutineEM64T<TCHAR>::emit(asmjit::X86Assembler& as, asmjit::Label& rejec
     asmjit::Label finishlabel = as.newLabel();
 
     as.mov(BACKUP_REG, 0);
+    as.jmp(statelabels[0]);
 
     for (int i = 0; i < dfa.get_state_num(); i++)
     {
@@ -480,28 +503,50 @@ void DFARoutineEM64T<char>::emit_state(asmjit::X86Assembler& as, asmjit::Label& 
 		as.mov(BACKUP_REG, INPUT_REG);
 	as.inc(INPUT_REG);
 
-	for (const auto& tr : state.get_transitions())
-	{
-		for (const auto& r : tr.label())
-		{
-			if (r.start() + 1 == r.end())
-			{
-                //The range consists of one character: test for equality and jump
-				as.cmp(CHAR_REG, r.start());
-				as.je(labels[tr.dest()]);
-			}
-			else
-			{
-                //The range consists of multiple characters: range check and jump
-				as.sub(CHAR_REG, r.start());
-				as.cmp(CHAR_REG, r.end() - r.start());
-				as.jb(labels[tr.dest()]);
-				as.mov(CHAR_REG, CHAR2_REG);
-			}
-		}
-	}
-    //Jump to the "reject trampoline" and check if the input has ever been accepted
-	as.jmp(rejectlabel);
+    if (state.get_transitions().size() == 1 && state.get_transitions()[0].label().size() == 1)
+    {
+        const NFATransition<char>& tr = state.get_transitions()[0];
+        const Range<char>& r = tr.label()[0];
+        {
+            if (r.start() + 1 == r.end())
+            {
+                as.cmp(CHAR_REG, r.start());
+                as.jne(rejectlabel);
+            }
+            else
+            {
+                as.sub(CHAR_REG, r.start());
+                as.cmp(CHAR_REG, r.end() - r.start());
+                as.jnb(rejectlabel);
+            }
+        }
+        as.jmp(labels[tr.dest()]);
+    }
+    else
+    {
+        for (const auto& tr : state.get_transitions())
+        {
+            for (const auto& r : tr.label())
+            {
+                if (r.start() + 1 == r.end())
+                {
+                    //The range consists of one character: test for equality and jump
+                    as.cmp(CHAR_REG, r.start());
+                    as.je(labels[tr.dest()]);
+                }
+                else
+                {
+                    //The range consists of multiple characters: range check and jump
+                    as.sub(CHAR_REG, r.start());
+                    as.cmp(CHAR_REG, r.end() - r.start());
+                    as.jb(labels[tr.dest()]);
+                    as.mov(CHAR_REG, CHAR2_REG);
+                }
+            }
+        }
+        //Jump to the "reject trampoline" and check if the input has ever been accepted
+        as.jmp(rejectlabel);
+    }
 }
 
 template<>
@@ -709,23 +754,36 @@ MatchRoutineEM64T<TCHAR>::MatchRoutineEM64T(const std::basic_string<TCHAR>& str,
 template<>
 void MatchRoutineEM64T<char>::emit(asmjit::X86Assembler& as, MyConstPool& pool, asmjit::Label& rejectlabel, const std::basic_string<char>& str)
 {
-	for (int i = 0; i < str.size(); i += 16)
-	{
-		int l1 = std::min(str.size() - i, (size_t)16);
+    if (str.size() < 8)
+    {
+        for (int i = 0; i < str.size(); i++)
+        {
+            as.movzx(CHAR_REG, asmjit::x86::byte_ptr(INPUT_REG, 0));
+            as.inc(INPUT_REG);
+            as.cmp(CHAR_REG, str[i]);
+            as.jne(rejectlabel);
+        }
+    }
+    else
+    {
+        for (int i = 0; i < str.size(); i += 16)
+        {
+            int l1 = std::min(str.size() - i, (size_t)16);
 
-		asmjit::Data128 d1;
+            asmjit::Data128 d1;
 
-		for (int j = 0; j < l1; j++)
-		{
-			d1.ub[j] = str[i + j];
-		}
-		
-		as.vmovdqu(LOAD_REG, asmjit::X86Mem(INPUT_REG, 0));
-		as.vpcmpistri(LOAD_REG, pool.add(d1), asmjit::Imm(0x18));
-		as.cmp(INDEX_REG, asmjit::Imm(l1));
-		as.jb(rejectlabel);
-		as.add(INPUT_REG, l1);
-	}
+            for (int j = 0; j < l1; j++)
+            {
+                d1.ub[j] = str[i + j];
+            }
+
+            as.vmovdqu(LOAD_REG, asmjit::X86Mem(INPUT_REG, 0));
+            as.vpcmpistri(LOAD_REG, pool.add(d1), asmjit::Imm(0x18));
+            as.cmp(INDEX_REG, asmjit::Imm(l1));
+            as.jb(rejectlabel);
+            as.add(INPUT_REG, l1);
+        }
+    }
 }
 template<>
 void MatchRoutineEM64T<wchar_t>::emit(asmjit::X86Assembler& as, MyConstPool& pool, asmjit::Label& rejectlabel, const std::basic_string<wchar_t>& str)
