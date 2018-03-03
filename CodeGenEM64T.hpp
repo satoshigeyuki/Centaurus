@@ -146,7 +146,6 @@ class SkipRoutineEM64T
     asmjit::JitRuntime m_runtime;
     asmjit::CodeHolder m_code;
 private:
-    static void emit_core(asmjit::X86Assembler& as);
     static CharClass<TCHAR> m_skipfilter;
 public:
     static void emit(asmjit::X86Assembler& as);

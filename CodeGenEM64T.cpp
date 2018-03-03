@@ -493,20 +493,26 @@ void DFARoutineEM64T<TCHAR>::emit(asmjit::X86Assembler& as, asmjit::Label& rejec
     as.jz(rejectlabel);
 }
 
-template<>
-void DFARoutineEM64T<char>::emit_state(asmjit::X86Assembler& as, asmjit::Label& rejectlabel, const DFAState<char>& state, std::vector<asmjit::Label>& labels)
+template<typename TCHAR>
+void DFARoutineEM64T<TCHAR>::emit_state(asmjit::X86Assembler& as, asmjit::Label& rejectlabel, const DFAState<TCHAR>& state, std::vector<asmjit::Label>& labels)
 {
     //Read the character from stream and advance the input position
-	as.movzx(CHAR_REG, asmjit::x86::byte_ptr(INPUT_REG, 0));
-	as.mov(CHAR2_REG, CHAR_REG);
+    if (sizeof(TCHAR) == 1)
+        as.movzx(CHAR_REG, asmjit::x86::byte_ptr(INPUT_REG, 0));
+    else
+        as.movzx(CHAR_REG, asmjit::x86::word_ptr(INPUT_REG, 0));
+    as.mov(CHAR2_REG, CHAR_REG);
 	if (state.is_accept_state())
 		as.mov(BACKUP_REG, INPUT_REG);
-	as.inc(INPUT_REG);
+    if (sizeof(TCHAR) == 1)
+        as.inc(INPUT_REG);
+    else
+        as.add(INPUT_REG, 2);
 
     if (state.get_transitions().size() == 1 && state.get_transitions()[0].label().size() == 1)
     {
-        const NFATransition<char>& tr = state.get_transitions()[0];
-        const Range<char>& r = tr.label()[0];
+        const NFATransition<TCHAR>& tr = state.get_transitions()[0];
+        const Range<TCHAR>& r = tr.label()[0];
         {
             if (r.start() + 1 == r.end())
             {
@@ -547,40 +553,6 @@ void DFARoutineEM64T<char>::emit_state(asmjit::X86Assembler& as, asmjit::Label& 
         //Jump to the "reject trampoline" and check if the input has ever been accepted
         as.jmp(rejectlabel);
     }
-}
-
-template<>
-void DFARoutineEM64T<wchar_t>::emit_state(asmjit::X86Assembler& as, asmjit::Label& rejectlabel, const DFAState<wchar_t>& state, std::vector<asmjit::Label>& labels)
-{
-    //Read the character from stream and advance the input position
-    as.movzx(CHAR_REG, asmjit::x86::word_ptr(INPUT_REG, 0));
-    as.mov(CHAR2_REG, CHAR_REG);
-    if (state.is_accept_state())
-        as.mov(BACKUP_REG, INPUT_REG);
-    as.add(INPUT_REG, 2);
-
-    for (const auto& tr : state.get_transitions())
-    {
-        for (const auto& r : tr.label())
-        {
-            if (r.start() + 1 == r.end())
-            {
-                //The range consists of one character: test for equality and jump
-                as.cmp(CHAR_REG, r.start());
-                as.je(labels[tr.dest()]);
-            }
-            else
-            {
-                //The range consists of multiple characters: range check and jump
-                as.sub(CHAR_REG, r.start());
-                as.cmp(CHAR_REG, r.end() - r.start());
-                as.jb(labels[tr.dest()]);
-                as.mov(CHAR_REG, CHAR2_REG);
-            }
-        }
-    }
-    //Jump to the "reject trampoline" and check if the input has ever been accepted
-    as.jmp(rejectlabel);
 }
 
 template<typename TCHAR>
@@ -641,12 +613,18 @@ void LDFARoutineEM64T<TCHAR>::emit(asmjit::X86Assembler& as, asmjit::Label& reje
     }
 }
 
-template<>
-void LDFARoutineEM64T<char>::emit_state(asmjit::X86Assembler& as, asmjit::Label& rejectlabel, const LDFAState<char>& state, std::vector<asmjit::Label>& labels, std::vector<asmjit::Label>& exitlabels)
+template<typename TCHAR>
+void LDFARoutineEM64T<TCHAR>::emit_state(asmjit::X86Assembler& as, asmjit::Label& rejectlabel, const LDFAState<TCHAR>& state, std::vector<asmjit::Label>& labels, std::vector<asmjit::Label>& exitlabels)
 {
-    as.movzx(CHAR_REG, asmjit::x86::byte_ptr(PEEK_REG, 0));
+    if (sizeof(TCHAR) == 1)
+        as.movzx(CHAR_REG, asmjit::x86::byte_ptr(PEEK_REG, 0));
+    else
+        as.movzx(CHAR_REG, asmjit::x86::word_ptr(PEEK_REG, 0));
     as.mov(CHAR2_REG, CHAR_REG);
-    as.inc(PEEK_REG);
+    if (sizeof(TCHAR) == 1)
+        as.inc(PEEK_REG);
+    else
+        as.add(PEEK_REG, 2);
 
     for (const auto& tr : state.get_transitions())
     {
@@ -683,48 +661,6 @@ void LDFARoutineEM64T<char>::emit_state(asmjit::X86Assembler& as, asmjit::Label&
     as.jmp(rejectlabel);
 }
 
-template<>
-void LDFARoutineEM64T<wchar_t>::emit_state(asmjit::X86Assembler& as, asmjit::Label& rejectlabel, const LDFAState<wchar_t>& state, std::vector<asmjit::Label>& labels, std::vector<asmjit::Label>& exitlabels)
-{
-	as.movzx(CHAR_REG, asmjit::x86::word_ptr(PEEK_REG, 0));
-	as.mov(CHAR2_REG, CHAR_REG);
-	as.add(PEEK_REG, 2);
-
-	for (const auto& tr : state.get_transitions())
-	{
-		for (const auto& r : tr.label())
-		{
-			if (r.start() + 1 == r.end())
-			{
-				as.cmp(CHAR_REG, r.start());
-				if (tr.dest() >= 0)
-				{
-					as.je(labels[tr.dest()]);
-				}
-				else
-				{
-                    as.je(exitlabels[-tr.dest() - 1]);
-				}
-			}
-			else
-			{
-				as.sub(CHAR_REG, r.start());
-				as.cmp(CHAR_REG, r.end() - r.start());
-				if (tr.dest() >= 0)
-				{
-					as.jb(labels[tr.dest()]);
-				}
-				else
-				{
-                    as.jb(exitlabels[-tr.dest() - 1]);
-				}
-				as.mov(CHAR_REG, CHAR2_REG);
-			}
-		}
-	}
-    as.jmp(rejectlabel);
-}
-
 template<typename TCHAR>
 MatchRoutineEM64T<TCHAR>::MatchRoutineEM64T(const std::basic_string<TCHAR>& str, asmjit::Logger *logger = NULL)
 {
@@ -751,30 +687,41 @@ MatchRoutineEM64T<TCHAR>::MatchRoutineEM64T(const std::basic_string<TCHAR>& str,
     as.finalize();
 }
 
-template<>
-void MatchRoutineEM64T<char>::emit(asmjit::X86Assembler& as, MyConstPool& pool, asmjit::Label& rejectlabel, const std::basic_string<char>& str)
+template<typename TCHAR>
+void MatchRoutineEM64T<TCHAR>::emit(asmjit::X86Assembler& as, MyConstPool& pool, asmjit::Label& rejectlabel, const std::basic_string<TCHAR>& str)
 {
     if (str.size() < 8)
     {
         for (int i = 0; i < str.size(); i++)
         {
-            as.movzx(CHAR_REG, asmjit::x86::byte_ptr(INPUT_REG, 0));
-            as.inc(INPUT_REG);
+            if (sizeof(TCHAR) == 1)
+            {
+                as.movzx(CHAR_REG, asmjit::x86::byte_ptr(INPUT_REG, 0));
+                as.inc(INPUT_REG);
+            }
+            else
+            {
+                as.movzx(CHAR_REG, asmjit::x86::word_ptr(INPUT_REG, 0));
+                as.add(INPUT_REG, 2);
+            }
             as.cmp(CHAR_REG, str[i]);
             as.jne(rejectlabel);
         }
     }
     else
     {
-        for (int i = 0; i < str.size(); i += 16)
+        for (int i = 0; i < str.size(); i += 16 / sizeof(TCHAR))
         {
-            int l1 = std::min(str.size() - i, (size_t)16);
+            int l1 = std::min(str.size() - i, (size_t)(16 / sizeof(TCHAR)));
 
             asmjit::Data128 d1;
 
             for (int j = 0; j < l1; j++)
             {
-                d1.ub[j] = str[i + j];
+                if (sizeof(TCHAR) == 1)
+                    d1.ub[j] = str[i + j];
+                else
+                    d1.uw[j] = str[i + j];
             }
 
             as.vmovdqu(LOAD_REG, asmjit::X86Mem(INPUT_REG, 0));
@@ -785,46 +732,6 @@ void MatchRoutineEM64T<char>::emit(asmjit::X86Assembler& as, MyConstPool& pool, 
         }
     }
 }
-template<>
-void MatchRoutineEM64T<wchar_t>::emit(asmjit::X86Assembler& as, MyConstPool& pool, asmjit::Label& rejectlabel, const std::basic_string<wchar_t>& str)
-{
-	for (int i = 0; i < str.size(); i += 8)
-	{
-		int l1 = std::min(str.size() - i, (size_t)8);
-
-		asmjit::Data128 d1;
-
-		for (int j = 0; j < l1; j++)
-		{
-			d1.uw[j] = str[i + j];
-		}
-
-		as.vmovdqu(LOAD_REG, asmjit::X86Mem(INPUT_REG, 0));
-		as.vpcmpistri(LOAD_REG, pool.add(d1), asmjit::Imm(0x18));
-		as.cmp(INDEX_REG, asmjit::Imm(l1));
-		as.jb(rejectlabel);
-		as.add(INPUT_REG, l1);
-	}
-}
-
-template<>
-void SkipRoutineEM64T<char>::emit_core(asmjit::X86Assembler& as)
-{
-    as.vmovdqu(LOAD_REG, asmjit::X86Mem(INPUT_REG, 0));
-    as.vpcmpistri(PATTERN_REG, LOAD_REG, asmjit::Imm(0x14));
-    as.add(INPUT_REG, INDEX_REG);
-    as.cmp(INDEX_REG, 15);
-}
-
-template<>
-void SkipRoutineEM64T<wchar_t>::emit_core(asmjit::X86Assembler& as)
-{
-    as.vmovdqu(LOAD_REG, asmjit::X86Mem(INPUT_REG, 0));
-    as.vpcmpistri(PATTERN_REG, LOAD_REG, asmjit::Imm(0x15));
-    as.sal(INDEX_REG, 1);
-    as.add(INPUT_REG, INDEX_REG);
-    as.cmp(INDEX_REG, 14);
-}
 
 template<typename TCHAR>
 void SkipRoutineEM64T<TCHAR>::emit(asmjit::X86Assembler& as)
@@ -833,7 +740,12 @@ void SkipRoutineEM64T<TCHAR>::emit(asmjit::X86Assembler& as)
 
     as.bind(looplabel);
 
-    emit_core(as);
+    as.vmovdqu(LOAD_REG, asmjit::X86Mem(INPUT_REG, 0));
+    as.vpcmpistri(PATTERN_REG, LOAD_REG, asmjit::Imm(sizeof(TCHAR) == 1 ? 0x14 : 0x15));
+    if (sizeof(TCHAR) == 2)
+        as.sal(INDEX_REG, 1);
+    as.add(INPUT_REG, INDEX_REG);
+    as.cmp(INDEX_REG, 15);
 
     as.jg(looplabel);
 }
