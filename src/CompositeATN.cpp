@@ -1,5 +1,3 @@
-#include <graphviz/gvc.h>
-
 #include "CompositeATN.hpp"
 
 namespace Centaurus

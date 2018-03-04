@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="ソース ファイル\asmjit">
+      <UniqueIdentifier>{8deed7bc-ae31-48e2-b1ed-ecb17bb24df4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -82,6 +85,96 @@
     </ClCompile>
     <ClCompile Include="stdafx.cpp">
       <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\asmjit\src\asmjit\base\arch.cpp">
+      <Filter>ソース ファイル\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="..\asmjit\src\asmjit\base\assembler.cpp">
+      <Filter>ソース ファイル\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="..\asmjit\src\asmjit\base\codebuilder.cpp">
+      <Filter>ソース ファイル\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="..\asmjit\src\asmjit\base\codecompiler.cpp">
+      <Filter>ソース ファイル\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="..\asmjit\src\asmjit\base\codeemitter.cpp">
+      <Filter>ソース ファイル\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="..\asmjit\src\asmjit\base\codeholder.cpp">
+      <Filter>ソース ファイル\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="..\asmjit\src\asmjit\base\constpool.cpp">
+      <Filter>ソース ファイル\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="..\asmjit\src\asmjit\base\cpuinfo.cpp">
+      <Filter>ソース ファイル\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="..\asmjit\src\asmjit\base\func.cpp">
+      <Filter>ソース ファイル\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="..\asmjit\src\asmjit\base\globals.cpp">
+      <Filter>ソース ファイル\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="..\asmjit\src\asmjit\base\inst.cpp">
+      <Filter>ソース ファイル\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="..\asmjit\src\asmjit\base\logging.cpp">
+      <Filter>ソース ファイル\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="..\asmjit\src\asmjit\base\operand.cpp">
+      <Filter>ソース ファイル\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="..\asmjit\src\asmjit\base\osutils.cpp">
+      <Filter>ソース ファイル\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="..\asmjit\src\asmjit\base\regalloc.cpp">
+      <Filter>ソース ファイル\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="..\asmjit\src\asmjit\base\runtime.cpp">
+      <Filter>ソース ファイル\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="..\asmjit\src\asmjit\base\string.cpp">
+      <Filter>ソース ファイル\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="..\asmjit\src\asmjit\base\utils.cpp">
+      <Filter>ソース ファイル\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="..\asmjit\src\asmjit\base\vmem.cpp">
+      <Filter>ソース ファイル\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="..\asmjit\src\asmjit\base\zone.cpp">
+      <Filter>ソース ファイル\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="..\asmjit\src\asmjit\x86\x86assembler.cpp">
+      <Filter>ソース ファイル\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="..\asmjit\src\asmjit\x86\x86builder.cpp">
+      <Filter>ソース ファイル\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="..\asmjit\src\asmjit\x86\x86compiler.cpp">
+      <Filter>ソース ファイル\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="..\asmjit\src\asmjit\x86\x86inst.cpp">
+      <Filter>ソース ファイル\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="..\asmjit\src\asmjit\x86\x86instimpl.cpp">
+      <Filter>ソース ファイル\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="..\asmjit\src\asmjit\x86\x86internal.cpp">
+      <Filter>ソース ファイル\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="..\asmjit\src\asmjit\x86\x86logging.cpp">
+      <Filter>ソース ファイル\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="..\asmjit\src\asmjit\x86\x86operand.cpp">
+      <Filter>ソース ファイル\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="..\asmjit\src\asmjit\x86\x86operand_regs.cpp">
+      <Filter>ソース ファイル\asmjit</Filter>
+    </ClCompile>
+    <ClCompile Include="..\asmjit\src\asmjit\x86\x86regalloc.cpp">
+      <Filter>ソース ファイル\asmjit</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
