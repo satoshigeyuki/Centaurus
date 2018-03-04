@@ -189,7 +189,7 @@ public:
             print_state(os, i);
             os << "\", shape=circle ];" << std::endl;
         }
-		 
+         
         for (unsigned int i = 0; i < m_states.size(); i++)
         {
             m_states[i].print(os, i);
@@ -220,14 +220,14 @@ public:
     {
         return prefix + "_S" + std::to_string(m_states.size() - 1);
     }
-	int get_state_num() const
-	{
-		return m_states.size();
-	}
-	const TSTATE& get_state(int index) const
-	{
-		return m_states[index];
-	}
+    int get_state_num() const
+    {
+        return m_states.size();
+    }
+    const TSTATE& get_state(int index) const
+    {
+        return m_states[index];
+    }
 };
 
 using NFAClosure = std::set<int>;
@@ -236,83 +236,83 @@ template<typename TCHAR>
 class NFADepartureSet : public std::vector<std::pair<CharClass<TCHAR>, NFAClosure> >
 {
 public:
-	NFADepartureSet()
-	{
-	}
-	virtual ~NFADepartureSet()
-	{
-	}
-	void add(const Range<TCHAR>& r, const NFAClosure& closure)
-	{
-		for (auto& p : *this)
-		{
-			if (std::equal(closure.cbegin(), closure.cend(), p.second.cbegin()))
-			{
-				p.first |= r;
-				return;
-			}
-		}
-		emplace_back(CharClass<TCHAR>(r), closure);
-	}
+    NFADepartureSet()
+    {
+    }
+    virtual ~NFADepartureSet()
+    {
+    }
+    void add(const Range<TCHAR>& r, const NFAClosure& closure)
+    {
+        for (auto& p : *this)
+        {
+            if (std::equal(closure.cbegin(), closure.cend(), p.second.cbegin()))
+            {
+                p.first |= r;
+                return;
+            }
+        }
+        emplace_back(CharClass<TCHAR>(r), closure);
+    }
 };
 
 template<typename TCHAR>
 class NFADepartureSetFactory
 {
-	std::vector<NFATransition<TCHAR> > m_transitions;
+    std::vector<NFATransition<TCHAR> > m_transitions;
 public:
-	NFADepartureSetFactory()
-	{
+    NFADepartureSetFactory()
+    {
 
-	}
-	virtual ~NFADepartureSetFactory()
-	{
+    }
+    virtual ~NFADepartureSetFactory()
+    {
 
-	}
-	void add(const NFATransition<TCHAR>& tr)
-	{
-		if (!tr.is_epsilon())
-		    m_transitions.push_back(tr);
-	}
-	NFADepartureSet<TCHAR> build_departure_set()
-	{
-		std::set<int> borders;
+    }
+    void add(const NFATransition<TCHAR>& tr)
+    {
+        if (!tr.is_epsilon())
+            m_transitions.push_back(tr);
+    }
+    NFADepartureSet<TCHAR> build_departure_set()
+    {
+        std::set<int> borders;
 
-		for (const auto& tr : m_transitions)
-		{
-			IndexVector borders_for_one_tr = tr.label().collect_borders();
+        for (const auto& tr : m_transitions)
+        {
+            IndexVector borders_for_one_tr = tr.label().collect_borders();
 
-			borders.insert(borders_for_one_tr.cbegin(), borders_for_one_tr.cend());
-		}
+            borders.insert(borders_for_one_tr.cbegin(), borders_for_one_tr.cend());
+        }
 
-		NFADepartureSet<TCHAR> deptset;
+        NFADepartureSet<TCHAR> deptset;
 
-		for (auto i = borders.cbegin(); i != borders.cend();)
-		{
-			TCHAR atomic_range_start = *i;
-			if (++i == borders.cend()) break;
-			TCHAR atomic_range_end = *i;
+        for (auto i = borders.cbegin(); i != borders.cend();)
+        {
+            TCHAR atomic_range_start = *i;
+            if (++i == borders.cend()) break;
+            TCHAR atomic_range_end = *i;
 
-			Range<TCHAR> atomic_range(atomic_range_start, atomic_range_end);
+            Range<TCHAR> atomic_range(atomic_range_start, atomic_range_end);
 
-			NFAClosure closure;
+            NFAClosure closure;
 
-			for (const auto& tr : m_transitions)
-			{
-				if (tr.label().includes(atomic_range))
-				{
-					closure.insert(tr.dest());
-				}
-			}
+            for (const auto& tr : m_transitions)
+            {
+                if (tr.label().includes(atomic_range))
+                {
+                    closure.insert(tr.dest());
+                }
+            }
 
-			if (!closure.empty())
-			{
-				deptset.add(atomic_range, closure);
-			}
-		}
+            if (!closure.empty())
+            {
+                deptset.add(atomic_range, closure);
+            }
+        }
 
-		return deptset;
-	}
+        return deptset;
+    }
 };
 
 template<typename TCHAR> class NFA : public NFABase<NFAState<TCHAR> >
@@ -497,58 +497,58 @@ public:
 
         return ret;
     }
-	/*!
-	 * @brief Tests if the NFA accepts the given string
-	 */
-	bool run(const std::basic_string<TCHAR>& seq, int index = 0, int input_pos = 0) const
-	{
-		if (index == m_states.size() - 1 && seq.size() == input_pos)
-		{
-			return true;
-		}
-		else
-		{
-			for (const auto& tr : get_transitions(index))
-			{
-				if (tr.is_epsilon())
-				{
-					if (run(seq, tr.dest(), input_pos))
-						return true;
-				}
-				else if (tr.label().includes(seq[input_pos]))
-				{
-					if (run(seq, tr.dest(), input_pos + 1))
-						return true;
-				}
-			}
-			return false;
-		}
-	}
-	/*!
-	* @brief Add a transition to a new state from the final state.
-	*/
-	void add_state(const CharClass<TCHAR>& cc)
-	{
-		m_states.back().add_transition(cc, m_states.size());
-		m_states.emplace_back();
-	}
-	/*!
-	* @brief Add a transition from the final state to another state.
-	*/
-	void add_transition_to(const CharClass<TCHAR>& cc, int dest)
-	{
-		m_states.back().add_transition(cc, dest);
-	}
-	/*!
-	* @brief Add a transition to the final state from another state.
-	*/
-	void add_transition_from(const CharClass<TCHAR>& cc, int src)
-	{
-		m_states[src].add_transition(cc, m_states.size() - 1);
-	}
-	const std::vector<NFATransition<TCHAR> >& get_transitions(int index) const
-	{
-		return m_states[index].get_transitions();
-	}
+    /*!
+     * @brief Tests if the NFA accepts the given string
+     */
+    bool run(const std::basic_string<TCHAR>& seq, int index = 0, int input_pos = 0) const
+    {
+        if (index == m_states.size() - 1 && seq.size() == input_pos)
+        {
+            return true;
+        }
+        else
+        {
+            for (const auto& tr : get_transitions(index))
+            {
+                if (tr.is_epsilon())
+                {
+                    if (run(seq, tr.dest(), input_pos))
+                        return true;
+                }
+                else if (tr.label().includes(seq[input_pos]))
+                {
+                    if (run(seq, tr.dest(), input_pos + 1))
+                        return true;
+                }
+            }
+            return false;
+        }
+    }
+    /*!
+    * @brief Add a transition to a new state from the final state.
+    */
+    void add_state(const CharClass<TCHAR>& cc)
+    {
+        m_states.back().add_transition(cc, m_states.size());
+        m_states.emplace_back();
+    }
+    /*!
+    * @brief Add a transition from the final state to another state.
+    */
+    void add_transition_to(const CharClass<TCHAR>& cc, int dest)
+    {
+        m_states.back().add_transition(cc, dest);
+    }
+    /*!
+    * @brief Add a transition to the final state from another state.
+    */
+    void add_transition_from(const CharClass<TCHAR>& cc, int src)
+    {
+        m_states[src].add_transition(cc, m_states.size() - 1);
+    }
+    const std::vector<NFATransition<TCHAR> >& get_transitions(int index) const
+    {
+        return m_states[index].get_transitions();
+    }
 };
 }

@@ -106,8 +106,8 @@ std::ostream& operator<<(std::ostream& os, const Range<TCHAR>& r)
 template<typename TCHAR>
 std::wostream& operator<<(std::wostream& os, const Range<TCHAR>& r)
 {
-	os << L'[' << r.start() << L", " << r.end() - 1 << L')';
-	return os;
+    os << L'[' << r.start() << L", " << r.end() - 1 << L')';
+    return os;
 }
 
 template<typename TCHAR> class CharClass
@@ -115,7 +115,7 @@ template<typename TCHAR> class CharClass
     std::vector<Range<TCHAR> > m_ranges;
 
     template<typename T> friend std::ostream& operator<<(std::ostream& os, const CharClass<T>& cc);
-	template<typename T> friend std::wostream& operator<<(std::wostream& os, const CharClass<T>& cc);
+    template<typename T> friend std::wostream& operator<<(std::wostream& os, const CharClass<T>& cc);
 
     void parse(Stream& stream);
 public:
@@ -249,14 +249,14 @@ public:
         }
         return false;
     }
-	bool includes(TCHAR ch) const
-	{
-		for (const auto& mr : m_ranges)
-		{
-			if (mr.start() <= ch && ch < mr.end()) return true;
-		}
-		return false;
-	}
+    bool includes(TCHAR ch) const
+    {
+        for (const auto& mr : m_ranges)
+        {
+            if (mr.start() <= ch && ch < mr.end()) return true;
+        }
+        return false;
+    }
     bool overlaps(const CharClass<TCHAR>& cc) const
     {
         auto i = m_ranges.cbegin();
@@ -442,22 +442,22 @@ public:
     {
         return !m_ranges.empty();
     }
-	typename std::vector<Range<TCHAR> >::const_iterator cbegin() const
-	{
-		return m_ranges.cbegin();
-	}
-	typename std::vector<Range<TCHAR> >::const_iterator cend() const
-	{
-		return m_ranges.cend();
-	}
-	typename std::vector<Range<TCHAR> >::const_iterator begin() const
-	{
-		return m_ranges.cbegin();
-	}
-	typename std::vector<Range<TCHAR> >::const_iterator end() const
-	{
-		return m_ranges.cend();
-	}
+    typename std::vector<Range<TCHAR> >::const_iterator cbegin() const
+    {
+        return m_ranges.cbegin();
+    }
+    typename std::vector<Range<TCHAR> >::const_iterator cend() const
+    {
+        return m_ranges.cend();
+    }
+    typename std::vector<Range<TCHAR> >::const_iterator begin() const
+    {
+        return m_ranges.cbegin();
+    }
+    typename std::vector<Range<TCHAR> >::const_iterator end() const
+    {
+        return m_ranges.cend();
+    }
     Range<TCHAR> operator[](int index) const
     {
         if (index >= 0 && index < m_ranges.size())
@@ -473,12 +473,12 @@ public:
 
 namespace Microsoft
 {
-	namespace VisualStudio
-	{
-		namespace CppUnitTestFramework
-		{
-			template<typename TCHAR>
-			std::wstring ToString(const Centaurus::CharClass<TCHAR>& cc);
-		}
-	}
+    namespace VisualStudio
+    {
+        namespace CppUnitTestFramework
+        {
+            template<typename TCHAR>
+            std::wstring ToString(const Centaurus::CharClass<TCHAR>& cc);
+        }
+    }
 }

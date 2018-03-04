@@ -256,47 +256,47 @@ std::ostream& operator<<(std::ostream& os, const CharClass<TCHAR>& cc)
 template<typename TCHAR>
 std::wostream& operator<<(std::wostream& os, const CharClass<TCHAR>& cc)
 {
-	auto i = cc.m_ranges.cbegin();
+    auto i = cc.m_ranges.cbegin();
 
-	for (; i != cc.m_ranges.cend();)
-	{
-		if (i->end() == i->start() + 1)
-		{
-			if (i->start() == wide_to_target<TCHAR>(u'"'))
-				os << L"\\\"";
-			else if (i->start() == wide_to_target<TCHAR>(u'\\'))
-				os << L"\\\\";
-			else
-			{
-				char ch = os.narrow(i->start(), '@');
-				os << (std::isprint(ch) ? ch : '@');
-			}
-		}
-		else
-		{
-			if (i->start() == wide_to_target<TCHAR>(u'"'))
-				os << L"\\\"";
-			else if (i->start() == wide_to_target<TCHAR>(u'\\'))
-				os << L"\\\\";
-			else
-			{
-				char ch = os.narrow(i->start(), '@');
-				os << (std::isprint(ch) ? ch : '@');
-			}
-			os << L'-';
-			if (i->end() - 1 == wide_to_target<TCHAR>(u'"'))
-				os << L"\\\"";
-			else if (i->end() - 1 == wide_to_target<TCHAR>(u'\\'))
-				os << L"\\\\";
-			else
-			{
-				char ch = os.narrow(i->end(), '@');
-				os << (std::isprint(ch) ? ch : '@');
-			}
-		}
-		i++;
-	}
-	return os;
+    for (; i != cc.m_ranges.cend();)
+    {
+        if (i->end() == i->start() + 1)
+        {
+            if (i->start() == wide_to_target<TCHAR>(u'"'))
+                os << L"\\\"";
+            else if (i->start() == wide_to_target<TCHAR>(u'\\'))
+                os << L"\\\\";
+            else
+            {
+                char ch = os.narrow(i->start(), '@');
+                os << (std::isprint(ch) ? ch : '@');
+            }
+        }
+        else
+        {
+            if (i->start() == wide_to_target<TCHAR>(u'"'))
+                os << L"\\\"";
+            else if (i->start() == wide_to_target<TCHAR>(u'\\'))
+                os << L"\\\\";
+            else
+            {
+                char ch = os.narrow(i->start(), '@');
+                os << (std::isprint(ch) ? ch : '@');
+            }
+            os << L'-';
+            if (i->end() - 1 == wide_to_target<TCHAR>(u'"'))
+                os << L"\\\"";
+            else if (i->end() - 1 == wide_to_target<TCHAR>(u'\\'))
+                os << L"\\\\";
+            else
+            {
+                char ch = os.narrow(i->end(), '@');
+                os << (std::isprint(ch) ? ch : '@');
+            }
+        }
+        i++;
+    }
+    return os;
 }
 template std::ostream& operator<<(std::ostream& os, const CharClass<char>& cc);
 template std::ostream& operator<<(std::ostream& os, const CharClass<char16_t>& cc);
@@ -308,15 +308,15 @@ template std::wostream& operator<<(std::wostream& os, const CharClass<wchar_t>& 
 
 namespace Microsoft
 {
-	namespace VisualStudio
-	{
-		namespace CppUnitTestFramework
-		{
-			template<typename TCHAR>
-			std::wstring ToString(const Centaurus::CharClass<TCHAR>& cc)
-			{
-				std::wostringstream os;
-				
+    namespace VisualStudio
+    {
+        namespace CppUnitTestFramework
+        {
+            template<typename TCHAR>
+            std::wstring ToString(const Centaurus::CharClass<TCHAR>& cc)
+            {
+                std::wostringstream os;
+                
                 os << std::hex << std::setfill(L'0') << std::setw(sizeof(TCHAR) * 2) << std::showbase;
                 os.put(L'[');
                 for (const auto& r : cc)
@@ -329,11 +329,11 @@ namespace Microsoft
                 }
                 os.put(L']');
 
-				return os.str();
-			}
+                return os.str();
+            }
 
-			template std::wstring ToString(const Centaurus::CharClass<char>& cc);
-			template std::wstring ToString(const Centaurus::CharClass<wchar_t>& cc);
-		}
-	}
+            template std::wstring ToString(const Centaurus::CharClass<char>& cc);
+            template std::wstring ToString(const Centaurus::CharClass<wchar_t>& cc);
+        }
+    }
 }
