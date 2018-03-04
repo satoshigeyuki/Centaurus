@@ -1,9 +1,9 @@
 #include "stdafx.h"
 #include "CppUnitTest.h"
 
-#include "nfa.hpp"
-#include "grammar.hpp"
-#include "catn2.hpp"
+#include "NFA.hpp"
+#include "Grammar.hpp"
+#include "CompositeATN.hpp"
 
 #include "CATNLoader.hpp"
 

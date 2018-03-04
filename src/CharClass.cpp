@@ -1,4 +1,4 @@
-#include "charclass.hpp"
+#include "CharClass.hpp"
 
 #include <cctype>
 #include <iomanip>

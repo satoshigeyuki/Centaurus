@@ -4,11 +4,11 @@
 #include <locale>
 #include <codecvt>
 
-#include "stream.hpp"
-#include "grammar.hpp"
+#include "Stream.hpp"
+#include "Grammar.hpp"
 
-#include "catn2.hpp"
-#include "ldfa.hpp"
+#include "CompositeATN.hpp"
+#include "LookaheadDFA.hpp"
 
 std::locale::id std::codecvt<char, char, std::mbstate_t>::id;
 std::locale::id std::codecvt<char16_t, char, std::mbstate_t>::id;

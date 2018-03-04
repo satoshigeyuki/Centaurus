@@ -1,6 +1,6 @@
 #include <graphviz/gvc.h>
 
-#include "catn2.hpp"
+#include "CompositeATN.hpp"
 
 namespace Centaurus
 {

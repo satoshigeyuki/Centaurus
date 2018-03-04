@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "CppUnitTest.h"
 
-#include "nfa.hpp"
+#include "NFA.hpp"
 
 using namespace Centaurus;
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;

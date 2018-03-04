@@ -4,10 +4,10 @@
 #include <vector>
 #include <array>
 
-#include "identifier.hpp"
-#include "nfa.hpp"
-#include "atn.hpp"
-#include "grammar.hpp"
+#include "Identifier.hpp"
+#include "NFA.hpp"
+#include "ATN.hpp"
+#include "Grammar.hpp"
 
 namespace std
 {

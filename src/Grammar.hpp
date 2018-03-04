@@ -4,8 +4,8 @@
 #include <string>
 #include <unordered_map>
 
-#include "identifier.hpp"
-#include "atn.hpp"
+#include "Identifier.hpp"
+#include "ATN.hpp"
 
 namespace Centaurus
 {

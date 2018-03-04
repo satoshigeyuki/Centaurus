@@ -1,5 +1,5 @@
-#include "dfa.hpp"
-#include "atn.hpp"
+#include "DFA.hpp"
+#include "ATN.hpp"
 #include "asmjit/asmjit.h"
 #include "CodeGenEM64T.hpp"
 

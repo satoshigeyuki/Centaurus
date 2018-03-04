@@ -3,10 +3,10 @@
 #include <stack>
 #include <unordered_map>
 
-#include "nfa.hpp"
-#include "identifier.hpp"
-#include "stream.hpp"
-#include "charclass.hpp"
+#include "NFA.hpp"
+#include "Identifier.hpp"
+#include "Stream.hpp"
+#include "CharClass.hpp"
 
 namespace Centaurus
 {

@@ -5,10 +5,10 @@
 #include <set>
 #include <utility>
 
-#include "catn2.hpp"
-#include "nfa.hpp"
-#include "util.hpp"
-#include "exception.hpp"
+#include "CompositeATN.hpp"
+#include "NFA.hpp"
+#include "Util.hpp"
+#include "Exception.hpp"
 
 namespace std
 {

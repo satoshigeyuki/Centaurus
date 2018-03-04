@@ -1,7 +1,7 @@
 #pragma once
 
-#include "dfa.hpp"
-#include "ldfa.hpp"
+#include "DFA.hpp"
+#include "LookaheadDFA.hpp"
 #include "asmjit/asmjit.h"
 
 namespace Centaurus

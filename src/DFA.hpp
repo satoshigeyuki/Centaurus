@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <vector>
 
-#include "nfa.hpp"
+#include "NFA.hpp"
 
 namespace Centaurus
 {

@@ -1,6 +1,6 @@
 #include "stdafx.h"
-#include "grammar.hpp"
-#include "ldfa.hpp"
+#include "Grammar.hpp"
+#include "LookaheadDFA.hpp"
 
 #include "CATNLoader.hpp"
 #include "loggerstream.hpp"

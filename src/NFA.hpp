@@ -12,9 +12,9 @@
 #include <codecvt>
 #include <algorithm>
 
-#include "util.hpp"
-#include "exception.hpp"
-#include "charclass.hpp"
+#include "Util.hpp"
+#include "Exception.hpp"
+#include "CharClass.hpp"
 
 namespace Centaurus
 {

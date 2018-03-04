@@ -1,7 +1,7 @@
 #pragma once
 
-#include "grammar.hpp"
-#include "catn2.hpp"
+#include "Grammar.hpp"
+#include "CompositeATN.hpp"
 
 #include "CppUnitTest.h"
 

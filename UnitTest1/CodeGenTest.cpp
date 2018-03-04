@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "nfa.hpp"
+#include "NFA.hpp"
 #include "CodeGenEM64T.hpp"
 #include <setjmp.h>
 #include "CATNLoader.hpp"

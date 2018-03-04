@@ -5,7 +5,7 @@
 #include <locale>
 #include <codecvt>
 
-#include "stream.hpp"
+#include "Stream.hpp"
 
 namespace Centaurus
 {
