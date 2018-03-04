@@ -8,7 +8,9 @@
 !*.vcxproj
 !*.vcxproj.filters
 !.gitignore
+!.gitmodules
 !CMakeLists.txt
 !vc
 !UnitTest1
 !src
+!asmjit
