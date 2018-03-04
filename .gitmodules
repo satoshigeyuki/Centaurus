@@ -1,3 +1,6 @@
 [submodule "asmjit"]
 	path = asmjit
 	url = https://github.com/asmjit/asmjit.git
+[submodule "MsTestEmulator"]
+	path = MsTestEmulator
+	url = https://github.com/ihr486/MsTestEmulator.git
