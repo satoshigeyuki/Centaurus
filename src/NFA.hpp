@@ -252,7 +252,7 @@ public:
                 return;
             }
         }
-        emplace_back(CharClass<TCHAR>(r), closure);
+        this->emplace_back(CharClass<TCHAR>(r), closure);
     }
 };
 

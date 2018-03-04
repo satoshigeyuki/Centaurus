@@ -13,6 +13,7 @@ template<typename TCHAR> using DFATransition = NFATransition<TCHAR>;
 template<typename TCHAR> class DFAState : public NFABaseState<TCHAR, IndexVector>
 {
 public:
+	using NFABaseState<TCHAR, IndexVector>::get_transitions;
 	DFAState(const IndexVector& label)
 		: NFABaseState<TCHAR, IndexVector>(label) {}
 	bool is_accept_state() const

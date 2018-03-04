@@ -138,7 +138,7 @@ static void emit_parser_epilog(asmjit::X86Assembler& as, asmjit::Label& rejectla
 }
 
 template<typename TCHAR>
-ParserEM64T<TCHAR>::ParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *logger = NULL, asmjit::ErrorHandler *errhandler = NULL)
+ParserEM64T<TCHAR>::ParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *logger, asmjit::ErrorHandler *errhandler)
 {
     m_code.init(m_runtime.getCodeInfo());
     if (logger != NULL)
@@ -198,7 +198,7 @@ ParserEM64T<TCHAR>::ParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *l
 }
 
 template<typename TCHAR>
-DryParserEM64T<TCHAR>::DryParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *logger = NULL)
+DryParserEM64T<TCHAR>::DryParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *logger)
 {
     m_code.init(m_runtime.getCodeInfo());
     if (logger != NULL)
@@ -378,7 +378,7 @@ void ParserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const ATNMachine
 }
 
 template<typename TCHAR>
-void * __cdecl ParserEM64T<TCHAR>::request_page(void *context)
+void * ParserEM64T<TCHAR>::request_page(void *context)
 {
     ParserEM64T<TCHAR> *parser = (ParserEM64T<TCHAR> *)context;
 
@@ -556,7 +556,7 @@ void DFARoutineEM64T<TCHAR>::emit_state(asmjit::X86Assembler& as, asmjit::Label&
 }
 
 template<typename TCHAR>
-LDFARoutineEM64T<TCHAR>::LDFARoutineEM64T(const LookaheadDFA<TCHAR>& ldfa, asmjit::Logger *logger = NULL)
+LDFARoutineEM64T<TCHAR>::LDFARoutineEM64T(const LookaheadDFA<TCHAR>& ldfa, asmjit::Logger *logger)
 {
     m_code.init(m_runtime.getCodeInfo());
     if (logger != NULL)
@@ -662,7 +662,7 @@ void LDFARoutineEM64T<TCHAR>::emit_state(asmjit::X86Assembler& as, asmjit::Label
 }
 
 template<typename TCHAR>
-MatchRoutineEM64T<TCHAR>::MatchRoutineEM64T(const std::basic_string<TCHAR>& str, asmjit::Logger *logger = NULL)
+MatchRoutineEM64T<TCHAR>::MatchRoutineEM64T(const std::basic_string<TCHAR>& str, asmjit::Logger *logger)
 {
     m_code.init(m_runtime.getCodeInfo());
     if (logger != NULL)
@@ -751,7 +751,7 @@ void SkipRoutineEM64T<TCHAR>::emit(asmjit::X86Assembler& as)
 }
 
 template<typename TCHAR>
-SkipRoutineEM64T<TCHAR>::SkipRoutineEM64T(const CharClass<TCHAR>& filter, asmjit::Logger *logger = NULL)
+SkipRoutineEM64T<TCHAR>::SkipRoutineEM64T(const CharClass<TCHAR>& filter, asmjit::Logger *logger)
 {
     m_code.init(m_runtime.getCodeInfo());
     if (logger != NULL)

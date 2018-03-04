@@ -310,7 +310,7 @@ public:
 
         for (const auto& t : m_departures)
         {
-            IndexVector borders_for_one_tr = std::get<CharClass<TCHAR> >(t).collect_borders();
+            IndexVector borders_for_one_tr = std::get<0>(t).collect_borders();
 
             borders.insert(borders_for_one_tr.cbegin(), borders_for_one_tr.cend());
         }
@@ -329,9 +329,9 @@ public:
 
             for (const auto& t : m_departures)
             {
-                if (std::get<CharClass<TCHAR> >(t).includes(atomic_range))
+                if (std::get<0>(t).includes(atomic_range))
                 {
-                    closure.emplace(std::get<ATNPath>(t), std::get<int>(t));
+                    closure.emplace(std::get<1>(t), std::get<2>(t));
                 }
             }
 

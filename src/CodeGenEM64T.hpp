@@ -49,7 +49,7 @@ class ParserEM64T
     void *m_buffer;
     const void *(*m_func)(void *context, const void *input, void *output);
     void emit_machine(asmjit::X86Assembler& as, const ATNMachine<TCHAR>& machine, std::unordered_map<Identifier, asmjit::Label>& machine_map, const CompositeATN<TCHAR>& catn, const Identifier& id, asmjit::Label& rejectlabel, MyConstPool& pool);
-    static void * __cdecl request_page(void *context);
+    static void * request_page(void *context);
     long m_flipcount;
 public:
     ParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *logger = NULL, asmjit::ErrorHandler *errhandler = NULL);
