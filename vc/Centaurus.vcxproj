@@ -178,6 +178,7 @@
   <ItemGroup>
     <ClInclude Include="..\atn.hpp" />
     <ClInclude Include="..\catn2.hpp" />
+    <ClInclude Include="..\IPCMaster.hpp" />
     <ClInclude Include="..\JitParser.hpp" />
     <ClInclude Include="..\charclass.hpp" />
     <ClInclude Include="..\dfa.hpp" />
