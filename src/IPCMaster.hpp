@@ -65,15 +65,15 @@ public:
 
         char buf[256];
 
-        snprintf(buf, sizeof(buf), "/%s%s[%u]MasterBuffer", PROGRAM_UUID, PROGRAM_NAME, getpid());
+        snprintf(buf, sizeof(buf), "/Centaurus_%d_MasterBuffer", /*PROGRAM_UUID, PROGRAM_NAME, */getpid());
 
-        int fd = shm_open(buf, O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
+        int fd = shm_open(buf, O_RDWR | O_CREAT, 0666);
 
         ftruncate(fd, buffer_size);
 
         m_buffer = mmap(NULL, buffer_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 
-        close(fd);
+        //close(fd);
     }
     virtual ~MasterASTRingBuffer()
     {
@@ -81,7 +81,7 @@ public:
 
         char buf[256];
 
-        snprintf(buf, sizeof(buf), "/%s%s[%u]MasterBuffer", PROGRAM_UUID, PROGRAM_NAME, getpid());
+        snprintf(buf, sizeof(buf), "/Centaurus_%d_MasterBuffer", /*PROGRAM_UUID, PROGRAM_NAME, */getpid());
 
         shm_unlink(buf);
     }

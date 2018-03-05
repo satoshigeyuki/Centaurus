@@ -52,10 +52,12 @@
 #define INDEX_REG asmjit::x86::rcx
 
 #if defined(CENTAURUS_BUILD_WINDOWS)
+#define ARG1_REG asmjit::x86::rcx
 #define ARG1_STACK_OFFSET (16)
 #define ARG2_STACK_OFFSET (24)
 #define ARG3_STACK_OFFSET (56)
 #elif defined(CENTAURUS_BUILD_LINUX)
+#define ARG1_REG asmjit::x86::rdi
 #define ARG1_STACK_OFFSET (40)
 #define ARG2_STACK_OFFSET (32)
 #define ARG3_STACK_OFFSET (24)
@@ -357,7 +359,7 @@ void ParserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const ATNMachine
     {
         as.push(INPUT_REG);
         as.push(CONTEXT_REG);
-        as.mov(asmjit::x86::rcx, asmjit::X86Mem(asmjit::x86::rsp, 0));
+        as.mov(ARG1_REG, asmjit::X86Mem(asmjit::x86::rsp, 0));
         as.sub(asmjit::x86::rsp, 32);
         as.call((uint64_t)request_page);
         as.add(asmjit::x86::rsp, 32);
@@ -373,7 +375,7 @@ void ParserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const ATNMachine
     {
         as.push(INPUT_REG);
         as.push(CONTEXT_REG);
-        as.mov(asmjit::x86::rcx, asmjit::X86Mem(asmjit::x86::rsp, 0));
+        as.mov(ARG1_REG, asmjit::X86Mem(asmjit::x86::rsp, 0));
 #if defined(CENTAURUS_BUILD_WINDOWS)
         as.sub(asmjit::x86::rsp, 32);
 #endif
