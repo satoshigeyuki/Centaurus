@@ -61,8 +61,13 @@ public:
         WaitForSingleObject(hThread, INFINITE);
 #elif defined(CENTAURUS_BUILD_LINUX)
         pthread_t thread;
+        pthread_attr_t attr;
 
-        pthread_create(&thread, NULL, ParserRunner<T>::thread_runner, this);
+        pthread_attr_init(&attr);
+
+        pthread_attr_setstacksize(&attr, 256 * 1024 * 1024);
+
+        pthread_create(&thread, &attr, ParserRunner<T>::thread_runner, this);
 
         pthread_join(thread, NULL);
 #endif

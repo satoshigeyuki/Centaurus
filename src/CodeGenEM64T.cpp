@@ -740,8 +740,8 @@ void MatchRoutineEM64T<TCHAR>::emit(asmjit::X86Assembler& as, MyConstPool& pool,
                     d1.uw[j] = str[i + j];
             }
 
-            as.vmovdqu(LOAD_REG, asmjit::X86Mem(INPUT_REG, 0));
-            as.vpcmpistri(LOAD_REG, pool.add(d1), asmjit::Imm(0x18));
+            as.movdqu(LOAD_REG, asmjit::X86Mem(INPUT_REG, 0));
+            as.pcmpistri(LOAD_REG, pool.add(d1), asmjit::Imm(0x18));
             as.cmp(INDEX_REG, asmjit::Imm(l1));
             as.jb(rejectlabel);
             as.add(INPUT_REG, l1);
@@ -756,8 +756,8 @@ void SkipRoutineEM64T<TCHAR>::emit(asmjit::X86Assembler& as)
 
     as.bind(looplabel);
 
-    as.vmovdqu(LOAD_REG, asmjit::X86Mem(INPUT_REG, 0));
-    as.vpcmpistri(PATTERN_REG, LOAD_REG, asmjit::Imm(sizeof(TCHAR) == 1 ? 0x14 : 0x15));
+    as.movdqu(LOAD_REG, asmjit::X86Mem(INPUT_REG, 0));
+    as.pcmpistri(PATTERN_REG, LOAD_REG, asmjit::Imm(sizeof(TCHAR) == 1 ? 0x14 : 0x15));
     if (sizeof(TCHAR) == 2)
         as.sal(INDEX_REG, 1);
     as.add(INPUT_REG, INDEX_REG);
