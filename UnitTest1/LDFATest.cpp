@@ -13,10 +13,10 @@ namespace CppUnitTestFramework
 {
 TEST_CLASS(LDFATest)
 {
+	LoggerStreamBuf<char> m_narrowstreambuf;
 public:
 	TEST_METHOD_INITIALIZE(LDFATestInitialize)
 	{
-        static LoggerStreamBuf<char> m_narrowstreambuf;
 		std::cout.rdbuf(&m_narrowstreambuf);
 	}
 	TEST_METHOD(LDFAConstructionTest)
