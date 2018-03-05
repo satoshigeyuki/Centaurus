@@ -24,8 +24,13 @@ namespace CppUnitTestFramework
 
 			X86Assembler as(&code);
 
+#if defined(CENTAURUS_BUILD_WINDOWS)
 			as.mov(x86::rax, x86::rcx);
 			as.add(x86::rax, x86::rdx);
+#elif defined(CENTAURUS_BUILD_LINUX)
+            as.mov(x86::rax, x86::rsi);
+            as.add(x86::rax, x86::rdi);
+#endif
 			as.ret();
 
 			Func fn;

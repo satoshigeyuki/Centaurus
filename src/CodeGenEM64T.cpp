@@ -51,6 +51,16 @@
 #define PATTERN_REG asmjit::x86::xmm1
 #define INDEX_REG asmjit::x86::rcx
 
+#if defined(CENTAURUS_BUILD_WINDOWS)
+#define ARG1_STACK_OFFSET (16)
+#define ARG2_STACK_OFFSET (24)
+#define ARG3_STACK_OFFSET (56)
+#elif defined(CENTAURUS_BUILD_LINUX)
+#define ARG1_STACK_OFFSET (40)
+#define ARG2_STACK_OFFSET (32)
+#define ARG3_STACK_OFFSET (24)
+#endif
+
 namespace Centaurus
 {
 asmjit::Data128 pack_charclass(const CharClass<char>& cc)
@@ -152,9 +162,9 @@ ParserEM64T<TCHAR>::ParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *l
 
     emit_parser_prolog(as);
 
-    as.mov(CONTEXT_REG, asmjit::X86Mem(asmjit::x86::rsp, 16));
-    as.mov(INPUT_REG, asmjit::X86Mem(asmjit::x86::rsp, 24));
-    as.mov(OUTPUT_REG, asmjit::X86Mem(asmjit::x86::rsp, 56));
+    as.mov(CONTEXT_REG, asmjit::X86Mem(asmjit::x86::rsp, ARG1_STACK_OFFSET));
+    as.mov(INPUT_REG, asmjit::X86Mem(asmjit::x86::rsp, ARG2_STACK_OFFSET));
+    as.mov(OUTPUT_REG, asmjit::X86Mem(asmjit::x86::rsp, ARG3_STACK_OFFSET));
     as.mov(OUTPUT_BOUND_REG, OUTPUT_REG);
     as.add(OUTPUT_BOUND_REG, asmjit::Imm(AST_BUF_SIZE));
     as.mov(INPUT_BASE_REG, INPUT_REG);
@@ -210,7 +220,7 @@ DryParserEM64T<TCHAR>::DryParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Log
 
     emit_parser_prolog(as);
 
-    as.mov(INPUT_REG, asmjit::X86Mem(asmjit::x86::rsp, 16));
+    as.mov(INPUT_REG, asmjit::X86Mem(asmjit::x86::rsp, ARG1_STACK_OFFSET));
 
     MyConstPool pool(as);
 
@@ -364,9 +374,13 @@ void ParserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const ATNMachine
         as.push(INPUT_REG);
         as.push(CONTEXT_REG);
         as.mov(asmjit::x86::rcx, asmjit::X86Mem(asmjit::x86::rsp, 0));
+#if defined(CENTAURUS_BUILD_WINDOWS)
         as.sub(asmjit::x86::rsp, 32);
+#endif
         as.call((uint64_t)request_page);
+#if defined(CENTAURUS_BUILD_WINDOWS)
         as.add(asmjit::x86::rsp, 32);
+#endif
         as.mov(OUTPUT_REG, asmjit::x86::rax);
         as.mov(OUTPUT_BOUND_REG, OUTPUT_REG);
         as.add(OUTPUT_BOUND_REG, AST_BUF_SIZE);
@@ -455,7 +469,7 @@ DFARoutineEM64T<TCHAR>::DFARoutineEM64T(const DFA<TCHAR>& dfa, asmjit::Logger *l
 
     emit_parser_prolog(as);
 
-    as.mov(INPUT_REG, asmjit::X86Mem(asmjit::x86::rsp, 16));
+    as.mov(INPUT_REG, asmjit::X86Mem(asmjit::x86::rsp, ARG1_STACK_OFFSET));
 
     asmjit::Label rejectlabel = as.newLabel();
 
@@ -566,7 +580,7 @@ LDFARoutineEM64T<TCHAR>::LDFARoutineEM64T(const LookaheadDFA<TCHAR>& ldfa, asmji
 
     emit_parser_prolog(as);
 
-    as.mov(INPUT_REG, asmjit::X86Mem(asmjit::x86::rsp, 16));
+    as.mov(INPUT_REG, asmjit::X86Mem(asmjit::x86::rsp, ARG1_STACK_OFFSET));
 
     asmjit::Label rejectlabel = as.newLabel();
 
@@ -672,7 +686,7 @@ MatchRoutineEM64T<TCHAR>::MatchRoutineEM64T(const std::basic_string<TCHAR>& str,
 
     emit_parser_prolog(as);
 
-    as.mov(INPUT_REG, asmjit::X86Mem(asmjit::x86::rsp, 16));
+    as.mov(INPUT_REG, asmjit::X86Mem(asmjit::x86::rsp, ARG1_STACK_OFFSET));
 
     MyConstPool pool(as);
 
@@ -761,7 +775,7 @@ SkipRoutineEM64T<TCHAR>::SkipRoutineEM64T(const CharClass<TCHAR>& filter, asmjit
 
     emit_parser_prolog(as);
 
-    as.mov(INPUT_REG, asmjit::X86Mem(asmjit::x86::rsp, 16));
+    as.mov(INPUT_REG, asmjit::X86Mem(asmjit::x86::rsp, ARG1_STACK_OFFSET));
 
     MyConstPool pool(as);
 

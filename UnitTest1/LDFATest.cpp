@@ -17,11 +17,15 @@ TEST_CLASS(LDFATest)
 public:
 	TEST_METHOD_INITIALIZE(LDFATestInitialize)
 	{
-		std::cout.rdbuf(&m_narrowstreambuf);
+		//std::cout.rdbuf(&m_narrowstreambuf);
 	}
 	TEST_METHOD(LDFAConstructionTest)
 	{
-		Centaurus::CompositeATN<char> catn = LoadCATN("../../../json.cgr");
+        Logger::WriteMessage("Starting test.\n");
+
+		Centaurus::CompositeATN<char> catn = LoadCATN("json.cgr");
+
+        Logger::WriteMessage("CATN loaded.\n");
 
 		Centaurus::LookaheadDFA<char> ldfa(catn, Centaurus::ATNPath(u"Object", 0));
 

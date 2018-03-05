@@ -17,7 +17,7 @@ namespace UnitTest1
 		TEST_METHOD(LoadGrammarFile)
 		{
 			// TODO: テスト コードをここに挿入します
-			Centaurus::CompositeATN<char> catn = LoadCATN("../../../json.cgr");
+			Centaurus::CompositeATN<char> catn = LoadCATN("json.cgr");
 
 			//Logger::WriteMessage("Hello World!!");
 		}
