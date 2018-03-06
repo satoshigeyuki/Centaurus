@@ -19,6 +19,21 @@ namespace Centaurus
 #define PROGRAM_UUID L"{57DF45C9-6D0C-4DD2-9B41-B71F8CF66B13}"
 #define PROGRAM_NAME L"Centaurus.exe"
 
+class MasterDispatcher
+{
+    HANDLE m_semaphore;
+public:
+    MasterDispatcher()
+        : m_semaphore(INVALID_HANDLE_VALUE)
+    {
+        wchar_t buf[MAX_PATH];
+        swprintf_s(buf, L"%s%s[%u]Semaphore", PROGRAM_UUID, PROGRAM_NAME, GetCurrentProcessId());
+
+        m_semaphore = CreateSemaphore(NULL, 0, 256, buf);
+
+        
+    }
+};
 class MasterASTRingBuffer
 {
     HANDLE m_handle;
