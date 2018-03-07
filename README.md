@@ -1,3 +1,17 @@
+Centaurus
+========
+
+Centaurus is a performance-oriented LL(\*)-S parser generator.
+
+## Supported platforms
+
+* Linux x86-64 g++
+The code generator will use the System V AMD64 ABI for function calls,
+and POSIX IPC (message queues, semaphores and shared memory) for master-slave communication.
+* Windows x86-64 MSVC
+The code generator will use the Microsoft AMD64 ABI for function calls,
+and Win32 IPC (named pipes, semaphores and shared memory) for master-slave communication.
+
 ## What is with the name?
 
 Centaurus is a bright constellation low down in the southern sky (in Japan).
