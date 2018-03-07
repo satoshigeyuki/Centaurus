@@ -12,12 +12,15 @@
 #include <semaphore.h>
 #endif
 
-#define ALIGN_NEXT(x, a) (((x) + (a) - 1) / (a) * (a))
-
 #include <stdio.h>
+
+#ifndef IPC_DEFS_H
+#define IPC_DEFS_H
+#define ALIGN_NEXT(x, a) (((x) + (a) - 1) / (a) * (a))
 
 #define PROGRAM_UUID "{57DF45C9-6D0C-4DD2-9B41-B71F8CF66B13}"
 #define PROGRAM_NAME "Centaurus"
+#endif
 
 namespace Centaurus
 {
