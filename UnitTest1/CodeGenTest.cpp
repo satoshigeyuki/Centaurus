@@ -269,7 +269,7 @@ public:
         size_t bank_size = 8 * 1024 * 1024;
         int bank_num = 8;
 
-        MasterASTRingBuffer ring_buffer(bank_size, bank_num);
+        IPCMaster ring_buffer(bank_size, bank_num);
 
         parser.set_buffer(ring_buffer.get_buffer());
 
