@@ -17,6 +17,10 @@ protected:
     const void *m_buffer;
     size_t m_length;
 public:
+	Input()
+		: m_buffer(NULL), m_length(0)
+	{
+	}
     Input(const void *input, size_t length)
         : m_buffer(input), m_length(length)
     {
@@ -73,7 +77,7 @@ public:
         m_buffer = mmap(NULL, m_length, PROT_READ, MAP_PRIVATE, fd, 0);
 #endif
     }
-    virtual ~MemoryInput()
+    virtual ~MappedFileInput()
     {
 #if defined(CENTAURUS_BUILD_WINDOWS)
         if (m_buffer != NULL)
@@ -84,7 +88,7 @@ public:
             CloseHandle(hFile);
 #elif defined(CENTAURUS_BUILD_LINUX)
         if (m_buffer != NULL)
-            munmap(m_buffer, m_length);
+            munmap(const_cast<void *>(m_buffer), m_length);
         if (fd != -1)
             close(fd);
 #endif
