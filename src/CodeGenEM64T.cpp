@@ -29,6 +29,9 @@
  *  LOAD_REG        XMM0
  *  PATTERN_REG     XMM1
  *  INDEX_REG       ECX/RCX
+ * Chaser Routine scope
+ *  CONTEXT_REG		MM2/R8
+ *  INPUT_REG		ESI/RSI
  */
 
 //Parser/Machine scope registers
@@ -53,19 +56,27 @@
 
 #if defined(CENTAURUS_BUILD_WINDOWS)
 #define ARG1_REG asmjit::x86::rcx
+#define ARG2_REG asmjit::x86::rdx
+#define ARG3_REG asmjit::x86::r8
+#define ARG4_REG asmjit::x86::r9
 #define ARG1_STACK_OFFSET (16)
 #define ARG2_STACK_OFFSET (24)
 #define ARG3_STACK_OFFSET (56)
+#define ARG4_STACK_OFFSET (64)
 #elif defined(CENTAURUS_BUILD_LINUX)
 #define ARG1_REG asmjit::x86::rdi
+#define ARG2_REG asmjit::x86::rsi
+#define ARG3_REG asmjit::x86::rdx
+#define ARG4_REG asmjit::x86::rcx
 #define ARG1_STACK_OFFSET (40)
 #define ARG2_STACK_OFFSET (32)
 #define ARG3_STACK_OFFSET (24)
+#define ARG4_STACK_OFFSET (16)
 #endif
 
 namespace Centaurus
 {
-asmjit::Data128 pack_charclass(const CharClass<char>& cc)
+static asmjit::Data128 pack_charclass(const CharClass<char>& cc)
 {
     asmjit::Data128 d128;
 
@@ -85,7 +96,7 @@ asmjit::Data128 pack_charclass(const CharClass<char>& cc)
 
     return d128;
 }
-asmjit::Data128 pack_charclass(const CharClass<wchar_t>& cc)
+static asmjit::Data128 pack_charclass(const CharClass<wchar_t>& cc)
 {
     asmjit::Data128 d128;
 
@@ -104,6 +115,30 @@ asmjit::Data128 pack_charclass(const CharClass<wchar_t>& cc)
     }
 
     return d128;
+}
+
+static void call_abs1(asmjit::X86Assembler& as, uint64_t addr, asmjit::X86Gp arg1)
+{
+	if (arg1 != ARG1_REG)
+		as.mov(ARG1_REG, arg1);
+#if defined(CENTAURUS_BUILD_WINDOWS)
+	as.sub(asmjit::x86::rsp, 32);
+#endif
+	as.call(addr);
+#if defined(CENTAURUS_BUILD_WINDOWS)
+	as.add(asmjit::x86::rsp, 32);
+#endif
+}
+
+static void call_abs3(asmjit::X86Assembler& as, uint64_t addr, asmjit::X86Gp arg1, asmjit::X86Gp arg2, asmjit::X86Gp arg3)
+{
+#if defined(CENTAURUS_BUILD_WINDOWS)
+	as.sub(asmjit::x86::rsp, 32);
+#endif
+	as.call(addr);
+#if defined(CENTAURUS_BUILD_WINDOWS)
+	as.add(asmjit::x86::rsp, 32);
+#endif
 }
 
 static void emit_parser_prolog(asmjit::X86Assembler& as)
@@ -147,6 +182,48 @@ static void emit_parser_epilog(asmjit::X86Assembler& as, asmjit::Label& rejectla
     as.pop(asmjit::x86::r9);
 
     as.ret();
+}
+
+template<typename TCHAR>
+ChaserEM64T<TCHAR>::ChaserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *logger, asmjit::ErrorHandler *errhandler)
+{
+	m_code.init(m_runtime.getCodeInfo());
+	if (logger != NULL)
+		m_code.setLogger(logger);
+	if (errhandler != NULL)
+		m_code.setErrorHandler(errhandler);
+	
+	std::unordered_map<Identifier, asmjit::Label> m_machinelabels;
+
+	asmjit::X86Assembler as(&m_code);
+
+	for (const auto& p : grammar)
+	{
+		m_machinelabels.emplace(std::pair<Identifier, asmjit::Label>(p.first, as.newLabel()));
+	}
+	
+	MyConstPool pool(as);
+
+	pool.load_charclass_filter(PATTERN_REG, m_skipfilter);
+
+	for (const auto& p : grammar)
+	{
+		asmjit::Label rejectlabel = as.newLabel();
+
+		as.bind(m_machinelabels[p.first]);
+
+		emit_parser_prolog(as);
+
+		emit_machine(as, grammar, p.first, catn, rejectlabel, pool);
+
+		emit_parser_epilog(as, rejectlabel);
+	}
+
+	pool.embed();
+
+	as.finalize();
+
+	m_runtime.add(&m_func, &m_code);
 }
 
 template<typename TCHAR>
@@ -261,6 +338,73 @@ template<> CharClass<wchar_t> ParserEM64T<wchar_t>::m_skipfilter({ L' ', L'\t', 
 template<> CharClass<char> DryParserEM64T<char>::m_skipfilter({' ', '\t', '\r', '\n'});
 template<> CharClass<wchar_t> DryParserEM64T<wchar_t>::m_skipfilter({L' ', L'\t', L'\r', L'\n'});
 
+template<> CharClass<char> ChaserEM64T<char>::m_skipfilter({ ' ', '\t', '\r', '\n' });
+template<> CharClass<wchar_t> ChaserEM64T<wchar_t>::m_skipfilter({ L' ', L'\t', L'\r', L'\n' });
+
+template<typename TCHAR>
+void ChaserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const Grammar<TCHAR>& grammar, const Identifier& id, const CompositeATN<TCHAR>& catn, asmjit::Label& rejectlabel, MyConstPool& pool)
+{
+	std::vector<asmjit::Label> statelabels;
+
+	for (int i = 0; i < machine.get_node_num(); i++)
+	{
+		statelabels.push_back(as.newLabel());
+	}
+
+	for (int i = 0; i < machine.get_node_num(); i++)
+	{
+		as.bind(statelabels[i]);
+
+		const ATNNode<TCHAR>& node = machine.get_node(i);
+
+		switch (node.type())
+		{
+		case ATNNodeType::Blank:
+			break;
+		case ATNNodeType::LiteralTerminal:
+			as.mov(BACKUP_REG, INPUT_REG);
+			MatchRoutineEM64T<TCHAR>::emit(as, pool, rejectlabel, node.get_literal());
+#if defined(CENTAURUS_BUILD_WINDOWS)
+			as.sub(asmjit::x86::rsp, 32);
+#endif
+			as.call(&terminal_callback);
+#if defined(CENTAURUS_BUILD_WINDOWS)
+			as.add(asmjit::x86::rsp, 32);
+#endif
+			break;
+		case ATNNodeType::RegularTerminal:
+			DFARoutineEM64T<TCHAR>::emit(as, rejectlabel, DFA<TCHAR>(node.get_nfa()));
+			break;
+		case ATNNodeType::WhiteSpace:
+			SkipRoutineEM64T<TCHAR>::emit(as);
+			break;
+		case ATNNodeType::Nonterminal:
+			break;
+		}
+
+		int outbound_num = node.get_transitions().size();
+		if (outbound_num == 0)
+		{
+			as.ret();
+		}
+		else if (outbound_num == 1)
+		{
+			as.jmp(statelabels[node.get_transitions(0).dest()]);
+		}
+		else
+		{
+			std::vector<asmjit::Label> exitlabels;
+
+			for (int j = 0; j < outbound_num; j++)
+			{
+				exitlabels.push_back(statelabels[node.get_transition(j).dest()]);
+			}
+
+			LDFARoutineEM64T<TCHAR>::emit(as, rejectlabel, LookaheadDFA<TCHAR>(catn, catn.convert_atn_path(ATNPath(id, i))), exitlabels);
+		}
+	}
+}
+
 template<typename TCHAR>
 void ParserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const ATNMachine<TCHAR>& machine, std::unordered_map<Identifier, asmjit::Label>& machine_map, const CompositeATN<TCHAR>& catn, const Identifier& id, asmjit::Label& rejectlabel, MyConstPool& pool)
 {
@@ -360,9 +504,13 @@ void ParserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const ATNMachine
         as.push(INPUT_REG);
         as.push(CONTEXT_REG);
         as.mov(ARG1_REG, asmjit::X86Mem(asmjit::x86::rsp, 0));
+#if defined(CENTAURUS_BUILD_WINDOWS)
         as.sub(asmjit::x86::rsp, 32);
+#endif
         as.call((uint64_t)request_page);
+#if defined(CENTAURUS_BUILD_WINDOWS)
         as.add(asmjit::x86::rsp, 32);
+#endif
         as.mov(OUTPUT_REG, asmjit::x86::rax);
         as.mov(OUTPUT_BOUND_REG, OUTPUT_REG);
         as.add(OUTPUT_BOUND_REG, AST_BUF_SIZE);
@@ -794,6 +942,8 @@ SkipRoutineEM64T<TCHAR>::SkipRoutineEM64T(const CharClass<TCHAR>& filter, asmjit
     as.finalize();
 }
 
+template class ChaserEM64T<char>;
+template class ChaserEM64T<wchar_t>;
 template class ParserEM64T<char>;
 template class ParserEM64T<wchar_t>;
 template class DryParserEM64T<char>;

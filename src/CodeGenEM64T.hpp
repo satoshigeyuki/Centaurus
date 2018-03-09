@@ -39,6 +39,30 @@ public:
         return asmjit::X86Mem(m_label, offset);
     }
 };
+
+typedef void (*ChaserFunc)(void *context, const void *input);
+
+template<typename TCHAR>
+class ChaserEM64T
+{
+	asmjit::JitRuntime m_runtime;
+	asmjit::CodeHolder m_code;
+	std::unordered_map<Identifier, ChaserFunc> m_funcmap;
+
+	static CharClass<TCHAR> m_skipfilter;
+	
+	void emit_machine(asmjit::X86Assembler& as, const Grammar<TCHAR>& machine, const Identifier& id, const CompositeATN<TCHAR>& catn, asmjit::Label& rejectlabel, MyConstPool& pool);
+	static void terminal_callback(void *context, const void *start, const void *end);
+	static void *nonterminal_callback(void *context);
+public:
+	ChaserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *logger = NULL, asmjit::ErrorHandler *errhandler = NULL);
+	virtual ~ChaserEM64T() {}
+	ChaserFunc operator[](const Identifier& id) const
+	{
+		return m_funcmap[id];
+	}
+};
+
 template<typename TCHAR>
 class ParserEM64T
 {
@@ -49,7 +73,7 @@ class ParserEM64T
     void *m_buffer;
     const void *(*m_func)(void *context, const void *input, void *output);
     void emit_machine(asmjit::X86Assembler& as, const ATNMachine<TCHAR>& machine, std::unordered_map<Identifier, asmjit::Label>& machine_map, const CompositeATN<TCHAR>& catn, const Identifier& id, asmjit::Label& rejectlabel, MyConstPool& pool);
-    static void * request_page(void *context);
+    static void *request_page(void *context);
     long m_flipcount;
 public:
     ParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *logger = NULL, asmjit::ErrorHandler *errhandler = NULL);
