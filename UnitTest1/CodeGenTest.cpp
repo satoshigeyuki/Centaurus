@@ -5,15 +5,13 @@
 #include <setjmp.h>
 #include "CATNLoader.hpp"
 #include "IPCMaster.hpp"
+#include "Input.hpp"
 
 #include <time.h>
 
 #if defined(CENTAURUS_BUILD_WINDOWS)
 #elif defined(CENTAURUS_BUILD_LINUX)
 #include <pthread.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 #include <unistd.h>
 #endif
 
@@ -94,67 +92,6 @@ public:
     }
 };
 
-class MemoryInput
-{
-#if defined(CENTAURUS_BUILD_WINDOWS)
-    HANDLE hFile, hMapping;
-#elif defined(CENTAURUS_BUILD_LINUX)
-    int fd;
-#endif
-    void *m_buffer;
-    size_t m_length;
-public:
-    MemoryInput(const char *filename)
-    {
-#if defined(CENTAURUS_BUILD_WINDOWS)
-        hFile = CreateFileA(filename, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
-
-        Assert::AreNotEqual(hFile, INVALID_HANDLE_VALUE, L"Failed to open text file.");
-
-        DWORD dwFileSizeHigh;
-        DWORD dwFileSizeLow = GetFileSize(hFile, &dwFileSizeHigh);
-
-        hMapping = CreateFileMapping(hFile, NULL, PAGE_READONLY, dwFileSizeHigh, dwFileSizeLow, NULL);
-
-        Assert::IsTrue(hMapping != NULL, L"Failed to open a new file mapping.");
-
-        m_length = ((size_t)dwFileSizeHigh << 32) | dwFileSizeLow;
-
-        m_buffer = MapViewOfFile(hMapping, FILE_MAP_READ, 0, 0, 0);
-#elif defined(CENTAURUS_BUILD_LINUX)
-        fd = open(filename, O_RDONLY);
-
-        struct stat sb;
-
-        fstat(fd, &sb);
-
-        m_length = sb.st_size;
-
-        m_buffer = mmap(NULL, m_length, PROT_READ, MAP_PRIVATE, fd, 0);
-#endif
-        Assert::IsTrue(m_buffer != NULL, L"Failed to obtain a mapped view of text file.");
-    }
-    virtual ~MemoryInput()
-    {
-#if defined(CENTAURUS_BUILD_WINDOWS)
-        if (m_buffer != NULL)
-            UnmapViewOfFile(m_buffer);
-        if (hMapping != NULL)
-            CloseHandle(hMapping);
-        if (hFile != NULL)
-            CloseHandle(hFile);
-#elif defined(CENTAURUS_BUILD_LINUX)
-        if (m_buffer != NULL)
-            munmap(m_buffer, m_length);
-        if (fd != -1)
-            close(fd);
-#endif
-    }
-    const void *get_buffer()
-    {
-        return m_buffer;
-    }
-};
 TEST_CLASS(CodeGenTest)
 {
 public:
@@ -239,11 +176,11 @@ public:
 
         //char *json = LoadTextAligned("C:\\Users\\ihara\\Downloads\\sf-city-lots-json-master\\sf-city-lots-json-master\\citylots.json");
 
-        //char *json = LoadTextAligned("C:\\Users\\ihara\\Downloads\\citylots.json");
+        //char *json = LoadTextAligned("C:\\Users\\ihara\\Downloads\\citylots.json")
 
         //char *json = LoadTextAligned("..\\..\\..\\test2.json");
 
-        MemoryInput json("/home/ihara/Downloads/sf-city-lots-json-master/citylots.json");
+        MappedFileInput json("/home/ihara/Downloads/sf-city-lots-json-master/citylots.json");
 
         ParserRunner<DryParserEM64T<char> > runner{parser, json.get_buffer(), NULL};
 
@@ -273,7 +210,7 @@ public:
 
         parser.set_buffer(ring_buffer.get_buffer());
 
-        MemoryInput json("/home/ihara/Downloads/sf-city-lots-json-master/citylots.json");
+        MappedFileInput json("/home/ihara/Downloads/sf-city-lots-json-master/citylots.json");
 
         //Logger::WriteMessage(logger.getString());
 
