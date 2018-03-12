@@ -142,7 +142,7 @@ public:
 
         IPCMaster ring_buffer(bank_size, bank_num);
 
-        parser.set_buffer(ring_buffer.get_buffer());
+        parser.set_buffer(ring_buffer.request_bank());
 
         MappedFileInput json("/home/ihara/Downloads/sf-city-lots-json-master/citylots.json");
 

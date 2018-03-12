@@ -32,6 +32,7 @@
  * Chaser Routine scope
  *  CONTEXT_REG		MM2/R8
  *  INPUT_REG		ESI/RSI
+ *  CHECKPOINT_REG  EDI/RDI
  */
 
 //Parser/Machine scope registers
@@ -54,24 +55,27 @@
 #define PATTERN_REG asmjit::x86::xmm1
 #define INDEX_REG asmjit::x86::rcx
 
+//Chaser routine scope registers
+#define CHECKPOINT_REG asmjit::x86::rdi
+
 #if defined(CENTAURUS_BUILD_WINDOWS)
 #define ARG1_REG asmjit::x86::rcx
 #define ARG2_REG asmjit::x86::rdx
 #define ARG3_REG asmjit::x86::r8
 #define ARG4_REG asmjit::x86::r9
-#define ARG1_STACK_OFFSET (16)
-#define ARG2_STACK_OFFSET (24)
-#define ARG3_STACK_OFFSET (56)
-#define ARG4_STACK_OFFSET (64)
+#define ARG1_STACK_OFFSET (8)
+#define ARG2_STACK_OFFSET (16)
+#define ARG3_STACK_OFFSET (48)
+#define ARG4_STACK_OFFSET (56)
 #elif defined(CENTAURUS_BUILD_LINUX)
 #define ARG1_REG asmjit::x86::rdi
 #define ARG2_REG asmjit::x86::rsi
 #define ARG3_REG asmjit::x86::rdx
 #define ARG4_REG asmjit::x86::rcx
-#define ARG1_STACK_OFFSET (40)
-#define ARG2_STACK_OFFSET (32)
-#define ARG3_STACK_OFFSET (24)
-#define ARG4_STACK_OFFSET (16)
+#define ARG1_STACK_OFFSET (32)
+#define ARG2_STACK_OFFSET (24)
+#define ARG3_STACK_OFFSET (16)
+#define ARG4_STACK_OFFSET (8)
 #endif
 
 namespace Centaurus
@@ -117,28 +121,65 @@ static asmjit::Data128 pack_charclass(const CharClass<wchar_t>& cc)
     return d128;
 }
 
-static void call_abs1(asmjit::X86Assembler& as, uint64_t addr, asmjit::X86Gp arg1)
+template<typename T>
+void call_abs_sub(asmjit::X86Assembler& as, T addr)
 {
-	if (arg1 != ARG1_REG)
-		as.mov(ARG1_REG, arg1);
 #if defined(CENTAURUS_BUILD_WINDOWS)
 	as.sub(asmjit::x86::rsp, 32);
 #endif
-	as.call(addr);
+	as.call(reinterpret_cast<uint64_t>(addr));
 #if defined(CENTAURUS_BUILD_WINDOWS)
 	as.add(asmjit::x86::rsp, 32);
 #endif
 }
 
-static void call_abs3(asmjit::X86Assembler& as, uint64_t addr, asmjit::X86Gp arg1, asmjit::X86Gp arg2, asmjit::X86Gp arg3)
+template<typename T>
+static void call_abs1(asmjit::X86Assembler& as, T addr, asmjit::X86Gp arg1)
 {
-#if defined(CENTAURUS_BUILD_WINDOWS)
-	as.sub(asmjit::x86::rsp, 32);
-#endif
-	as.call(addr);
-#if defined(CENTAURUS_BUILD_WINDOWS)
-	as.add(asmjit::x86::rsp, 32);
-#endif
+	if (arg1 != ARG1_REG)
+		as.mov(ARG1_REG, arg1);
+    call_abs_sub(as, addr);
+}
+
+template<typename T>
+static void call_abs2(asmjit::X86Assembler& as, T addr, asmjit::X86Gp arg1, asmjit::X86Gp arg2)
+{
+    if (arg1 == ARG2_REG && arg2 == ARG1_REG)
+        as.xchg(ARG1_REG, ARG2_REG);
+    else if (arg1 == ARG2_REG)
+        as.mov(ARG2_REG, arg1);
+    else if (arg2 == ARG1_REG)
+        as.mov(ARG1_REG, arg2);
+    if (arg1 != ARG1_REG && arg1 != ARG2_REG)
+        as.mov(ARG1_REG, arg1);
+    if (arg2 != ARG1_REG && arg2 != ARG2_REG)
+        as.mov(ARG2_REG, arg2);
+    call_abs_sub(as, addr);
+}
+
+template<typename T>
+static void call_abs3(asmjit::X86Assembler& as, T addr, asmjit::X86Gp arg1, asmjit::X86Gp arg2, asmjit::X86Gp arg3)
+{
+    as.push(arg3);
+    as.push(arg2);
+    as.push(arg1);
+    as.pop(ARG1_REG);
+    as.pop(ARG2_REG);
+    as.pop(ARG3_REG);
+    call_abs_sub(as, addr);
+}
+
+static void call_abs4(asmjit::X86Assembler& as, void *addr, asmjit::X86Gp arg1, asmjit::X86Gp arg2, asmjit::X86Gp arg3, asmjit::X86Gp arg4)
+{
+    as.push(arg4);
+    as.push(arg3);
+    as.push(arg2);
+    as.push(arg1);
+    as.pop(ARG1_REG);
+    as.pop(ARG2_REG);
+    as.pop(ARG3_REG);
+    as.pop(ARG4_REG);
+    call_abs_sub(as, addr);
 }
 
 static void emit_parser_prolog(asmjit::X86Assembler& as)
@@ -151,7 +192,6 @@ static void emit_parser_prolog(asmjit::X86Assembler& as)
     as.push(asmjit::x86::rdx);
     as.push(asmjit::x86::rcx);
     as.push(asmjit::x86::rbx);
-    as.push(asmjit::x86::rax);
 
     //Save RSP for bailout
     as.mov(asmjit::x86::r9, asmjit::x86::rsp);
@@ -171,7 +211,6 @@ static void emit_parser_epilog(asmjit::X86Assembler& as, asmjit::Label& rejectla
 
     as.bind(acceptlabel);
 
-    as.pop(asmjit::x86::rbx);
     as.pop(asmjit::x86::rbx);
     as.pop(asmjit::x86::rcx);
     as.pop(asmjit::x86::rdx);
@@ -193,24 +232,26 @@ ChaserEM64T<TCHAR>::ChaserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *l
 	if (errhandler != NULL)
 		m_code.setErrorHandler(errhandler);
 	
-	std::unordered_map<Identifier, asmjit::Label> m_machinelabels;
+	std::unordered_map<Identifier, asmjit::Label> machinelabels;
 
 	asmjit::X86Assembler as(&m_code);
 
 	for (const auto& p : grammar)
 	{
-		m_machinelabels.emplace(std::pair<Identifier, asmjit::Label>(p.first, as.newLabel()));
+		machinelabels.emplace(std::pair<Identifier, asmjit::Label>(p.first, as.newLabel()));
 	}
 	
 	MyConstPool pool(as);
 
 	pool.load_charclass_filter(PATTERN_REG, m_skipfilter);
 
+    CompositeATN<TCHAR> catn(grammar);
+
 	for (const auto& p : grammar)
 	{
 		asmjit::Label rejectlabel = as.newLabel();
 
-		as.bind(m_machinelabels[p.first]);
+		as.bind(machinelabels[p.first]);
 
 		emit_parser_prolog(as);
 
@@ -223,7 +264,23 @@ ChaserEM64T<TCHAR>::ChaserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *l
 
 	as.finalize();
 
-	m_runtime.add(&m_func, &m_code);
+    char *func_base;
+	m_runtime.add(&func_base, &m_code);
+
+    for (const auto& p : grammar)
+    {
+        m_funcmap[p.first] = (void (*)(void *, const void *))(func_base + m_code.getLabelOffset(machinelabels[p.first]));
+    }
+}
+
+template<typename TCHAR>
+void ChaserEM64T<TCHAR>::terminal_callback(void *context, const void *start, const void *end)
+{
+}
+
+template<typename TCHAR>
+void *ChaserEM64T<TCHAR>::nonterminal_callback(void *context)
+{
 }
 
 template<typename TCHAR>
@@ -346,6 +403,8 @@ void ChaserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const Grammar<TC
 {
 	std::vector<asmjit::Label> statelabels;
 
+    const ATNMachine<TCHAR>& machine = grammar[id];
+
 	for (int i = 0; i < machine.get_node_num(); i++)
 	{
 		statelabels.push_back(as.newLabel());
@@ -362,23 +421,20 @@ void ChaserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const Grammar<TC
 		case ATNNodeType::Blank:
 			break;
 		case ATNNodeType::LiteralTerminal:
-			as.mov(BACKUP_REG, INPUT_REG);
+			as.mov(CHECKPOINT_REG, INPUT_REG);
 			MatchRoutineEM64T<TCHAR>::emit(as, pool, rejectlabel, node.get_literal());
-#if defined(CENTAURUS_BUILD_WINDOWS)
-			as.sub(asmjit::x86::rsp, 32);
-#endif
-			as.call(&terminal_callback);
-#if defined(CENTAURUS_BUILD_WINDOWS)
-			as.add(asmjit::x86::rsp, 32);
-#endif
+            call_abs3(as, terminal_callback, CONTEXT_REG, CHECKPOINT_REG, INPUT_REG);
 			break;
 		case ATNNodeType::RegularTerminal:
+            as.mov(CHECKPOINT_REG, INPUT_REG);
 			DFARoutineEM64T<TCHAR>::emit(as, rejectlabel, DFA<TCHAR>(node.get_nfa()));
+            call_abs3(as, terminal_callback, CONTEXT_REG, CHECKPOINT_REG, INPUT_REG);
 			break;
 		case ATNNodeType::WhiteSpace:
 			SkipRoutineEM64T<TCHAR>::emit(as);
 			break;
 		case ATNNodeType::Nonterminal:
+            call_abs1(as, nonterminal_callback, CONTEXT_REG);
 			break;
 		}
 
@@ -389,7 +445,7 @@ void ChaserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const Grammar<TC
 		}
 		else if (outbound_num == 1)
 		{
-			as.jmp(statelabels[node.get_transitions(0).dest()]);
+			as.jmp(statelabels[node.get_transition(0).dest()]);
 		}
 		else
 		{

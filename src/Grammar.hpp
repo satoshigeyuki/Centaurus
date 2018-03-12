@@ -155,5 +155,13 @@ public:
     {
         return m_root_id;
     }
+    typename std::unordered_map<Identifier, ATNMachine<TCHAR> >::const_iterator begin() const
+    {
+        return m_networks.cbegin();
+    }
+    typename std::unordered_map<Identifier, ATNMachine<TCHAR> >::const_iterator end() const
+    {
+        return m_networks.cend();
+    }
 };
 }

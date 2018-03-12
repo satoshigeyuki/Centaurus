@@ -59,7 +59,7 @@ public:
 	virtual ~ChaserEM64T() {}
 	ChaserFunc operator[](const Identifier& id) const
 	{
-		return m_funcmap[id];
+		return m_funcmap.at(id);
 	}
 };
 

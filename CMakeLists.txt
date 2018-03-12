@@ -38,4 +38,6 @@ target_link_libraries(centaurus libcentaurus)
 if(NOT MSVC)
     add_subdirectory(UnitTest1)
 	add_subdirectory(MsTestEmulator)
+
+    add_test(NAME LoadGrammarFile COMMAND bash MsTestEmulator/scripts/run.sh -m LoadGrammarFile -d $<TARGET_FILE:testdriver> $<TARGET_FILE:UnitTest1> WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
 endif()
