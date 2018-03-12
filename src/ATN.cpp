@@ -48,6 +48,24 @@ void ATNNode<TCHAR>::parse(Stream& stream)
 
     if (ch == u'{')
     {
+        ch = stream.skip_whitespace();
+
+        if (ch == u'}')
+            throw stream.unexpected(ch);
+
+        int id = 0;
+        for (; u'0' <= ch && ch <= u'9'; ch = stream.peek())
+        {
+            id = id * 10 + static_cast<int>(ch - u'0');
+            stream.discard();
+        }
+        
+        ch = stream.skip_whitespace();
+        if (ch != u'}')
+            throw stream.unexpected(ch);
+        stream.discard();
+
+        m_localid = id;
     }
 }
 
