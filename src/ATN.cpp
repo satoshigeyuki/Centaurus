@@ -48,6 +48,8 @@ void ATNNode<TCHAR>::parse(Stream& stream)
 
     if (ch == u'{')
     {
+		stream.discard();
+
         ch = stream.skip_whitespace();
 
         if (ch == u'}')
@@ -64,6 +66,8 @@ void ATNNode<TCHAR>::parse(Stream& stream)
         if (ch != u'}')
             throw stream.unexpected(ch);
         stream.discard();
+
+		stream.skip_whitespace();
 
         m_localid = id;
     }

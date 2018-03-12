@@ -214,6 +214,10 @@ public:
     {
         return m_invoke;
     }
+	int get_id() const
+	{
+		return m_localid;
+	}
 };
 
 template<typename TCHAR> class ATNMachine

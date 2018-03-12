@@ -274,12 +274,12 @@ ChaserEM64T<TCHAR>::ChaserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *l
 }
 
 template<typename TCHAR>
-void ChaserEM64T<TCHAR>::terminal_callback(void *context, const void *start, const void *end)
+void ChaserEM64T<TCHAR>::terminal_callback(void *context, int id, const void *start, const void *end)
 {
 }
 
 template<typename TCHAR>
-void *ChaserEM64T<TCHAR>::nonterminal_callback(void *context)
+void *ChaserEM64T<TCHAR>::nonterminal_callback(void *context, int id)
 {
 }
 
@@ -423,18 +423,20 @@ void ChaserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const Grammar<TC
 		case ATNNodeType::LiteralTerminal:
 			as.mov(CHECKPOINT_REG, INPUT_REG);
 			MatchRoutineEM64T<TCHAR>::emit(as, pool, rejectlabel, node.get_literal());
-            call_abs3(as, terminal_callback, CONTEXT_REG, CHECKPOINT_REG, INPUT_REG);
+			if (node.get_id() >= 0)
+				call_abs4(as, terminal_callback, CONTEXT_REG, node.get_id(), CHECKPOINT_REG, INPUT_REG);
 			break;
 		case ATNNodeType::RegularTerminal:
             as.mov(CHECKPOINT_REG, INPUT_REG);
 			DFARoutineEM64T<TCHAR>::emit(as, rejectlabel, DFA<TCHAR>(node.get_nfa()));
-            call_abs3(as, terminal_callback, CONTEXT_REG, CHECKPOINT_REG, INPUT_REG);
+			if (node.get_id() >= 0)
+				call_abs4(as, terminal_callback, CONTEXT_REG, node.get_id(), CHECKPOINT_REG, INPUT_REG);
 			break;
 		case ATNNodeType::WhiteSpace:
 			SkipRoutineEM64T<TCHAR>::emit(as);
 			break;
 		case ATNNodeType::Nonterminal:
-            call_abs1(as, nonterminal_callback, CONTEXT_REG);
+            call_abs2(as, nonterminal_callback, CONTEXT_REG, grammar.get_machine_id(node.get_invoke()));
 			break;
 		}
 
@@ -945,7 +947,7 @@ void MatchRoutineEM64T<TCHAR>::emit(asmjit::X86Assembler& as, MyConstPool& pool,
             }
 
             as.movdqu(LOAD_REG, asmjit::X86Mem(INPUT_REG, 0));
-            as.pcmpistri(LOAD_REG, pool.add(d1), asmjit::Imm(0x18));
+            as.pcmpistri(LOAD_REG, pool.add(d1), asmjit::Imm(sizeof(TCHAR) == 1 ? 0x18 : 0x19));
             as.cmp(INDEX_REG, asmjit::Imm(l1));
             as.jb(rejectlabel);
             as.add(INPUT_REG, l1);

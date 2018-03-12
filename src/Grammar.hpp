@@ -163,5 +163,9 @@ public:
     {
         return m_networks.cend();
     }
+	int get_machine_id(const Identifier& id) const
+	{
+		return m_networks.at(id).get_unique_id();
+	}
 };
 }
