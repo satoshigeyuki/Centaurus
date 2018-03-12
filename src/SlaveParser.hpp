@@ -7,6 +7,7 @@
 #endif
 
 #include "IPCSlave.hpp"
+#include "CodeGenEM64T.hpp"
 
 #define MACHINE_ID_FROM_MARKER(m) (((m) >> 48) & 0x7FFF)
 #define OFFSET_FROM_MARKER(m) ((m) & (((uint64_t)1 << 48) - 1))
@@ -19,21 +20,27 @@ template<typename TCHAR, typename TSV>
 class SlaveParser
 {
     size_t m_bank_size;
+    ChaserEM64T<TCHAR> m_chaser;
 private:
-	TSV *parse_subtree(const uint64_t *ast, int position)
+	TSV parse_subtree(const uint64_t *ast, int position)
 	{
+        std::vector<TSV> children;
+
 		int machine_id = MACHINE_ID_FROM_MARKER(ast[position]);
 		for (int i = position + 1; i < m_bank_size / 8; i++)
 		{
 			if (IS_START_MARKER(ast[i]))
 			{
-				parse_subtree(ast, i);
+                children.push_back(parse_subtree(ast, i));
 			}
+            else if (IS_END_MARKER(ast[i]))
+            {
+            }
 		}
 	}
 public:
-    SlaveParser(size_t bank_size)
-        : m_bank_size(bank_size)
+    SlaveParser(const Grammar<TCHAR>& grammar, size_t bank_size)
+        : m_chaser(grammar), m_bank_size(bank_size)
     {
     }
     virtual ~SlaveParser()

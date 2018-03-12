@@ -48,7 +48,7 @@ class ChaserEM64T
 	asmjit::JitRuntime m_runtime;
 	asmjit::CodeHolder m_code;
 	std::unordered_map<Identifier, ChaserFunc> m_funcmap;
-
+    std::vector<ChaserFunc> m_funcarray;
 	static CharClass<TCHAR> m_skipfilter;
 	
 	void emit_machine(asmjit::X86Assembler& as, const Grammar<TCHAR>& machine, const Identifier& id, const CompositeATN<TCHAR>& catn, asmjit::Label& rejectlabel, MyConstPool& pool);
