@@ -21,7 +21,21 @@ class SlaveParser
 {
     size_t m_bank_size;
     ChaserEM64T<TCHAR> m_chaser;
+	IPCSlave m_ipc;
 private:
+#if defined(CENTAURUS_BUILD_WINDOWS)
+	static DWORD WINAPI thread_runner(LPVOID param)
+	{
+		SlaveParser<TCHAR, TSV> *instance = reinterpret_cast<SlaveParser<TCHAR, TSV> *>(param);
+
+		ExitThread(0);
+	}
+#elif defined(CENTAURUS_BUILD_LINUX)
+	static void *thread_runner(void *param)
+	{
+		SlaveParser<TCHAR, TSV> *instance = reinterpret_cast<SlaveParser<TCHAR, TSV> *>(param);
+	}
+#endif
 	TSV parse_subtree(const uint64_t *ast, int position)
 	{
         std::vector<TSV> children;
@@ -35,6 +49,7 @@ private:
 			}
             else if (IS_END_MARKER(ast[i]))
             {
+				m_chaser[machine_id](static_cast<void *>(this), );
             }
 		}
 	}
@@ -56,5 +71,9 @@ public:
             }
         }
     }
+	void run()
+	{
+		
+	}
 };
 }

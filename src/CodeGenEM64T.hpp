@@ -61,6 +61,10 @@ public:
 	{
 		return m_funcmap.at(id);
 	}
+	ChaserFunc operator[](int id) const
+	{
+		return m_funcarray[id];
+	}
 };
 
 template<typename TCHAR>

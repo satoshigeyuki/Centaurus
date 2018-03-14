@@ -30,6 +30,8 @@ private:
         MasterParser<T> *instance = reinterpret_cast<MasterParser<T> *>(param);
 
         instance->m_result = instance->m_parser(instance->m_memory);
+
+		return NULL;
     }
 #endif
 public:
