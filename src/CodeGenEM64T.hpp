@@ -52,8 +52,8 @@ class ChaserEM64T
 	static CharClass<TCHAR> m_skipfilter;
 	
 	void emit_machine(asmjit::X86Assembler& as, const Grammar<TCHAR>& machine, const Identifier& id, const CompositeATN<TCHAR>& catn, asmjit::Label& rejectlabel, MyConstPool& pool);
-	static void terminal_callback(void *context, const void *start, const void *end);
-	static void *nonterminal_callback(void *context);
+	static void terminal_callback(void *context, int id, const void *start, const void *end);
+	static void *nonterminal_callback(void *context, int id);
 public:
 	ChaserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *logger = NULL, asmjit::ErrorHandler *errhandler = NULL);
 	virtual ~ChaserEM64T() {}

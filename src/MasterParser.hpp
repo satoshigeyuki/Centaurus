@@ -12,6 +12,7 @@ namespace Centaurus
 template<class T>
 class MasterParser
 {
+	static constexpr size_t m_stack_size = 256 * 1024 * 1024;
     T& m_parser;
     const void *m_memory, *m_result;
 private:
@@ -44,7 +45,7 @@ public:
         clock_t start_time = clock();
 
 #if defined(CENTAURUS_BUILD_WINDOWS)
-        HANDLE hThread = CreateThread(NULL, 256*1024*1024, MasterParser<T>::thread_runner, (LPVOID)this, 0, NULL);
+        HANDLE hThread = CreateThread(NULL, m_stack_size, MasterParser<T>::thread_runner, (LPVOID)this, 0, NULL);
 
         WaitForSingleObject(hThread, INFINITE);
 #elif defined(CENTAURUS_BUILD_LINUX)
@@ -53,7 +54,7 @@ public:
 
         pthread_attr_init(&attr);
 
-        pthread_attr_setstacksize(&attr, 256 * 1024 * 1024);
+        pthread_attr_setstacksize(&attr, m_stack_size);
 
         pthread_create(&thread, &attr, MasterParser<T>::thread_runner, this);
 
