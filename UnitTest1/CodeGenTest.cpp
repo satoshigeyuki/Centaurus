@@ -29,6 +29,12 @@ public:
 TEST_CLASS(CodeGenTest)
 {
 public:
+    TEST_METHOD_INITIALIZE(InitCodeGenTest)
+    {
+#if defined(CENTAURUS_BUILD_WINDOWS)
+        SetCurrentDirectoryA(CENTAURUS_PROJECT_DIR);
+#endif
+    }
     TEST_METHOD(DFACodeGenTest1)
     {
         using namespace Centaurus;
@@ -59,7 +65,7 @@ public:
     {
         using namespace Centaurus;
 
-        CompositeATN<char> catn = LoadCATN("json.cgr");
+        CompositeATN<char> catn = LoadCATN("grammar\\json.cgr");
 
         LookaheadDFA<char> ldfa(catn, catn.convert_atn_path(ATNPath(u"Object", 0)));
 
@@ -100,7 +106,7 @@ public:
     {
         using namespace Centaurus;
 
-        Grammar<char> grammar = LoadGrammar("json.cgr");
+        Grammar<char> grammar = LoadGrammar("grammar\\json.cgr");
 
         asmjit::StringLogger logger;
 
@@ -108,13 +114,8 @@ public:
 
         //Logger::WriteMessage(logger.getString());
 
-        //char *json = LoadTextAligned("C:\\Users\\ihara\\Downloads\\sf-city-lots-json-master\\sf-city-lots-json-master\\citylots.json");
-
-        //char *json = LoadTextAligned("C:\\Users\\ihara\\Downloads\\citylots.json")
-
-        //char *json = LoadTextAligned("..\\..\\..\\test2.json");
-
-        MappedFileInput json("/home/ihara/Downloads/sf-city-lots-json-master/citylots.json");
+        //MappedFileInput json("/home/ihara/Downloads/sf-city-lots-json-master/citylots.json");
+        MappedFileInput json("C:\\Users\\ihara\\Downloads\\sf-city-lots-json-master\\sf-city-lots-json-master\\citylots.json");
 
         MasterParser<DryParserEM64T<char> > runner{parser, json.get_buffer(), NULL};
 
@@ -129,7 +130,7 @@ public:
     {
         using namespace Centaurus;
 
-        Grammar<char> grammar = LoadGrammar("json.cgr");
+        Grammar<char> grammar = LoadGrammar("grammar\\json.cgr");
 
         asmjit::StringLogger logger;
 
@@ -144,13 +145,11 @@ public:
 
         parser.set_buffer(ring_buffer.request_bank());
 
-        MappedFileInput json("/home/ihara/Downloads/sf-city-lots-json-master/citylots.json");
+        //MappedFileInput json("/home/ihara/Downloads/sf-city-lots-json-master/citylots.json");
 
         //Logger::WriteMessage(logger.getString());
 
-        //char *json = LoadTextAligned("C:\\Users\\ihara\\Downloads\\sf-city-lots-json-master\\sf-city-lots-json-master\\citylots.json");
-
-        //char *json = LoadTextAligned("C:\\Users\\ihara\\Downloads\\citylots.json");
+        MappedFileInput json("C:\\Users\\ihara\\Downloads\\sf-city-lots-json-master\\sf-city-lots-json-master\\citylots.json");
 
         MasterParser<ParserEM64T<char> > runner{ parser, json.get_buffer(), NULL };
 

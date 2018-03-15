@@ -65,6 +65,7 @@ void ChaserEM64T<TCHAR>::terminal_callback(void *context, int id, const void *st
 template<typename TCHAR>
 void *ChaserEM64T<TCHAR>::nonterminal_callback(void *context, int id)
 {
+    return NULL;
 }
 
 template<typename TCHAR>
