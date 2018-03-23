@@ -4,8 +4,8 @@
 #include "NFA.hpp"
 #include "CodeGenEM64T.hpp"
 #include "CATNLoader.hpp"
-#include "IPCMaster.hpp"
 #include "MasterParser.hpp"
+#include "SlaveParser.hpp"
 #include "Input.hpp"
 
 #include <time.h>
@@ -137,6 +137,7 @@ public:
         MyErrorHandler errhandler;
 
         ParserEM64T<char> parser(grammar, &logger, &errhandler);
+		ChaserEM64T<char> chaser(grammar, &logger, &errhandler);
 
         size_t bank_size = 8 * 1024 * 1024;
         int bank_num = 8;
@@ -151,9 +152,11 @@ public:
 
         MappedFileInput json("C:\\Users\\ihara\\Downloads\\sf-city-lots-json-master\\sf-city-lots-json-master\\citylots.json");
 
-        MasterParser<ParserEM64T<char> > runner{ parser, json.get_buffer(), NULL };
+        MasterParser<ParserEM64T<char> > master{ parser, json.get_buffer(), NULL };
+		SlaveParser<ChaserEM64T<char>, int> slave{ chaser };
 
-        runner.run();
+        master.start();
+		slave.start();
 
         long flipcount = parser.get_flipcount();
 

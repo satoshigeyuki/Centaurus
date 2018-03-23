@@ -6,6 +6,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #endif
+#include "IPCMaster.hpp"
 
 namespace Centaurus
 {
@@ -15,6 +16,12 @@ class MasterParser
 	static constexpr size_t m_stack_size = 256 * 1024 * 1024;
     T& m_parser;
     const void *m_memory, *m_result;
+	IPCMaster m_ipc;
+#if defined(CENTAURUS_BUILD_WINDOWS)
+	HANDLE m_thread;
+#elif defined(CENTAURUS_BUILD_LINUX)
+	pthread_t m_thread;
+#endif
 private:
 #if defined(CENTAURUS_BUILD_WINDOWS)
     static DWORD WINAPI thread_runner(LPVOID param)
@@ -40,14 +47,12 @@ public:
         : m_parser(parser), m_memory(memory), m_result(result)
     {
     }
-    void run()
+    void start()
     {
         clock_t start_time = clock();
 
 #if defined(CENTAURUS_BUILD_WINDOWS)
-        HANDLE hThread = CreateThread(NULL, m_stack_size, MasterParser<T>::thread_runner, (LPVOID)this, 0, NULL);
-
-        WaitForSingleObject(hThread, INFINITE);
+        HANDLE m_thread = CreateThread(NULL, m_stack_size, MasterParser<T>::thread_runner, (LPVOID)this, 0, NULL);
 #elif defined(CENTAURUS_BUILD_LINUX)
         pthread_t thread;
         pthread_attr_t attr;
@@ -56,9 +61,7 @@ public:
 
         pthread_attr_setstacksize(&attr, m_stack_size);
 
-        pthread_create(&thread, &attr, MasterParser<T>::thread_runner, this);
-
-        pthread_join(thread, NULL);
+        pthread_create(&m_thread, &attr, MasterParser<T>::thread_runner, this);
 #endif
 
         clock_t end_time = clock();
@@ -67,6 +70,19 @@ public:
         //snprintf(buf, 64, "Elapsed time = %lf[ms]\r\n", (double)(end_time - start_time) * 1000.0 / CLOCKS_PER_SEC);
         //Logger::WriteMessage(buf);
     }
+	void wait()
+	{
+#if defined(CENTAURUS_BUILD_WINDOWS)
+		WaitForSingleObject(m_thread, INFINITE);
+#elif defined(CENTAURUS_BUILD_LINUX)
+		pthread_join(m_thread, NULL);
+#endif
+	}
+	void run()
+	{
+		start();
+		wait();
+	}
     const void *get_result()
     {
         return m_result;

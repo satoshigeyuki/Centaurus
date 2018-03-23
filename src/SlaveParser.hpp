@@ -47,6 +47,11 @@ class SlaveParser
     T& m_chaser;
 	IPCSlave m_ipc;
 	const void *m_input;
+#if defined(CENTAURUS_BUILD_WINDOWS)
+	HANDLE m_thread;
+#elif defined(CENTAURUS_BUILD_LINUX)
+	pthread_t m_thread;
+#endif
 private:
 #if defined(CENTAURUS_BUILD_WINDOWS)
 	static DWORD WINAPI thread_runner(LPVOID param)
@@ -69,6 +74,7 @@ private:
 		return NULL;
 #endif
 	}
+#if 0
 	Tsv parse_subtree(const uint64_t *ast, int position)
 	{
         std::vector<Tsv> children;
@@ -86,6 +92,7 @@ private:
             }
 		}
 	}
+#endif
 public:
     SlaveParser(T& chaser, size_t bank_size)
         : m_chaser(chaser), m_bank_size(bank_size)
@@ -96,25 +103,36 @@ public:
     }
 	void run()
 	{
+		start();
+		wait();
+	}
+	void start()
+	{
 		clock_t start_time = clock();
 
 #if defined(CENTAURUS_BUILD_WINDOWS)
-		HANDLE hThread = CreateThread(NULL, m_stack_size, SlaveParser<T, Tsv>::thread_runner, (LPVOID)this, 0, NULL);
-
-		WaitForSingleObject(hThread, INFINITE);
+		m_thread = CreateThread(NULL, m_stack_size, SlaveParser<T, Tsv>::thread_runner, (LPVOID)this, 0, NULL);
 #elif defined(CENTAURUS_BUILD_LINUX)
-		pthread_t thread;
 		pthread_attr_t attr;
 
 		pthread_attr_init(&attr);
 
 		pthread_attr_setstacksize(&attr, m_stack_size);
 
-		pthread_create(&thread, &attr, SlaveParser<T, Tsv>::thread_runner, static_cast<void *>(this));
+		pthread_create(&m_thread, &attr, SlaveParser<T, Tsv>::thread_runner, static_cast<void *>(this));
 #endif
 
 		clock_t end_time = clock();
 	}
+	void wait()
+	{
+#if defined(CENTAURUS_BUILD_WINDOWS)
+		WaitForSingleObject(m_thread, INFINITE);
+#elif defined(CENTAURUS_BUILD_LINUX)
+		pthread_join(m_thread, NULL);
+#endif
+	}
+#if 0
     void operator()(const uint64_t *ast)
     {
         for (int i = 0; i < m_bank_size / 8; i++)
@@ -125,5 +143,6 @@ public:
             }
         }
     }
+#endif
 };
 }
