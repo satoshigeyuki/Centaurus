@@ -8,7 +8,7 @@ class IPCSlave : public IPCCommon
 {
 public:
 	IPCSlave(size_t bank_size, int bank_num, int master_pid)
-		: IPCCommon(bank_size, bank_num, master_pid)
+		: IPCBase(bank_size, bank_num, master_pid)
 	{
 #if defined(CENTAURUS_BUILD_WINDOWS)
 		m_mem_handle = OpenFileMappingA(FILE_MAP_ALL_ACCESS, FALSE, m_memory_name);
@@ -81,18 +81,21 @@ public:
         {
             number = banks[i].number.exchange(-1);
             if (number != -1)
-                break;
-        }
+			{
+				number = -1;
 #if defined(CENTAURUS_BUILD_WINDOWS)
-        ReleaseMutex(m_window_lock);
-        ReleaseSemaphore(m_slave_lock, 1, NULL);
+				ReleaseMutex(m_window_lock);
+				ReleaseSemaphore(m_slave_lock, 1, NULL);
 #elif defined(CENTAURUS_BUILD_LINUX)
-        sem_post(m_window_lock);
-        sem_post(m_slave_lock);
+				sem_post(m_window_lock);
+				sem_post(m_slave_lock);
 #endif
-        const void *ptr = (const char *)m_main_window + m_bank_size * i;
+				const void *ptr = (const char *)m_main_window + m_bank_size * i;
 
-        return std::pair<const void *, int>(ptr, number);
+				return std::pair<const void *, int>(ptr, number);
+			}
+        }
+		throw SimpleException("Nothing to sink.");
     }
 };
 }

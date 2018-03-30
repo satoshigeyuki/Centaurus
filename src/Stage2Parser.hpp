@@ -40,7 +40,7 @@ public:
 	}
 };
 template<class T, typename Tsv>
-class SlaveParser
+class Stage2Parser
 {
 	static constexpr size_t m_stack_size = 64 * 1024 * 1024;
     size_t m_bank_size;
@@ -59,13 +59,13 @@ private:
 	static void *thread_runner(void *param)
 #endif
 	{
-		SlaveParser<T, Tsv> *instance = reinterpret_cast<SlaveParser<T, Tsv> *>(param);
+		Stage2Parser<T, Tsv> *instance = reinterpret_cast<Stage2Parser<T, Tsv> *>(param);
 
 		while (true)
 		{
 			std::pair<const void *, int> bank = instance->m_ipc.request_bank();
 
-			
+			reduce_bank(reinterpret_cast<uint64_t *>(bank.first));
 		}
 
 #if defined(CENTAURUS_BUILD_WINDOWS)
@@ -74,31 +74,43 @@ private:
 		return NULL;
 #endif
 	}
-#if 0
-	Tsv parse_subtree(const uint64_t *ast, int position)
+	void reduce_bank(uint64_t *ast)
 	{
-        std::vector<Tsv> children;
-
-		int machine_id = MACHINE_ID_FROM_MARKER(ast[position]);
-		for (int i = position + 1; i < m_bank_size / 8; i++)
+		for (int i = 0; i < m_bank_size / 8; i++)
 		{
-			if (IS_START_MARKER(ast[i]))
+			CSTMarker marker(ast[i]);
+			if (marker.is_start_marker())
 			{
-                children.push_back(parse_subtree(ast, i));
+				i = parse_subtree(ast, i);
 			}
-            else if (IS_END_MARKER(ast[i]))
-            {
-				m_chaser[machine_id](static_cast<void *>(this), );
-            }
 		}
 	}
-#endif
+	int parse_subtree(uint64_t *ast, int position)
+	{
+		CSTMarker start_marker(ast[position]);
+		int i;
+		std::vector<void *> children;
+		for (i = position + 1; i < m_bank_size / 8; i++)
+		{
+			CSTMarker marker(ast[i]);
+			if (marker.is_start_marker())
+			{
+                i = parse_subtree(ast, i);
+			}
+            else if (marker.is_end_marker())
+            {
+				//Invoke chaser to derive the semantic value for this symbol
+				return i + 1;
+            }
+		}
+		return i;
+	}
 public:
-    SlaveParser(T& chaser, size_t bank_size)
+    Stage2Parser(T& chaser, size_t bank_size)
         : m_chaser(chaser), m_bank_size(bank_size)
     {
     }
-    virtual ~SlaveParser()
+    virtual ~Stage2Parser()
     {
     }
 	void run()
@@ -111,7 +123,7 @@ public:
 		clock_t start_time = clock();
 
 #if defined(CENTAURUS_BUILD_WINDOWS)
-		m_thread = CreateThread(NULL, m_stack_size, SlaveParser<T, Tsv>::thread_runner, (LPVOID)this, 0, NULL);
+		m_thread = CreateThread(NULL, m_stack_size, Stage2Parser<T, Tsv>::thread_runner, (LPVOID)this, 0, NULL);
 #elif defined(CENTAURUS_BUILD_LINUX)
 		pthread_attr_t attr;
 
@@ -119,7 +131,7 @@ public:
 
 		pthread_attr_setstacksize(&attr, m_stack_size);
 
-		pthread_create(&m_thread, &attr, SlaveParser<T, Tsv>::thread_runner, static_cast<void *>(this));
+		pthread_create(&m_thread, &attr, Stage2Parser<T, Tsv>::thread_runner, static_cast<void *>(this));
 #endif
 
 		clock_t end_time = clock();
@@ -132,17 +144,5 @@ public:
 		pthread_join(m_thread, NULL);
 #endif
 	}
-#if 0
-    void operator()(const uint64_t *ast)
-    {
-        for (int i = 0; i < m_bank_size / 8; i++)
-        {
-            if (ast[i] & ((uint64_t)1 << 63))
-            {
-				parse_subtree(ast, i);
-            }
-        }
-    }
-#endif
 };
 }

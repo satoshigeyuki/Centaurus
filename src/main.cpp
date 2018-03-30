@@ -23,8 +23,6 @@ int main(int argc, const char *argv[])
         return -1;
     }
 
-    //std::cout << "Centaurus parser generator v0.1" << std::endl;
-
     std::ifstream grammar_file(argv[1], std::ios::in);
 
     std::string raw_grammar(std::istreambuf_iterator<char>(grammar_file), {});
@@ -52,15 +50,9 @@ int main(int argc, const char *argv[])
 
     grammar.print(graph, u"Object");
  
-    //Centaurus::CompositeATN<char> catn = grammar.build_catn();
-
     Centaurus::CompositeATN<char> catn(grammar);
 
     std::ofstream catn_graph("catn.dot");
-
-    //catn[u"ListContent"].print(catn_graph, "CATN");
-
-    //Centaurus::LookaheadDFA<char> ldfa(catn, Centaurus::ATNPath(u"ListItems", 0));
 
     return 0;
 }
