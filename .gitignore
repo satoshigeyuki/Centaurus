@@ -3,6 +3,7 @@
 !*.cpp
 !*.hpp
 !*.h
+!*.py
 !*.sln
 !*.vcproj
 !*.vcxproj
@@ -18,3 +19,4 @@
 !asmjit
 !MsTestEmulator
 !grammar
+!python
