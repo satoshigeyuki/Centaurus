@@ -5,9 +5,19 @@
 
 namespace Centaurus
 {
-template<class T, typename Tsv>
+template<class T>
 class Stage3Parser
 {
+	static constexpr size_t m_stack_size = 64 * 1024 * 1024;
+    size_t m_bank_size;
+    T& m_chaser;
+	IPCSlave m_ipc;
+	const void *m_input;
+#if defined(CENTAURUS_BUILD_WINDOWS)
+	HANDLE m_thread;
+#elif defined(CENTAURUS_BUILD_LINUX)
+	pthread_t m_thread;
+#endif
 private:
 #if defined(CENTAURUS_BUILD_WINDOWS)
 	static DWORD WINAPI thread_runner(LPVOID param)
@@ -15,7 +25,13 @@ private:
 	static void *thread_runner(void *param)
 #endif
 	{
-		Stage3Parser<T, Tsv> *instance = reinterpret_cast<Stage3Parser<T, Tsv> *>(param);
+		Stage3Parser<T> *instance = reinterpret_cast<Stage3Parser<T> *>(param);
+
+		while (true)
+		{
+			std::pair<const void *, int> bank = instance->m_ipc.request_bank();
+
+		}
 
 #if defined(CENTAURUS_BUILD_WINDOWS)
 		ExitThread(0);
@@ -41,13 +57,13 @@ public:
 		clock_t start_time = clock();
 
 #if defined(CENTAURUS_BUILD_WINDOWS)
-		m_thread = CreateThread(NULL, m_stack_size, Stage3Parser<T, Tsv>::thread_runner, (LPVOID)this, 0, NULL);
+		m_thread = CreateThread(NULL, m_stack_size, Stage3Parser<T>::thread_runner, (LPVOID)this, 0, NULL);
 #elif defined(CENTAURUS_BUILD_LINUX)
 		pthread_attr_t attr;
 
 		pthread_attr_init(&attr);
 		pthread_attr_setstacksize(&attr, m_stack_size);
-		pthread_create(&m_thread, &attr, Stage3Parser<T, Tsv>::thread_runner, static_cast<void *>(this));
+		pthread_create(&m_thread, &attr, Stage3Parser<T>::thread_runner, static_cast<void *>(this));
 #endif
 
 		clock_t end_time = clock();

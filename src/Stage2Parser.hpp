@@ -39,7 +39,7 @@ public:
 		return static_cast<void *>((char *)p + get_offset());
 	}
 };
-template<class T, typename Tsv>
+template<class T>
 class Stage2Parser
 {
 	static constexpr size_t m_stack_size = 64 * 1024 * 1024;
@@ -59,7 +59,7 @@ private:
 	static void *thread_runner(void *param)
 #endif
 	{
-		Stage2Parser<T, Tsv> *instance = reinterpret_cast<Stage2Parser<T, Tsv> *>(param);
+		Stage2Parser<T> *instance = reinterpret_cast<Stage2Parser<T> *>(param);
 
 		while (true)
 		{
@@ -89,7 +89,6 @@ private:
 	{
 		CSTMarker start_marker(ast[position]);
 		int i;
-		std::vector<void *> children;
 		for (i = position + 1; i < m_bank_size / 8; i++)
 		{
 			CSTMarker marker(ast[i]);
@@ -99,7 +98,7 @@ private:
 			}
             else if (marker.is_end_marker())
             {
-				//Invoke chaser to derive the semantic value for this symbol
+				//ToDo: Invoke chaser to derive the semantic value for this symbol
 				return i + 1;
             }
 		}
@@ -123,15 +122,13 @@ public:
 		clock_t start_time = clock();
 
 #if defined(CENTAURUS_BUILD_WINDOWS)
-		m_thread = CreateThread(NULL, m_stack_size, Stage2Parser<T, Tsv>::thread_runner, (LPVOID)this, 0, NULL);
+		m_thread = CreateThread(NULL, m_stack_size, Stage2Parser<T>::thread_runner, (LPVOID)this, 0, NULL);
 #elif defined(CENTAURUS_BUILD_LINUX)
 		pthread_attr_t attr;
 
 		pthread_attr_init(&attr);
-
 		pthread_attr_setstacksize(&attr, m_stack_size);
-
-		pthread_create(&m_thread, &attr, Stage2Parser<T, Tsv>::thread_runner, static_cast<void *>(this));
+		pthread_create(&m_thread, &attr, Stage2Parser<T>::thread_runner, static_cast<void *>(this));
 #endif
 
 		clock_t end_time = clock();

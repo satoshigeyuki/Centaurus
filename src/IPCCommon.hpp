@@ -24,9 +24,16 @@ namespace Centaurus
 class IPCBase
 {
 protected:
+	enum class ASTBankState
+	{
+		Stage1,
+		Stage2,
+		Stage3
+	};
 	struct ASTBankEntry
 	{
 		std::atomic<int> number;
+		std::atomic<ASTBankState> state;
 	};
     void *m_main_window, *m_sub_window;
     size_t m_bank_size;
