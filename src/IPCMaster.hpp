@@ -87,7 +87,7 @@ public:
     {
         m_counter = 0;
     }
-    void *request_bank()
+    void *acquire_bank()
     {
 #if defined(CENTAURUS_BUILD_WINDOWS)
         WaitForSingleObject(m_master_lock, INFINITE);
@@ -99,9 +99,10 @@ public:
         int i;
         for (i = 0; i < m_bank_num; i++)
         {
-            //Leave the new bank unlocked, because nobody else will try to use it.
-            if (banks[i].number.load() < 0)
-                break;
+			if (banks[i].state.exchange())
+			{
+
+			}
         }
         m_current_bank = i;
         return (char *)m_main_window + m_bank_size * i;

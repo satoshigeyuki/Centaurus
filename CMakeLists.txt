@@ -3,6 +3,8 @@ enable_testing()
 
 project(Centaurus CXX)
 
+INCLUDE(CheckCXXSourceCompiles)
+
 set(ASMJIT_STATIC TRUE)
 set(ASMJIT_BUILD_ARM FALSE)
 set(ASMJIT_BUILD_X86 TRUE)
@@ -25,6 +27,8 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
 elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     add_definitions("-DCENTAURUS_BUILD_LINUX")
 endif()
+
+CHECK_CXX_SOURCE_COMPILES(cmake/check_lockfree_atomic.cpp)
 
 add_library(libcentaurus)
 set_target_properties(libcentaurus PROPERTIES PREFIX "")

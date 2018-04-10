@@ -26,6 +26,7 @@ class IPCBase
 protected:
 	enum class ASTBankState
 	{
+		Free,
 		Stage1,
 		Stage2,
 		Stage3

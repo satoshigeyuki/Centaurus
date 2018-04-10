@@ -66,7 +66,7 @@ public:
             sem_close(m_slave_lock);
 #endif
 	}
-    std::pair<const void *, int> request_bank()
+    std::pair<const void *, ASTBankEntry *> acquire_bank()
     {
 #if defined(CENTAURUS_BUILD_WINDOWS)
         WaitForSingleObject(m_slave_lock, INFINITE);
@@ -79,7 +79,7 @@ public:
         int i, number = -1;
         for (i = 0; i < m_bank_num; i++)
         {
-            number = banks[i].number.exchange(-1);
+            number = banks[i].state.exchange(ASTBankState::Stage);
             if (number != -1)
 			{
 				number = -1;
@@ -92,7 +92,7 @@ public:
 #endif
 				const void *ptr = (const char *)m_main_window + m_bank_size * i;
 
-				return std::pair<const void *, int>(ptr, number);
+				return std::pair<const void *, ASTBankEntry *>(ptr, &banks[i]);
 			}
         }
 		throw SimpleException("Nothing to sink.");
