@@ -19,23 +19,18 @@ class Stage1Runner : public BaseRunner
 private:
 #if defined(CENTAURUS_BUILD_WINDOWS)
     static DWORD WINAPI thread_runner(LPVOID param)
-    {
-        Stage1Runner<T> *instance = reinterpret_cast<Stage1Runner<T> *>(param);
-
-        instance->m_parser(instance->m_input_window);
-
-        ExitThread(0);
-    }
 #elif defined(CENTAURUS_BUILD_LINUX)
     static void *thread_runner(void *param)
+#endif
     {
-        Stage1Runner<T> *instance = reinterpret_cast<Stage1Runner<T> *>(param);
-
         instance->m_parser(instance->m_input_window);
 
+#if defined(CENTAURUS_BUILD_WINDOWS)
+        ExitThread(0);
+#elif defined(CENTAURUS_BUILD_LINUX)
 		return NULL;
-    }
 #endif
+    }
     void *acquire_bank()
     {
         WindowBankEntry *banks = (WindowBankEntry *)m_sub_window;

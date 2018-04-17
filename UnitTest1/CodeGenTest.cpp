@@ -117,7 +117,7 @@ public:
         //MappedFileInput json("/home/ihara/Downloads/sf-city-lots-json-master/citylots.json");
         MappedFileInput json("C:\\Users\\ihara\\Downloads\\sf-city-lots-json-master\\sf-city-lots-json-master\\citylots.json");
 
-        MasterParser<DryParserEM64T<char> > runner{parser, json.get_buffer(), NULL};
+        Stage1Runner<DryParserEM64T<char> > runner{parser, json.get_buffer(), NULL};
 
         runner.run();
 
