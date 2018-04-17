@@ -21,7 +21,7 @@
 
 namespace Centaurus
 {
-class IPCBase
+class StageBase
 {
 protected:
 	enum class ASTBankState
@@ -39,11 +39,12 @@ protected:
 		int number;
 		std::atomic<ASTBankState> state;
 	};
+	const void *m_input_window;
     void *m_main_window, *m_sub_window;
     size_t m_bank_size;
 	int m_bank_num;
 #if defined(CENTAURUS_BUILD_WINDOWS)
-    HANDLE m_mem_handle, m_slave_lock;
+    HANDLE m_input_handle, m_mem_handle, m_slave_lock;
 #elif defined(CENTAURUS_BUILD_LINUX)
 	sem_t *m_slave_lock;
 #endif
@@ -53,10 +54,14 @@ protected:
 	char m_memory_name[256], m_slave_lock_name[256];
 #endif
 public:
-	IPCBase(size_t bank_size, int bank_num, int pid)
+	IPCBase(const char *filename, size_t bank_size, int bank_num, int pid)
 		: m_bank_size(bank_size), m_bank_num(bank_num)
 	{
 #if defined(CENTAURUS_BUILD_WINDOWS)
+		HANDLE input_file_handle = CreateFileA(filename, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+
+		m_input_window = CreateFileMappingA(input_file_handle, NULL, PAGE_READONLY, 
+
 		sprintf_s(m_memory_name, "%s%s[%u]Window", PROGRAM_UUID, PROGRAM_NAME, pid);
 
 		sprintf_s(m_slave_lock_name, "%s%s[%u]SlaveLock", PROGRAM_UUID, PROGRAM_NAME, pid);
