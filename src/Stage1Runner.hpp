@@ -6,7 +6,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #endif
-#include "IPCCommon.hpp"
+#include "BaseRunner.hpp"
 
 namespace Centaurus
 {
@@ -16,11 +16,6 @@ class Stage1Runner : public BaseRunner
 	static constexpr size_t m_stack_size = 256 * 1024 * 1024;
     T& m_parser;
     int m_current_bank, m_counter;
-#if defined(CENTAURUS_BUILD_WINDOWS)
-	HANDLE m_thread;
-#elif defined(CENTAURUS_BUILD_LINUX)
-	pthread_t m_thread;
-#endif
 private:
 #if defined(CENTAURUS_BUILD_WINDOWS)
     static DWORD WINAPI thread_runner(LPVOID param)
@@ -43,14 +38,14 @@ private:
 #endif
     void *acquire_bank()
     {
-        ASTBankEntry *banks = (ASTBankEntry *)m_sub_window;
+        WindowBankEntry *banks = (WindowBankEntry *)m_sub_window;
 
 		while (true)
 		{
 			for (int i = 0; i < m_bank_num; i++)
 			{
-				ASTBankState old_state = ASTBankState::Free;
-				if (banks[i].state.compare_exchange_weak(old_state, ASTBankState::Stage1_Locked))
+				WindowBankState old_state = WindowBankState::Free;
+				if (banks[i].state.compare_exchange_weak(old_state, WindowBankState::Stage1_Locked))
 				{
 					m_current_bank = i;
 					return (char *)m_main_window + m_bank_size * i;
@@ -60,10 +55,10 @@ private:
     }
     void release_bank()
     {
-        ASTBankEntry *banks = (ASTBankEntry *)m_sub_window;
+        WindowBankEntry *banks = (WindowBankEntry *)m_sub_window;
 
         banks[m_current_bank].number = m_counter++;
-		banks[m_current_bank].state.store(ASTBankState::Stage1_Unlocked);
+		banks[m_current_bank].state.store(WindowBankState::Stage1_Unlocked);
 
         m_current_bank = -1;
 
@@ -137,35 +132,8 @@ public:
 	}
     void start()
     {
-        clock_t start_time = clock();
-
-#if defined(CENTAURUS_BUILD_WINDOWS)
-        HANDLE m_thread = CreateThread(NULL, m_stack_size, Stage1Runner<T>::thread_runner, (LPVOID)this, 0, NULL);
-#elif defined(CENTAURUS_BUILD_LINUX)
-        pthread_t thread;
-        pthread_attr_t attr;
-
-        pthread_attr_init(&attr);
-
-        pthread_attr_setstacksize(&attr, m_stack_size);
-
-        pthread_create(&m_thread, &attr, Stage1Runner<T>::thread_runner, this);
-#endif
-
-        clock_t end_time = clock();
-
-        //char buf[64];
-        //snprintf(buf, 64, "Elapsed time = %lf[ms]\r\n", (double)(end_time - start_time) * 1000.0 / CLOCKS_PER_SEC);
-        //Logger::WriteMessage(buf);
+        start(Stage1Runner<T>::thread_runner);
     }
-	void wait()
-	{
-#if defined(CENTAURUS_BUILD_WINDOWS)
-		WaitForSingleObject(m_thread, INFINITE);
-#elif defined(CENTAURUS_BUILD_LINUX)
-		pthread_join(m_thread, NULL);
-#endif
-	}
 	void run()
 	{
 		start();
