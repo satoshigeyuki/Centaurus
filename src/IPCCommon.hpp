@@ -27,27 +27,30 @@ protected:
 	enum class ASTBankState
 	{
 		Free,
-		Stage1,
-		Stage2,
-		Stage3
+		Stage1_Locked,
+		Stage1_Unlocked,
+		Stage2_Locked,
+		Stage2_Unlocked,
+		Stage3_Locked,
+		Stage3_Unlocked
 	};
 	struct ASTBankEntry
 	{
-		std::atomic<int> number;
+		int number;
 		std::atomic<ASTBankState> state;
 	};
     void *m_main_window, *m_sub_window;
     size_t m_bank_size;
 	int m_bank_num;
 #if defined(CENTAURUS_BUILD_WINDOWS)
-    HANDLE m_mem_handle, m_slave_lock, m_master_lock, m_window_lock;
+    HANDLE m_mem_handle, m_slave_lock;
 #elif defined(CENTAURUS_BUILD_LINUX)
-	sem_t *m_slave_lock, *m_master_lock, *m_window_lock;
+	sem_t *m_slave_lock;
 #endif
 #if defined(CENTAURUS_BUILD_WINDOWS)
-	char m_memory_name[MAX_PATH], m_slave_lock_name[MAX_PATH], m_master_lock_name[MAX_PATH], m_window_lock_name[MAX_PATH];
+	char m_memory_name[MAX_PATH], m_slave_lock_name[MAX_PATH];
 #elif defined(CENTAURUS_BUILD_LINUX)
-	char m_memory_name[256], m_slave_lock_name[256], m_master_lock_name[256], m_window_lock_name[256];
+	char m_memory_name[256], m_slave_lock_name[256];
 #endif
 public:
 	IPCBase(size_t bank_size, int bank_num, int pid)
@@ -57,18 +60,10 @@ public:
 		sprintf_s(m_memory_name, "%s%s[%u]Window", PROGRAM_UUID, PROGRAM_NAME, pid);
 
 		sprintf_s(m_slave_lock_name, "%s%s[%u]SlaveLock", PROGRAM_UUID, PROGRAM_NAME, pid);
-        
-        sprintf_s(m_master_lock_name, "%s%s[%u]MasterLock", PROGRAM_UUID, PROGRAM_NAME, pid);
-
-        sprintf_s(m_window_lock_name, "%s%s[%u]WindowLock", PROGRAM_UUID, PROGRAM_NAME, pid);
 #elif defined(CENTAURUS_BUILD_LINUX)
         snprintf(m_memory_name, sizeof(m_memory_name), "/%s%s[%d]Window", PROGRAM_UUID, PROGRAM_NAME, pid);
 
 		snprintf(m_slave_lock_name, sizeof(m_slave_lock_name), "/%s%s[%d]SlaveLock", PROGRAM_UUID, PROGRAM_NAME, pid);
-
-        snprintf(m_master_lock_name, sizeof(m_master_lock_name), "/%s%s[%d]MasterLock", PROGRAM_UUID, PROGRAM_NAME, pid);
-
-        snprintf(m_window_lock_name, sizeof(m_window_lock_name), "/%s%s[%d]WindowLock", PROGRAM_UUID, PROGRAM_NAME, pid);
 #endif
 	}
 	virtual ~IPCBase()

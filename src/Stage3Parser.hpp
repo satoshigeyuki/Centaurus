@@ -1,17 +1,16 @@
 #pragma once
 
-#include "IPCSlave.hpp"
+#include "IPCCommon.hpp"
 #include "CodeGenEM64T.hpp"
 
 namespace Centaurus
 {
 template<class T>
-class Stage3Parser
+class Stage3Parser : public IPCBase
 {
 	static constexpr size_t m_stack_size = 64 * 1024 * 1024;
     size_t m_bank_size;
     T& m_chaser;
-	IPCSlave m_ipc;
 	const void *m_input;
 #if defined(CENTAURUS_BUILD_WINDOWS)
 	HANDLE m_thread;
@@ -29,7 +28,7 @@ private:
 
 		while (true)
 		{
-			std::pair<const void *, int> bank = instance->m_ipc.request_bank();
+			acquire_bank();
 
 		}
 
