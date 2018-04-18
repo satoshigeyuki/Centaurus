@@ -5,6 +5,7 @@
 #include "CodeGenEM64T.hpp"
 #include "CATNLoader.hpp"
 #include "Stage1Runner.hpp"
+#include "Stage2Runner.hpp"
 
 #include <time.h>
 
@@ -150,6 +151,39 @@ public:
         Stage1Runner<ParserEM64T<char> > runner{input_path, parser, 8 * 1024 * 1024, 8};
 
 		runner.run();
+
+        //Assert::AreEqual((const void *)(json + strlen(json)), context.result);
+        //Assert::IsTrue(runner.get_result() != NULL);
+
+        //_aligned_free(json);
+    }
+    TEST_METHOD(ChaserGenTest1)
+    {
+        using namespace Centaurus;
+
+        Grammar<char> grammar = LoadGrammar("grammar/json.cgr");
+
+        asmjit::StringLogger logger;
+
+        MyErrorHandler errhandler;
+
+        ParserEM64T<char> parser(grammar, &logger, &errhandler);
+        ChaserEM64T<char> chaser(grammar);
+
+#if defined(CENTAURUS_BUILD_WINDOWS)
+        const char *input_path = "C:\\Users\\ihara\\Downloads\\sf-city-lots-json-master\\sf-city-lots-json-master\\citylots.json";
+#elif defined(CENTAURUS_BUILD_LINUX)
+        const char *input_path = "/mnt/c/Users/ihara/Downloads/sf-city-lots-json-master/sf-city-lots-json-master/citylots.json";
+#endif
+
+        Stage1Runner<ParserEM64T<char> > runner1{ input_path, parser, 8 * 1024 * 1024, 8 };
+        Stage2Runner<ChaserEM64T<char> > runner2{ input_path, chaser, 8 * 1024 * 1024, 8, (int)GetCurrentProcessId() };
+
+        runner1.start();
+        runner2.start();
+
+        runner1.wait();
+        runner2.wait();
 
         //Assert::AreEqual((const void *)(json + strlen(json)), context.result);
         //Assert::IsTrue(runner.get_result() != NULL);

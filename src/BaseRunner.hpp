@@ -58,7 +58,8 @@ protected:
 		Stage1_Unlocked,
 		Stage2_Locked,
 		Stage2_Unlocked,
-		Stage3_Locked
+		Stage3_Locked,
+        YouAreDone
 	};
 	struct WindowBankEntry
 	{

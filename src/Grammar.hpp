@@ -82,7 +82,7 @@ template<typename TCHAR> class Grammar
 public:
     void parse(Stream& stream)
     {
-        int machine_id = 0;
+        int machine_id = 1;
 
         while (1)
         {

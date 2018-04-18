@@ -105,6 +105,9 @@ ParserEM64T<TCHAR>::ParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *l
         as.call(machine_map[grammar.get_root_id()]);
     }
 
+    as.xor_(MARKER_REG, MARKER_REG);
+    as.movnti(asmjit::X86Mem(OUTPUT_REG, 0), MARKER_REG);
+
     asmjit::Label finishlabel = as.newLabel();
     as.jmp(finishlabel);
 
@@ -401,7 +404,7 @@ void *ParserEM64T<TCHAR>::request_page(void *context)
 {
     ParserEM64T<TCHAR> *instance = reinterpret_cast<ParserEM64T<TCHAR> *>(context);
 
-    return instance->m_callback(instance->m_context);
+    return instance->m_feed_callback(instance->m_context);
 }
 
 template<typename TCHAR>

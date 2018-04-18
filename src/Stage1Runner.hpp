@@ -22,6 +22,10 @@ private:
 
         instance->m_parser(instance->m_input_window);
 
+        instance->release_bank();
+
+        instance->signal_exit();
+
 #if defined(CENTAURUS_BUILD_WINDOWS)
         ExitThread(0);
 #elif defined(CENTAURUS_BUILD_LINUX)
@@ -52,8 +56,7 @@ private:
             WindowBankEntry *banks = (WindowBankEntry *)m_sub_window;
 
             banks[m_current_bank].number = m_counter++;
-            //banks[m_current_bank].state.store(WindowBankState::Stage1_Unlocked);
-            banks[m_current_bank].state.store(WindowBankState::Free);
+            banks[m_current_bank].state.store(WindowBankState::Stage1_Unlocked);
 
             m_current_bank = -1;
 
@@ -79,6 +82,34 @@ private:
             banks[i].state.store(WindowBankState::Free);
         }
     }
+    void signal_exit()
+    {
+        WindowBankEntry *banks = (WindowBankEntry *)m_sub_window;
+
+        while (true)
+        {
+            int count = 0;
+            for (int i = 0; i < m_bank_num; i++)
+            {
+                WindowBankState state = banks[i].state.load();
+
+                if (state != WindowBankState::Free)
+                    count++;
+            }
+            if (count == 0) break;
+        }
+
+        for (int i = 0; i < m_bank_num; i++)
+        {
+            banks[i].state.store(WindowBankState::YouAreDone);
+        
+#if defined(CENTAURUS_BUILD_WINDOWS)
+            ReleaseSemaphore(m_slave_lock, 1, NULL);
+#elif defined(CENTAURUS_BUILD_LINUX)
+            sem_post(m_slave_lock);
+#endif
+        }
+    }
 public:
     Stage1Runner(const char *filename, T& parser, size_t bank_size, int bank_num)
 #if defined(CENTAURUS_BUILD_WINDOWS)
@@ -95,7 +126,7 @@ public:
 
         m_main_window = MapViewOfFile(m_mem_handle, FILE_MAP_ALL_ACCESS, 0, get_sub_window_size(), get_main_window_size());
 
-		m_slave_lock = CreateSemaphoreExA(NULL, 0, bank_num, /*m_slave_lock_name*/NULL, 0, SEMAPHORE_MODIFY_STATE);
+		m_slave_lock = CreateSemaphoreExA(NULL, 0, bank_num, m_slave_lock_name, 0, SEMAPHORE_MODIFY_STATE);
 #elif defined(CENTAURUS_BUILD_LINUX)
         int fd = shm_open(m_memory_name, O_RDWR | O_CREAT, 0600);
 

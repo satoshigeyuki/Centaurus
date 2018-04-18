@@ -67,7 +67,7 @@ public:
 	}
 };
 
-using PageCallbackFunc = void *(*)(void *);
+using FeedCallbackFunc = void *(*)(void *);
 
 template<typename TCHAR>
 class ParserEM64T
@@ -79,19 +79,19 @@ class ParserEM64T
     const void *(*m_func)(void *context, const void *input, void *output);
     void emit_machine(asmjit::X86Assembler& as, const ATNMachine<TCHAR>& machine, std::unordered_map<Identifier, asmjit::Label>& machine_map, const CompositeATN<TCHAR>& catn, const Identifier& id, asmjit::Label& rejectlabel, MyConstPool& pool);
     static void *request_page(void *context);
-    PageCallbackFunc m_callback;
+    FeedCallbackFunc m_feed_callback;
     void *m_context;
 public:
     ParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *logger = NULL, asmjit::ErrorHandler *errhandler = NULL);
     virtual ~ParserEM64T() {}
     const void *operator()(const void *input)
     {
-        void *output = m_callback(m_context);
+        void *output = m_feed_callback(m_context);
         return m_func(static_cast<void *>(this), input, output);
     }
-    void register_callback(PageCallbackFunc callback, void *context)
+    void register_callback(FeedCallbackFunc feed_callback, void *context)
     {
-        m_callback = callback;
+        m_feed_callback = feed_callback;
         m_context = context;
     }
 };
@@ -112,9 +112,9 @@ public:
         m_runtime.add(&func, &m_code);
         return func(input);
     }
-    void register_callback(PageCallbackFunc callback, void *context)
+    void register_callback(FeedCallbackFunc /*callback*/, void */*context*/)
     {
-
+        //Do nothing
     }
 };
 

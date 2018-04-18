@@ -26,8 +26,10 @@ private:
 
 		while (true)
 		{
-			//instance->reduce_bank(reinterpret_cast<const uint64_t *>(instance->acquire_bank()));
-            instance->acquire_bank();
+            const uint64_t *data = reinterpret_cast<const uint64_t *>(instance->acquire_bank());
+
+            if (data == NULL) break;
+
             instance->release_bank();
 		}
 
@@ -87,6 +89,13 @@ private:
 					m_current_bank = i;
 					return (const char *)m_main_window + m_bank_size * i;
 				}
+                else
+                {
+                    if (old_state == WindowBankState::YouAreDone)
+                    {
+                        return NULL;
+                    }
+                }
 			}
 		}
     }
@@ -94,7 +103,8 @@ private:
 	{
 		WindowBankEntry *banks = reinterpret_cast<WindowBankEntry *>(m_sub_window);
 
-		banks[m_current_bank].state.store(WindowBankState::Stage2_Unlocked);
+		//banks[m_current_bank].state.store(WindowBankState::Stage2_Unlocked);
+        banks[m_current_bank].state.store(WindowBankState::Free);
 
 		m_current_bank = -1;
 	}
@@ -144,7 +154,7 @@ public:
     }
 	void start()
 	{
-        start(Stage2Runner<T>::thread_runner);
+        _start(Stage2Runner<T>::thread_runner, this);
     }
 	void run()
 	{
