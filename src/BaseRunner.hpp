@@ -92,11 +92,11 @@ public:
         DWORD dwFileSize = GetFileSize(hInputFile, &dwFileSizeHigh);
         m_input_size = ((size_t)dwFileSizeHigh << 32) | dwFileSize;
 
-		HANDLE hInputMapping = CreateFileMappingA(hInputFile, NULL, PAGE_READONLY, 0, dwFileSize, NULL);
+		HANDLE hInputMapping = CreateFileMappingA(hInputFile, NULL, PAGE_READONLY, dwFileSizeHigh, dwFileSize, NULL);
 
         m_input_window = MapViewOfFile(hInputMapping, FILE_MAP_READ, 0, 0, 0);
 
-        volatile int a = *(const int *)m_input_window;
+        //volatile char a = *((const char *)m_input_window + (m_input_size - 1));
 
         //CloseHandle(hInputMapping);
         //CloseHandle(hInputFile);
@@ -156,7 +156,7 @@ public:
         clock_t start_time = clock();
 
 #if defined(CENTAURUS_BUILD_WINDOWS)
-        HANDLE m_thread = CreateThread(NULL, m_stack_size, runner, context, 0, NULL);
+        m_thread = CreateThread(NULL, m_stack_size, runner, context, 0, NULL);
 #elif defined(CENTAURUS_BUILD_LINUX)
         pthread_t thread;
         pthread_attr_t attr;
