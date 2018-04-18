@@ -6,6 +6,7 @@
 #include "CATNLoader.hpp"
 #include "Stage1Runner.hpp"
 #include "Stage2Runner.hpp"
+#include "Stage3Runner.hpp"
 
 #include <time.h>
 
@@ -118,12 +119,14 @@ public:
 #if defined(CENTAURUS_BUILD_WINDOWS)
 		const char *input_path = "C:\\Users\\ihara\\Downloads\\sf-city-lots-json-master\\sf-city-lots-json-master\\citylots.json";
 #elif defined(CENTAURUS_BUILD_LINUX)
-		const char *input_path = "/mnt/c/Users/ihara/Downloads/sf-city-lots-json-master/sf-city-lots-json-master/citylots.json";
+		//const char *input_path = "/mnt/c/Users/ihara/Downloads/sf-city-lots-json-master/sf-city-lots-json-master/citylots.json";
+        const char *input_path = "/home/ihara/Downloads/sf-city-lots-json-master/citylots.json";
 #endif
 
         Stage1Runner<DryParserEM64T<char> > runner{input_path, parser, 8 * 1024 * 1024, 8};
 
-        runner.run();
+        runner.start();
+        runner.wait();
 
         //Assert::AreEqual((const void *)(json + strlen(json)), context.result);
         //Assert::IsTrue(runner.get_result() != NULL);
@@ -145,12 +148,14 @@ public:
 #if defined(CENTAURUS_BUILD_WINDOWS)
 		const char *input_path = "C:\\Users\\ihara\\Downloads\\sf-city-lots-json-master\\sf-city-lots-json-master\\citylots.json";
 #elif defined(CENTAURUS_BUILD_LINUX)
-		const char *input_path = "/mnt/c/Users/ihara/Downloads/sf-city-lots-json-master/sf-city-lots-json-master/citylots.json";
+		//const char *input_path = "/mnt/c/Users/ihara/Downloads/sf-city-lots-json-master/sf-city-lots-json-master/citylots.json";
+        const char *input_path = "/home/ihara/Downloads/sf-city-lots-json-master/citylots.json";
 #endif
 
         Stage1Runner<ParserEM64T<char> > runner{input_path, parser, 8 * 1024 * 1024, 8};
 
-		runner.run();
+		runner.start();
+        runner.wait();
 
         //Assert::AreEqual((const void *)(json + strlen(json)), context.result);
         //Assert::IsTrue(runner.get_result() != NULL);
@@ -173,17 +178,26 @@ public:
 #if defined(CENTAURUS_BUILD_WINDOWS)
         const char *input_path = "C:\\Users\\ihara\\Downloads\\sf-city-lots-json-master\\sf-city-lots-json-master\\citylots.json";
 #elif defined(CENTAURUS_BUILD_LINUX)
-        const char *input_path = "/mnt/c/Users/ihara/Downloads/sf-city-lots-json-master/sf-city-lots-json-master/citylots.json";
+        //const char *input_path = "/mnt/c/Users/ihara/Downloads/sf-city-lots-json-master/sf-city-lots-json-master/citylots.json";
+        const char *input_path = "/home/ihara/Downloads/sf-city-lots-json-master/citylots.json";
 #endif
 
         Stage1Runner<ParserEM64T<char> > runner1{ input_path, parser, 8 * 1024 * 1024, 8 };
-        Stage2Runner<ChaserEM64T<char> > runner2{ input_path, chaser, 8 * 1024 * 1024, 8, (int)GetCurrentProcessId() };
+#if defined(CENTAURUS_BUILD_WINDOWS)
+        int pid = GetCurrentProcessId();
+#elif defined(CENTAURUS_BUILD_LINUX)
+        int pid = getpid();
+#endif
+        Stage2Runner<ChaserEM64T<char> > runner2{ input_path, chaser, 8 * 1024 * 1024, 8, pid };
+        Stage3Runner<ChaserEM64T<char> > runner3{ input_path, chaser, 8 * 1024 * 1024, 8, pid };
 
         runner1.start();
         runner2.start();
+        runner3.start();
 
         runner1.wait();
         runner2.wait();
+        runner3.wait();
 
         //Assert::AreEqual((const void *)(json + strlen(json)), context.result);
         //Assert::IsTrue(runner.get_result() != NULL);

@@ -20,6 +20,10 @@ private:
     {
 		Stage1Runner<T> *instance = reinterpret_cast<Stage1Runner<T> *>(param);
 
+        instance->m_current_bank = -1;
+        instance->m_counter = 0;
+        instance->reset_banks();
+
         instance->m_parser(instance->m_input_window);
 
         instance->release_bank();
@@ -117,7 +121,7 @@ public:
 #elif defined(CENTAURUS_BUILD_LINUX)
 		: BaseRunner(filename, bank_size, bank_num, getpid(), STAGE1_STACK_SIZE),
 #endif
-		m_parser(parser), m_current_bank(-1), m_counter(0)
+		m_parser(parser)
     {
 #if defined(CENTAURUS_BUILD_WINDOWS)
         m_mem_handle = CreateFileMappingA(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, get_window_size(), m_memory_name);
@@ -142,8 +146,6 @@ public:
 #endif
 
         m_parser.register_callback(Stage1Runner<T>::exchange_bank, this);
-
-        reset_banks();
     }
 	~Stage1Runner()
 	{
@@ -174,10 +176,5 @@ public:
     {
         _start(Stage1Runner<T>::thread_runner, static_cast<void *>(this));
     }
-	void run()
-	{
-		start();
-		wait();
-	}
 };
 }

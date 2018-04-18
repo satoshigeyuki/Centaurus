@@ -24,11 +24,15 @@ private:
 	{
 		Stage2Runner<T> *instance = reinterpret_cast<Stage2Runner<T> *>(param);
 
+        instance->m_current_bank = -1;
+
 		while (true)
 		{
-            const uint64_t *data = reinterpret_cast<const uint64_t *>(instance->acquire_bank());
+            uint64_t *data = reinterpret_cast<uint64_t *>(instance->acquire_bank());
 
             if (data == NULL) break;
+
+            instance->reduce_bank(data);
 
             instance->release_bank();
 		}
@@ -48,6 +52,10 @@ private:
 			{
 				i = parse_subtree(ast, i);
 			}
+            else if (ast[i] == 0)
+            {
+                break;
+            }
 		}
 	}
 	int parse_subtree(uint64_t *ast, int position)
@@ -69,7 +77,7 @@ private:
 		}
 		return i;
 	}
-    const void *acquire_bank()
+    void *acquire_bank()
     {
 #if defined(CENTAURUS_BUILD_WINDOWS)
         WaitForSingleObject(m_slave_lock, INFINITE);
@@ -87,7 +95,7 @@ private:
 				if (banks[i].state.compare_exchange_weak(old_state, WindowBankState::Stage2_Locked))
 				{
 					m_current_bank = i;
-					return (const char *)m_main_window + m_bank_size * i;
+					return (char *)m_main_window + m_bank_size * i;
 				}
                 else
                 {
@@ -103,21 +111,20 @@ private:
 	{
 		WindowBankEntry *banks = reinterpret_cast<WindowBankEntry *>(m_sub_window);
 
-		//banks[m_current_bank].state.store(WindowBankState::Stage2_Unlocked);
-        banks[m_current_bank].state.store(WindowBankState::Free);
+		banks[m_current_bank].state.store(WindowBankState::Stage2_Unlocked);
 
 		m_current_bank = -1;
 	}
 public:
     Stage2Runner(const char *filename, T& chaser, size_t bank_size, int bank_num, int master_pid)
-        : BaseRunner(filename, bank_size, bank_num, master_pid, STAGE2_STACK_SIZE), m_chaser(chaser), m_bank_size(bank_size), m_current_bank(-1)
+        : BaseRunner(filename, bank_size, bank_num, master_pid, STAGE2_STACK_SIZE), m_chaser(chaser), m_bank_size(bank_size)
     {
 #if defined(CENTAURUS_BUILD_WINDOWS)
 		m_mem_handle = OpenFileMappingA(FILE_MAP_ALL_ACCESS, FALSE, m_memory_name);
 
 		m_sub_window = MapViewOfFile(m_mem_handle, FILE_MAP_ALL_ACCESS, 0, 0, get_sub_window_size());
 
-		m_main_window = MapViewOfFile(m_mem_handle, FILE_MAP_READ, 0, get_sub_window_size(), get_main_window_size());
+		m_main_window = MapViewOfFile(m_mem_handle, FILE_MAP_ALL_ACCESS, 0, get_sub_window_size(), get_main_window_size());
 
 		m_slave_lock = OpenSemaphoreA(SYNCHRONIZE, FALSE, m_slave_lock_name);
 #elif defined(CENTAURUS_BUILD_LINUX)
@@ -127,7 +134,7 @@ public:
 
 		m_sub_window = mmap(NULL, get_sub_window_size(), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 
-		m_main_window = mmap(NULL, get_main_window_size(), PROT_READ, MAP_SHARED, fd, get_sub_window_size());
+		m_main_window = mmap(NULL, get_main_window_size(), PROT_READ | PROT_WRITE, MAP_SHARED, fd, get_sub_window_size());
 
 		m_slave_lock = sem_open(m_slave_lock_name, 0);
 #endif
@@ -156,10 +163,5 @@ public:
 	{
         _start(Stage2Runner<T>::thread_runner, this);
     }
-	void run()
-	{
-		start();
-		wait();
-	}
 };
 }
