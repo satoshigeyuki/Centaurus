@@ -183,7 +183,9 @@
     <ClInclude Include="..\src\ATN.hpp" />
     <ClInclude Include="..\src\BaseRunner.hpp" />
     <ClInclude Include="..\src\CharClass.hpp" />
+    <ClInclude Include="..\src\CodeGenCommonEM64T.hpp" />
     <ClInclude Include="..\src\CodeGenEM64T.hpp" />
+    <ClInclude Include="..\src\CodeGenUtilsEM64T.hpp" />
     <ClInclude Include="..\src\CompositeATN.hpp" />
     <ClInclude Include="..\src\DFA.hpp" />
     <ClInclude Include="..\src\Exception.hpp" />

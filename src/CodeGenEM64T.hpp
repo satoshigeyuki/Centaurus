@@ -67,6 +67,8 @@ public:
 	}
 };
 
+using PageCallbackFunc = void *(*)(void *);
+
 template<typename TCHAR>
 class ParserEM64T
 {
@@ -74,26 +76,23 @@ class ParserEM64T
     asmjit::JitRuntime m_runtime;
     asmjit::CodeHolder m_code;
     static CharClass<TCHAR> m_skipfilter;
-    void *m_buffer;
     const void *(*m_func)(void *context, const void *input, void *output);
     void emit_machine(asmjit::X86Assembler& as, const ATNMachine<TCHAR>& machine, std::unordered_map<Identifier, asmjit::Label>& machine_map, const CompositeATN<TCHAR>& catn, const Identifier& id, asmjit::Label& rejectlabel, MyConstPool& pool);
     static void *request_page(void *context);
-    long m_flipcount;
+    PageCallbackFunc m_callback;
+    void *m_context;
 public:
     ParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *logger = NULL, asmjit::ErrorHandler *errhandler = NULL);
     virtual ~ParserEM64T() {}
-    const void *operator()(void *context, const void *input)
+    const void *operator()(const void *input)
     {
-        m_flipcount = 0;
-        return m_func(context, input, m_buffer);
+        void *output = m_callback(m_context);
+        return m_func(static_cast<void *>(this), input, output);
     }
-    void set_buffer(void *buffer)
+    void register_callback(PageCallbackFunc callback, void *context)
     {
-        m_buffer = buffer;
-    }
-    long get_flipcount() const
-    {
-        return m_flipcount;
+        m_callback = callback;
+        m_context = context;
     }
 };
 
@@ -107,11 +106,15 @@ public:
     static void emit_machine(asmjit::X86Assembler& as, const ATNMachine<TCHAR>& machine, std::unordered_map<Identifier, asmjit::Label>& machine_map, const CompositeATN<TCHAR>& catn, const Identifier& id, asmjit::Label& rejectlabel, MyConstPool& pool);
     DryParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *logger = NULL);
     virtual ~DryParserEM64T() {}
-    const void *operator()(void *context, const void *input)
+    const void *operator()(const void *input)
     {
         const void *(*func)(const void *);
         m_runtime.add(&func, &m_code);
         return func(input);
+    }
+    void register_callback(PageCallbackFunc callback, void *context)
+    {
+
     }
 };
 

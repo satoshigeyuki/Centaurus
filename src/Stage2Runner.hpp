@@ -26,7 +26,8 @@ private:
 
 		while (true)
 		{
-			instance->reduce_bank(reinterpret_cast<const uint64_t *>(instance->acquire_bank()));
+			//instance->reduce_bank(reinterpret_cast<const uint64_t *>(instance->acquire_bank()));
+            instance->acquire_bank();
             instance->release_bank();
 		}
 

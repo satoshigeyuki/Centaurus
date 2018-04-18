@@ -120,7 +120,7 @@ public:
 		const char *input_path = "/mnt/c/Users/ihara/Downloads/sf-city-lots-json-master/sf-city-lots-json-master/citylots.json";
 #endif
 
-        Stage1Runner<DryParserEM64T<char> > runner{input_path, parser, 8 * 1024, 8};
+        Stage1Runner<DryParserEM64T<char> > runner{input_path, parser, 8 * 1024 * 1024, 8};
 
         runner.run();
 

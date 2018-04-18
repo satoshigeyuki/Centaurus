@@ -20,7 +20,7 @@ private:
     {
 		Stage1Runner<T> *instance = reinterpret_cast<Stage1Runner<T> *>(param);
 
-        instance->m_parser(instance, instance->m_input_window);
+        instance->m_parser(instance->m_input_window);
 
 #if defined(CENTAURUS_BUILD_WINDOWS)
         ExitThread(0);
@@ -47,25 +47,37 @@ private:
     }
     void release_bank()
     {
-        WindowBankEntry *banks = (WindowBankEntry *)m_sub_window;
+        if (m_current_bank != -1)
+        {
+            WindowBankEntry *banks = (WindowBankEntry *)m_sub_window;
 
-        banks[m_current_bank].number = m_counter++;
-		//banks[m_current_bank].state.store(WindowBankState::Stage1_Unlocked);
-		banks[m_current_bank].state.store(WindowBankState::Free);
+            banks[m_current_bank].number = m_counter++;
+            //banks[m_current_bank].state.store(WindowBankState::Stage1_Unlocked);
+            banks[m_current_bank].state.store(WindowBankState::Free);
 
-        m_current_bank = -1;
+            m_current_bank = -1;
 
 #if defined(CENTAURUS_BUILD_WINDOWS)
-		ReleaseSemaphore(m_slave_lock, 1, NULL);
+            ReleaseSemaphore(m_slave_lock, 1, NULL);
 #elif defined(CENTAURUS_BUILD_LINUX)
-		sem_post(m_slave_lock);
+            sem_post(m_slave_lock);
 #endif
+        }
     }
     static void *exchange_bank(void *context)
     {
         Stage1Runner<T> *instance = reinterpret_cast<Stage1Runner<T> *>(context);
         instance->release_bank();
         return instance->acquire_bank();
+    }
+    void reset_banks()
+    {
+        WindowBankEntry *banks = (WindowBankEntry *)m_sub_window;
+
+        for (int i = 0; i < m_bank_num; i++)
+        {
+            banks[i].state.store(WindowBankState::Free);
+        }
     }
 public:
     Stage1Runner(const char *filename, T& parser, size_t bank_size, int bank_num)
@@ -83,7 +95,7 @@ public:
 
         m_main_window = MapViewOfFile(m_mem_handle, FILE_MAP_ALL_ACCESS, 0, get_sub_window_size(), get_main_window_size());
 
-		m_slave_lock = CreateSemaphoreA(NULL, 0, bank_num, m_slave_lock_name);
+		m_slave_lock = CreateSemaphoreExA(NULL, 0, bank_num, /*m_slave_lock_name*/NULL, 0, SEMAPHORE_MODIFY_STATE);
 #elif defined(CENTAURUS_BUILD_LINUX)
         int fd = shm_open(m_memory_name, O_RDWR | O_CREAT, 0600);
 
@@ -97,6 +109,10 @@ public:
 
 		m_slave_lock = sem_open(m_slave_lock_name, O_CREAT | O_EXCL, 0600, 0);
 #endif
+
+        m_parser.register_callback(Stage1Runner<T>::exchange_bank, this);
+
+        reset_banks();
     }
 	~Stage1Runner()
 	{

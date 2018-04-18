@@ -345,8 +345,11 @@ void ParserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const ATNMachine
     as.bind(requestpage1_label);
     {
         as.push(INPUT_REG);
+        as.push(INPUT_BASE_REG);
         as.push(CONTEXT_REG);
-        as.mov(ARG1_REG, asmjit::X86Mem(asmjit::x86::rsp, 0));
+        as.push(STACK_BACKUP_REG);
+        as.vmovdqa(asmjit::x86::xmm15, PATTERN_REG);
+        as.mov(ARG1_REG, asmjit::X86Mem(asmjit::x86::rsp, 8));
 #if defined(CENTAURUS_BUILD_WINDOWS)
         as.sub(asmjit::x86::rsp, 32);
 #endif
@@ -357,7 +360,10 @@ void ParserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const ATNMachine
         as.mov(OUTPUT_REG, asmjit::x86::rax);
         as.mov(OUTPUT_BOUND_REG, OUTPUT_REG);
         as.add(OUTPUT_BOUND_REG, AST_BUF_SIZE);
+        as.vmovdqa(PATTERN_REG, asmjit::x86::xmm15);
+        as.pop(STACK_BACKUP_REG);
         as.pop(CONTEXT_REG);
+        as.pop(INPUT_BASE_REG);
         as.pop(INPUT_REG);
 
         as.jmp(statelabels[0]);
@@ -365,8 +371,11 @@ void ParserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const ATNMachine
     as.bind(requestpage2_label);
     {
         as.push(INPUT_REG);
+        as.push(INPUT_BASE_REG);
         as.push(CONTEXT_REG);
-        as.mov(ARG1_REG, asmjit::X86Mem(asmjit::x86::rsp, 0));
+        as.push(STACK_BACKUP_REG);
+        as.vmovdqa(asmjit::x86::xmm15, PATTERN_REG);
+        as.mov(ARG1_REG, asmjit::X86Mem(asmjit::x86::rsp, 8));
 #if defined(CENTAURUS_BUILD_WINDOWS)
         as.sub(asmjit::x86::rsp, 32);
 #endif
@@ -377,7 +386,10 @@ void ParserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const ATNMachine
         as.mov(OUTPUT_REG, asmjit::x86::rax);
         as.mov(OUTPUT_BOUND_REG, OUTPUT_REG);
         as.add(OUTPUT_BOUND_REG, AST_BUF_SIZE);
+        as.vmovdqa(PATTERN_REG, asmjit::x86::xmm15);
+        as.pop(STACK_BACKUP_REG);
         as.pop(CONTEXT_REG);
+        as.pop(INPUT_BASE_REG);
         as.pop(INPUT_REG);
 
         as.ret();
@@ -385,13 +397,11 @@ void ParserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const ATNMachine
 }
 
 template<typename TCHAR>
-void * ParserEM64T<TCHAR>::request_page(void *context)
+void *ParserEM64T<TCHAR>::request_page(void *context)
 {
-    ParserEM64T<TCHAR> *parser = (ParserEM64T<TCHAR> *)context;
+    ParserEM64T<TCHAR> *instance = reinterpret_cast<ParserEM64T<TCHAR> *>(context);
 
-    parser->m_flipcount++;
-
-    return parser->m_buffer;
+    return instance->m_callback(instance->m_context);
 }
 
 template<typename TCHAR>

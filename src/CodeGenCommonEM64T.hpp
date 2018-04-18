@@ -5,6 +5,7 @@
  * ATN Machine scope
  *  CONTEXT_REG     MM2/R8
  *  INPUT_REG       ESI/RSI
+ *  INPUT_BASE_REG  EBP/RBP
  *  OUTPUT_REG      EDI/RDI
  *  OUTPUT_BOUND    EDX/RDX
  *  Stack backup    MM3/R9
@@ -40,6 +41,7 @@
 #define INPUT_BASE_REG asmjit::x86::rbp
 #define MARKER_REG asmjit::x86::rax
 #define ID_REG asmjit::x86::rbx
+#define STACK_BACKUP_REG asmjit::x86::r9
 
 //DFA/LDFA routine scope registers
 #define BACKUP_REG asmjit::x86::rbx
