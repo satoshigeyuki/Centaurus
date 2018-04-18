@@ -28,8 +28,6 @@ elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     add_definitions("-DCENTAURUS_BUILD_LINUX")
 endif()
 
-CHECK_CXX_SOURCE_COMPILES(cmake/check_lockfree_atomic.cpp)
-
 add_library(libcentaurus)
 set_target_properties(libcentaurus PROPERTIES PREFIX "")
 target_link_libraries(libcentaurus asmjit)

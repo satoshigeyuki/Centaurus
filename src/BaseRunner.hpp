@@ -9,6 +9,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <semaphore.h>
+#include <pthread.h>
 #endif
 
 #include <stdio.h>
@@ -64,12 +65,12 @@ protected:
 		int number;
 		std::atomic<WindowBankState> state;
 	};
-private:
 	const void *m_input_window;
     size_t m_input_size;
     void *m_main_window, *m_sub_window;
     size_t m_bank_size;
 	int m_bank_num;
+	size_t m_stack_size;
 #if defined(CENTAURUS_BUILD_WINDOWS)
     HANDLE m_slave_lock;
 	HANDLE m_thread;
@@ -80,8 +81,8 @@ private:
 	char m_memory_name[256], m_slave_lock_name[256];
 #endif
 public:
-	BaseRunner(const char *filename, size_t bank_size, int bank_num, int pid)
-		: m_bank_size(bank_size), m_bank_num(bank_num)
+	BaseRunner(const char *filename, size_t bank_size, int bank_num, int pid, size_t stack_size)
+		: m_bank_size(bank_size), m_bank_num(bank_num), m_stack_size(stack_size)
 	{
 #if defined(CENTAURUS_BUILD_WINDOWS)
 		HANDLE hInputFile = CreateFileA(filename, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
@@ -121,7 +122,7 @@ public:
 #if defined(CENTAURUS_BUILD_WINDOWS)
         UnmapViewOfFile(m_input_window);
 #elif defined(CENTAURUS_BUILD_LINUX)
-        munmap(m_input_window, m_input_size);
+        munmap(const_cast<void *>(m_input_window), m_input_size);
 #endif
 	}
 protected:
@@ -147,12 +148,12 @@ protected:
     }
 public:
     template<typename F>
-    void start(F runner)
+    void _start(F runner, void *context)
     {
         clock_t start_time = clock();
 
 #if defined(CENTAURUS_BUILD_WINDOWS)
-        HANDLE m_thread = CreateThread(NULL, m_stack_size, runner, (LPVOID)this, 0, NULL);
+        HANDLE m_thread = CreateThread(NULL, m_stack_size, runner, context, 0, NULL);
 #elif defined(CENTAURUS_BUILD_LINUX)
         pthread_t thread;
         pthread_attr_t attr;
@@ -161,7 +162,7 @@ public:
 
         pthread_attr_setstacksize(&attr, m_stack_size);
 
-        pthread_create(&m_thread, &attr, runner, this);
+        pthread_create(&m_thread, &attr, runner, context);
 #endif
 
         clock_t end_time = clock();

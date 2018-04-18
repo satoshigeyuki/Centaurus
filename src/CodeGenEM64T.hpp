@@ -82,10 +82,10 @@ class ParserEM64T
 public:
     ParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *logger = NULL, asmjit::ErrorHandler *errhandler = NULL);
     virtual ~ParserEM64T() {}
-    const void *operator()(const void *input)
+    const void *operator()(void *context, const void *input)
     {
         m_flipcount = 0;
-        return m_func(this, input, m_buffer);
+        return m_func(context, input, m_buffer);
     }
     void set_buffer(void *buffer)
     {
@@ -107,7 +107,7 @@ public:
     static void emit_machine(asmjit::X86Assembler& as, const ATNMachine<TCHAR>& machine, std::unordered_map<Identifier, asmjit::Label>& machine_map, const CompositeATN<TCHAR>& catn, const Identifier& id, asmjit::Label& rejectlabel, MyConstPool& pool);
     DryParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *logger = NULL);
     virtual ~DryParserEM64T() {}
-    const void *operator()(const void *input)
+    const void *operator()(void *context, const void *input)
     {
         const void *(*func)(const void *);
         m_runtime.add(&func, &m_code);

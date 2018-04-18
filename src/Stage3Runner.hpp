@@ -3,12 +3,13 @@
 #include "BaseRunner.hpp"
 #include "CodeGenEM64T.hpp"
 
+#define STAGE3_STACK_SIZE (64 * 1024 * 1024)
+
 namespace Centaurus
 {
 template<class T>
 class Stage3Runner : public BaseRunner
 {
-	static constexpr size_t m_stack_size = 64 * 1024 * 1024;
     size_t m_bank_size;
     T& m_chaser;
     int m_current_bank;
@@ -59,8 +60,8 @@ private:
         m_current_bank = -1;
     }
 public:
-	Stage3Runner(T& chaser, size_t bank_size, int bank_num)
-		: BaseRunner(bank_size, bank_num), m_chaser(chaser), m_bank_size(bank_size)
+	Stage3Runner(const char *filename, T& chaser, size_t bank_size, int bank_num, int master_pid)
+		: BaseRunner(filename, bank_size, bank_num, master_pid, STAGE3_STACK_SIZE), m_chaser(chaser), m_bank_size(bank_size)
 	{
 	}
 	virtual ~Stage3Runner()

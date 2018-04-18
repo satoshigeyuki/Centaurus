@@ -1,19 +1,14 @@
 #pragma once
 
-#if defined(CENTAURUS_BUILD_WINDOWS)
-#include <Windows.h>
-#elif defined(CENTAURUS_BUILD_LINUX)
-#include <pthread.h>
-#include <unistd.h>
-#endif
 #include "BaseRunner.hpp"
+
+#define STAGE1_STACK_SIZE (256 * 1024 * 1024)
 
 namespace Centaurus
 {
 template<class T>
 class Stage1Runner : public BaseRunner
 {
-	static constexpr size_t m_stack_size = 256 * 1024 * 1024;
     T& m_parser;
     int m_current_bank, m_counter;
 private:
@@ -23,7 +18,9 @@ private:
     static void *thread_runner(void *param)
 #endif
     {
-        instance->m_parser(instance->m_input_window);
+		Stage1Runner<T> *instance = reinterpret_cast<Stage1Runner<T> *>(param);
+
+        instance->m_parser(instance, instance->m_input_window);
 
 #if defined(CENTAURUS_BUILD_WINDOWS)
         ExitThread(0);
@@ -53,7 +50,8 @@ private:
         WindowBankEntry *banks = (WindowBankEntry *)m_sub_window;
 
         banks[m_current_bank].number = m_counter++;
-		banks[m_current_bank].state.store(WindowBankState::Stage1_Unlocked);
+		//banks[m_current_bank].state.store(WindowBankState::Stage1_Unlocked);
+		banks[m_current_bank].state.store(WindowBankState::Free);
 
         m_current_bank = -1;
 
@@ -65,16 +63,16 @@ private:
     }
     static void *exchange_bank(void *context)
     {
-        IPCMaster *instance = reinterpret_cast<IPCMaster *>(context);
+        Stage1Runner<T> *instance = reinterpret_cast<Stage1Runner<T> *>(context);
         instance->release_bank();
         return instance->acquire_bank();
     }
 public:
     Stage1Runner(const char *filename, T& parser, size_t bank_size, int bank_num)
 #if defined(CENTAURUS_BUILD_WINDOWS)
-        : BaseRunner(filename, bank_size, bank_num, GetCurrentProcessId()),
+        : BaseRunner(filename, bank_size, bank_num, GetCurrentProcessId(), STAGE1_STACK_SIZE),
 #elif defined(CENTAURUS_BUILD_LINUX)
-		: BaseRunner(filename, bank_size, bank_num, getpid()),
+		: BaseRunner(filename, bank_size, bank_num, getpid(), STAGE1_STACK_SIZE),
 #endif
 		m_parser(parser), m_current_bank(-1), m_counter(0)
     {
@@ -127,7 +125,7 @@ public:
 	}
     void start()
     {
-        start(Stage1Runner<T>::thread_runner);
+        _start(Stage1Runner<T>::thread_runner, static_cast<void *>(this));
     }
 	void run()
 	{

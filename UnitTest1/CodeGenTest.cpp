@@ -4,9 +4,7 @@
 #include "NFA.hpp"
 #include "CodeGenEM64T.hpp"
 #include "CATNLoader.hpp"
-#include "MasterParser.hpp"
-#include "SlaveParser.hpp"
-#include "Input.hpp"
+#include "Stage1Runner.hpp"
 
 #include <time.h>
 
@@ -115,14 +113,15 @@ public:
         //Logger::WriteMessage(logger.getString());
 
         //MappedFileInput json("/home/ihara/Downloads/sf-city-lots-json-master/citylots.json");
-        MappedFileInput json("C:\\Users\\ihara\\Downloads\\sf-city-lots-json-master\\sf-city-lots-json-master\\citylots.json");
 
-        Stage1Runner<DryParserEM64T<char> > runner{parser, json.get_buffer(), NULL};
+		const char *input_path = "C:\\Users\\ihara\\Downloads\\sf-city-lots-json-master\\sf-city-lots-json-master\\citylots.json";
+
+        Stage1Runner<DryParserEM64T<char> > runner{input_path, parser, 8 * 1024 * 1024, 8};
 
         runner.run();
 
         //Assert::AreEqual((const void *)(json + strlen(json)), context.result);
-        Assert::IsTrue(runner.get_result() != NULL);
+        //Assert::IsTrue(runner.get_result() != NULL);
 
         //_aligned_free(json);
     }
@@ -137,35 +136,15 @@ public:
         MyErrorHandler errhandler;
 
         ParserEM64T<char> parser(grammar, &logger, &errhandler);
-		ChaserEM64T<char> chaser(grammar, &logger, &errhandler);
 
-        size_t bank_size = 8 * 1024 * 1024;
-        int bank_num = 8;
+        const char *input_path = "C:\\Users\\ihara\\Downloads\\sf-city-lots-json-master\\sf-city-lots-json-master\\citylots.json";
 
-        IPCMaster ring_buffer(bank_size, bank_num);
+        Stage1Runner<ParserEM64T<char> > runner{input_path, parser, 8 * 1024 * 1024, 8};
 
-        parser.set_buffer(ring_buffer.request_bank());
-
-        //MappedFileInput json("/home/ihara/Downloads/sf-city-lots-json-master/citylots.json");
-
-        //Logger::WriteMessage(logger.getString());
-
-        MappedFileInput json("C:\\Users\\ihara\\Downloads\\sf-city-lots-json-master\\sf-city-lots-json-master\\citylots.json");
-
-        MasterParser<ParserEM64T<char> > master{ parser, json.get_buffer(), NULL };
-		SlaveParser<ChaserEM64T<char>, int> slave{ chaser };
-
-        master.start();
-		slave.start();
-
-        long flipcount = parser.get_flipcount();
-
-        char buf[64];
-        snprintf(buf, 64, "Flipcount = %ld\r\n", flipcount);
-        Logger::WriteMessage(buf);
+		runner.run();
 
         //Assert::AreEqual((const void *)(json + strlen(json)), context.result);
-        Assert::IsTrue(runner.get_result() != NULL);
+        //Assert::IsTrue(runner.get_result() != NULL);
 
         //_aligned_free(json);
     }

@@ -1,22 +1,17 @@
 #pragma once
 
-#if defined(CENTAURUS_BUILD_WINDOWS)
-#include <Windows.h>
-#elif defined(CENTAURUS_BUILD_LINUX)
-#include <unistd.h>
-#endif
-
 #include <stdint.h>
 #include <time.h>
 #include "BaseRunner.hpp"
 #include "CodeGenEM64T.hpp"
+
+#define STAGE2_STACK_SIZE (64 * 1024 * 1024)
 
 namespace Centaurus
 {
 template<class T>
 class Stage2Runner : public BaseRunner
 {
-	static constexpr size_t m_stack_size = 64 * 1024 * 1024;
     size_t m_bank_size;
     T& m_chaser;
 	int m_current_bank;
@@ -104,7 +99,7 @@ private:
 	}
 public:
     Stage2Runner(const char *filename, T& chaser, size_t bank_size, int bank_num, int master_pid)
-        : BaseRunner(filename, bank_size, bank_num, master_pid), m_chaser(chaser), m_bank_size(bank_size), m_current_bank(-1)
+        : BaseRunner(filename, bank_size, bank_num, master_pid, STAGE2_STACK_SIZE), m_chaser(chaser), m_bank_size(bank_size), m_current_bank(-1)
     {
 #if defined(CENTAURUS_BUILD_WINDOWS)
 		m_mem_handle = OpenFileMappingA(FILE_MAP_ALL_ACCESS, FALSE, m_memory_name);
