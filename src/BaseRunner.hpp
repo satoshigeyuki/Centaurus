@@ -72,6 +72,7 @@ protected:
 	int m_bank_num;
 	size_t m_stack_size;
 #if defined(CENTAURUS_BUILD_WINDOWS)
+    HANDLE m_mem_handle;
     HANDLE m_slave_lock;
 	HANDLE m_thread;
 	char m_memory_name[MAX_PATH], m_slave_lock_name[MAX_PATH];
@@ -91,12 +92,14 @@ public:
         DWORD dwFileSize = GetFileSize(hInputFile, &dwFileSizeHigh);
         m_input_size = ((size_t)dwFileSizeHigh << 32) | dwFileSize;
 
-		HANDLE hInputMapping = CreateFileMappingA(input_file_handle, NULL, PAGE_READONLY, 0, dwFileSize, NULL);
+		HANDLE hInputMapping = CreateFileMappingA(hInputFile, NULL, PAGE_READONLY, 0, dwFileSize, NULL);
 
         m_input_window = MapViewOfFile(hInputMapping, FILE_MAP_READ, 0, 0, 0);
 
-        CloseHandle(hInputMapping);
-        CloseHandle(hInputFile);
+        volatile int a = *(const int *)m_input_window;
+
+        //CloseHandle(hInputMapping);
+        //CloseHandle(hInputFile);
 
 		sprintf_s(m_memory_name, "%s%s[%u]Window", PROGRAM_UUID, PROGRAM_NAME, pid);
 

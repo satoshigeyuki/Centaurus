@@ -181,6 +181,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\src\ATN.hpp" />
+    <ClInclude Include="..\src\BaseRunner.hpp" />
     <ClInclude Include="..\src\CharClass.hpp" />
     <ClInclude Include="..\src\CodeGenEM64T.hpp" />
     <ClInclude Include="..\src\CompositeATN.hpp" />
@@ -188,9 +189,11 @@
     <ClInclude Include="..\src\Exception.hpp" />
     <ClInclude Include="..\src\Grammar.hpp" />
     <ClInclude Include="..\src\Identifier.hpp" />
-    <ClInclude Include="..\src\IPCMaster.hpp" />
     <ClInclude Include="..\src\LookaheadDFA.hpp" />
     <ClInclude Include="..\src\NFA.hpp" />
+    <ClInclude Include="..\src\Stage1Runner.hpp" />
+    <ClInclude Include="..\src\Stage2Runner.hpp" />
+    <ClInclude Include="..\src\Stage3Runner.hpp" />
     <ClInclude Include="..\src\Stream.hpp" />
     <ClInclude Include="..\src\Util.hpp" />
     <ClInclude Include="stdafx.h" />

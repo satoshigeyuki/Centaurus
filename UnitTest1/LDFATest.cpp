@@ -5,6 +5,10 @@
 #include "CATNLoader.hpp"
 #include "loggerstream.hpp"
 
+#if defined(CENTAURUS_BUILD_WINDOWS)
+#include <Windows.h>
+#endif
+
 namespace Microsoft
 {
 namespace VisualStudio
@@ -18,12 +22,15 @@ public:
 	TEST_METHOD_INITIALIZE(LDFATestInitialize)
 	{
 		//std::cout.rdbuf(&m_narrowstreambuf);
+#if defined(CENTAURUS_BUILD_WINDOWS)
+        SetCurrentDirectoryA(CENTAURUS_PROJECT_DIR);
+#endif
 	}
 	TEST_METHOD(LDFAConstructionTest)
 	{
         Logger::WriteMessage("Starting test.\n");
 
-		Centaurus::CompositeATN<char> catn = LoadCATN("json.cgr");
+		Centaurus::CompositeATN<char> catn = LoadCATN("grammar/json.cgr");
 
         Logger::WriteMessage("CATN loaded.\n");
 

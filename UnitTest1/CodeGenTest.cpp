@@ -104,13 +104,13 @@ public:
     {
         using namespace Centaurus;
 
-        Grammar<char> grammar = LoadGrammar("grammar\\json.cgr");
+        Grammar<char> grammar = LoadGrammar("grammar/json.cgr");
 
         asmjit::StringLogger logger;
 
         DryParserEM64T<char> parser(grammar, &logger);
 
-        //Logger::WriteMessage(logger.getString());
+        Logger::WriteMessage(logger.getString());
 
         //MappedFileInput json("/home/ihara/Downloads/sf-city-lots-json-master/citylots.json");
 
