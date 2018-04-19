@@ -2,8 +2,6 @@
 
 #include "BaseRunner.hpp"
 
-#define STAGE1_STACK_SIZE (256 * 1024 * 1024)
-
 namespace Centaurus
 {
 template<class T>
@@ -24,7 +22,7 @@ private:
         instance->m_counter = 0;
         instance->reset_banks();
 
-        instance->m_parser(instance->m_input_window);
+        instance->m_parser(static_cast<BaseListener *>(instance), instance->m_input_window);
 
         instance->release_bank();
 
@@ -71,12 +69,6 @@ private:
 #endif
         }
     }
-    static void *exchange_bank(void *context)
-    {
-        Stage1Runner<T> *instance = reinterpret_cast<Stage1Runner<T> *>(context);
-        instance->release_bank();
-        return instance->acquire_bank();
-    }
     void reset_banks()
     {
         WindowBankEntry *banks = (WindowBankEntry *)m_sub_window;
@@ -117,9 +109,9 @@ private:
 public:
     Stage1Runner(const char *filename, T& parser, size_t bank_size, int bank_num)
 #if defined(CENTAURUS_BUILD_WINDOWS)
-        : BaseRunner(filename, bank_size, bank_num, GetCurrentProcessId(), STAGE1_STACK_SIZE),
+        : BaseRunner(filename, bank_size, bank_num, GetCurrentProcessId()),
 #elif defined(CENTAURUS_BUILD_LINUX)
-		: BaseRunner(filename, bank_size, bank_num, getpid(), STAGE1_STACK_SIZE),
+		: BaseRunner(filename, bank_size, bank_num, getpid()),
 #endif
 		m_parser(parser)
     {
@@ -144,8 +136,6 @@ public:
 
 		m_slave_lock = sem_open(m_slave_lock_name, O_CREAT | O_EXCL, 0600, 0);
 #endif
-
-        m_parser.register_callback(Stage1Runner<T>::exchange_bank, this);
     }
 	~Stage1Runner()
 	{
@@ -175,6 +165,11 @@ public:
     void start()
     {
         _start(Stage1Runner<T>::thread_runner, static_cast<void *>(this));
+    }
+    virtual void *feed_callback() override
+    {
+        release_bank();
+        return acquire_bank();
     }
 };
 }

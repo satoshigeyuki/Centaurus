@@ -3,6 +3,7 @@
 #include "DFA.hpp"
 #include "LookaheadDFA.hpp"
 #include "asmjit/asmjit.h"
+#include "BaseListener.hpp"
 
 namespace Centaurus
 {
@@ -52,8 +53,8 @@ class ChaserEM64T
 	static CharClass<TCHAR> m_skipfilter;
 	
 	void emit_machine(asmjit::X86Assembler& as, const Grammar<TCHAR>& machine, const Identifier& id, const CompositeATN<TCHAR>& catn, asmjit::Label& rejectlabel, MyConstPool& pool);
-	static void terminal_callback(void *context, int id, const void *start, const void *end);
-	static void *nonterminal_callback(void *context, int id);
+	static void push_terminal(void *context, int id, const void *start, const void *end);
+	static const void *request_nonterminal(void *context, int id, const void *input);
 public:
 	ChaserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *logger = NULL, asmjit::ErrorHandler *errhandler = NULL);
 	virtual ~ChaserEM64T() {}
@@ -67,8 +68,6 @@ public:
 	}
 };
 
-using FeedCallbackFunc = void *(*)(void *);
-
 template<typename TCHAR>
 class ParserEM64T
 {
@@ -79,20 +78,13 @@ class ParserEM64T
     const void *(*m_func)(void *context, const void *input, void *output);
     void emit_machine(asmjit::X86Assembler& as, const ATNMachine<TCHAR>& machine, std::unordered_map<Identifier, asmjit::Label>& machine_map, const CompositeATN<TCHAR>& catn, const Identifier& id, asmjit::Label& rejectlabel, MyConstPool& pool);
     static void *request_page(void *context);
-    FeedCallbackFunc m_feed_callback;
-    void *m_context;
 public:
     ParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *logger = NULL, asmjit::ErrorHandler *errhandler = NULL);
     virtual ~ParserEM64T() {}
-    const void *operator()(const void *input)
+    const void *operator()(BaseListener *context, const void *input)
     {
-        void *output = m_feed_callback(m_context);
-        return m_func(static_cast<void *>(this), input, output);
-    }
-    void register_callback(FeedCallbackFunc feed_callback, void *context)
-    {
-        m_feed_callback = feed_callback;
-        m_context = context;
+        void *output = context->feed_callback();
+        return m_func(context, input, output);
     }
 };
 
@@ -106,15 +98,11 @@ public:
     static void emit_machine(asmjit::X86Assembler& as, const ATNMachine<TCHAR>& machine, std::unordered_map<Identifier, asmjit::Label>& machine_map, const CompositeATN<TCHAR>& catn, const Identifier& id, asmjit::Label& rejectlabel, MyConstPool& pool);
     DryParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *logger = NULL);
     virtual ~DryParserEM64T() {}
-    const void *operator()(const void *input)
+    const void *operator()(BaseListener *context, const void *input)
     {
         const void *(*func)(const void *);
         m_runtime.add(&func, &m_code);
         return func(input);
-    }
-    void register_callback(FeedCallbackFunc /*callback*/, void */*context*/)
-    {
-        //Do nothing
     }
 };
 

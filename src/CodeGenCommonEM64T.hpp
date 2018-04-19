@@ -9,6 +9,9 @@
  *  OUTPUT_REG      EDI/RDI
  *  OUTPUT_BOUND    EDX/RDX
  *  Stack backup    MM3/R9
+ * ATN Machine scope (Chaser mode)
+ *  CONTEXT_REG     MM2/R8
+ *  INPUT_REG       ESI/RSI
  * ATN Machine scope (marker writing)
  *  MARKER_REG      EAX/RAX
  * DFA Routine scope

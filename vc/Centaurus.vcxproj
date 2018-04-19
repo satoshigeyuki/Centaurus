@@ -179,6 +179,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\src\ATN.hpp" />
+    <ClInclude Include="..\src\BaseListener.hpp" />
     <ClInclude Include="..\src\BaseRunner.hpp" />
     <ClInclude Include="..\src\CharClass.hpp" />
     <ClInclude Include="..\src\CodeGenCommonEM64T.hpp" />

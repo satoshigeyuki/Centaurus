@@ -3,8 +3,6 @@
 #include "BaseRunner.hpp"
 #include "CodeGenEM64T.hpp"
 
-#define STAGE3_STACK_SIZE (64 * 1024 * 1024)
-
 namespace Centaurus
 {
 template<class T>
@@ -78,7 +76,7 @@ private:
     }
 public:
 	Stage3Runner(const char *filename, T& chaser, size_t bank_size, int bank_num, int master_pid)
-		: BaseRunner(filename, bank_size, bank_num, master_pid, STAGE3_STACK_SIZE), m_chaser(chaser), m_bank_size(bank_size)
+		: BaseRunner(filename, bank_size, bank_num, master_pid), m_chaser(chaser), m_bank_size(bank_size)
 	{
 #if defined(CENTAURUS_BUILD_WINDOWS)
 		m_mem_handle = OpenFileMappingA(FILE_MAP_ALL_ACCESS, FALSE, m_memory_name);

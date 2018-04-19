@@ -15,6 +15,8 @@
 #include <stdio.h>
 #include <atomic>
 
+#include "BaseListener.hpp"
+
 #define ALIGN_NEXT(x, a) (((x) + (a) - 1) / (a) * (a))
 #define PROGRAM_UUID "{57DF45C9-6D0C-4DD2-9B41-B71F8CF66B13}"
 #define PROGRAM_NAME "Centaurus"
@@ -48,8 +50,9 @@ public:
 		return static_cast<void *>((char *)p + get_offset());
 	}
 };
-class BaseRunner
+class BaseRunner : public BaseListener
 {
+    static constexpr size_t STACK_SIZE = 1024 * 1024 * 1024;
 protected:
 	enum class WindowBankState
 	{
@@ -71,7 +74,6 @@ protected:
     void *m_main_window, *m_sub_window;
     size_t m_bank_size;
 	int m_bank_num;
-	size_t m_stack_size;
 #if defined(CENTAURUS_BUILD_WINDOWS)
     HANDLE m_mem_handle;
     HANDLE m_slave_lock;
@@ -83,8 +85,8 @@ protected:
 	char m_memory_name[256], m_slave_lock_name[256];
 #endif
 public:
-	BaseRunner(const char *filename, size_t bank_size, int bank_num, int pid, size_t stack_size)
-		: m_bank_size(bank_size), m_bank_num(bank_num), m_stack_size(stack_size)
+	BaseRunner(const char *filename, size_t bank_size, int bank_num, int pid)
+		: m_bank_size(bank_size), m_bank_num(bank_num)
 	{
 #if defined(CENTAURUS_BUILD_WINDOWS)
 		HANDLE hInputFile = CreateFileA(filename, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
@@ -157,14 +159,14 @@ public:
         clock_t start_time = clock();
 
 #if defined(CENTAURUS_BUILD_WINDOWS)
-        m_thread = CreateThread(NULL, m_stack_size, runner, context, 0, NULL);
+        m_thread = CreateThread(NULL, STACK_SIZE, runner, context, STACK_SIZE_PARAM_IS_A_RESERVATION, NULL);
 #elif defined(CENTAURUS_BUILD_LINUX)
         pthread_t thread;
         pthread_attr_t attr;
 
         pthread_attr_init(&attr);
 
-        pthread_attr_setstacksize(&attr, m_stack_size);
+        pthread_attr_setstacksize(&attr, STACK_SIZE);
 
         pthread_create(&m_thread, &attr, runner, context);
 #endif

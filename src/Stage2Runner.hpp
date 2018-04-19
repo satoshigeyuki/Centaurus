@@ -5,8 +5,6 @@
 #include "BaseRunner.hpp"
 #include "CodeGenEM64T.hpp"
 
-#define STAGE2_STACK_SIZE (128 * 1024 * 1024)
-
 namespace Centaurus
 {
 template<class T>
@@ -61,18 +59,27 @@ private:
 	int parse_subtree(uint64_t *ast, int position)
 	{
 		CSTMarker start_marker(ast[position]);
-		int i;
+		int i, j;
+        j = position + 1;
 		for (i = position + 1; i < m_bank_size / 8; i++)
 		{
+            if (ast[i] == 0) return m_bank_size / 8;
 			CSTMarker marker(ast[i]);
 			if (marker.is_start_marker())
 			{
-                i = parse_subtree(ast, i);
+                int k = parse_subtree(ast, i);
+                ast[j] = ast[i];
+                ast[j + 1] = ast[i + 1];
+                j += 2;
+                i = k;
 			}
             else if (marker.is_end_marker())
             {
-				//ToDo: Invoke chaser to derive the semantic value for this symbol
-				return i + 1;
+                m_chaser[marker.get_machine_id()](this, start_marker.offset_ptr(m_input_window));
+                ast[position] = ((uint64_t)1 << 63) | marker.get_offset();
+                //ToDo: store SV pointer to the second entry
+                ast[position + 1] = NULL;
+                return i + 1;
             }
 		}
 		return i;
@@ -117,7 +124,7 @@ private:
 	}
 public:
     Stage2Runner(const char *filename, T& chaser, size_t bank_size, int bank_num, int master_pid)
-        : BaseRunner(filename, bank_size, bank_num, master_pid, STAGE2_STACK_SIZE), m_chaser(chaser), m_bank_size(bank_size)
+        : BaseRunner(filename, bank_size, bank_num, master_pid), m_chaser(chaser), m_bank_size(bank_size)
     {
 #if defined(CENTAURUS_BUILD_WINDOWS)
 		m_mem_handle = OpenFileMappingA(FILE_MAP_ALL_ACCESS, FALSE, m_memory_name);
@@ -162,6 +169,14 @@ public:
 	void start()
 	{
         _start(Stage2Runner<T>::thread_runner, this);
+    }
+    virtual void terminal_callback(int id, const void *start, const void *end) override
+    {
+        //Do nothing
+    }
+    virtual const void *nonterminal_callback(int id, const void *input) override
+    {
+        return NULL;
     }
 };
 }

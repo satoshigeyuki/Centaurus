@@ -27,8 +27,6 @@ ChaserEM64T<TCHAR>::ChaserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *l
 	
 	MyConstPool pool(as);
 
-	pool.load_charclass_filter(PATTERN_REG, m_skipfilter);
-
     CompositeATN<TCHAR> catn(grammar);
 
 	for (const auto& p : grammar)
@@ -39,7 +37,9 @@ ChaserEM64T<TCHAR>::ChaserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *l
 
 		emit_parser_prolog(as);
 
-		emit_machine(as, grammar, p.first, catn, rejectlabel, pool);
+        pool.load_charclass_filter(PATTERN_REG, m_skipfilter);
+
+		//emit_machine(as, grammar, p.first, catn, rejectlabel, pool);
 
 		emit_parser_epilog(as, rejectlabel);
 	}
@@ -55,17 +55,14 @@ ChaserEM64T<TCHAR>::ChaserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *l
     {
         m_funcmap[p.first] = (void (*)(void *, const void *))(func_base + m_code.getLabelOffset(machinelabels[p.first]));
     }
-}
 
-template<typename TCHAR>
-void ChaserEM64T<TCHAR>::terminal_callback(void *context, int id, const void *start, const void *end)
-{
-}
-
-template<typename TCHAR>
-void *ChaserEM64T<TCHAR>::nonterminal_callback(void *context, int id)
-{
-    return NULL;
+    for (const auto& p : grammar)
+    {
+        int id = p.second.get_unique_id();
+        if (m_funcarray.size() <= id)
+            m_funcarray.resize(id + 1);
+        m_funcarray[id] = m_funcmap[p.first];
+    }
 }
 
 template<typename TCHAR>
@@ -105,8 +102,13 @@ ParserEM64T<TCHAR>::ParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *l
         as.call(machine_map[grammar.get_root_id()]);
     }
 
+    asmjit::Label landfilllabel = as.newLabel();
     as.xor_(MARKER_REG, MARKER_REG);
+    as.bind(landfilllabel);
     as.movnti(asmjit::X86Mem(OUTPUT_REG, 0), MARKER_REG);
+    as.add(OUTPUT_REG, asmjit::Imm(8));
+    as.cmp(OUTPUT_REG, OUTPUT_BOUND_REG);
+    as.jne(landfilllabel);
 
     asmjit::Label finishlabel = as.newLabel();
     as.jmp(finishlabel);
@@ -211,20 +213,35 @@ void ChaserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const Grammar<TC
 		case ATNNodeType::LiteralTerminal:
 			as.mov(CHECKPOINT_REG, INPUT_REG);
 			MatchRoutineEM64T<TCHAR>::emit(as, pool, rejectlabel, node.get_literal());
-			if (node.get_id() >= 0)
-				call_abs(as, terminal_callback, CONTEXT_REG, node.get_id(), CHECKPOINT_REG, INPUT_REG);
-			break;
+            if (node.get_id() >= 0)
+            {
+                as.push(INPUT_REG);
+                as.push(CONTEXT_REG);
+                call_abs(as, push_terminal, CONTEXT_REG, node.get_id(), CHECKPOINT_REG, INPUT_REG);
+                as.pop(CONTEXT_REG);
+                as.pop(INPUT_REG);
+            }
+            break;
 		case ATNNodeType::RegularTerminal:
             as.mov(CHECKPOINT_REG, INPUT_REG);
 			DFARoutineEM64T<TCHAR>::emit(as, rejectlabel, DFA<TCHAR>(node.get_nfa()));
-			if (node.get_id() >= 0)
-				call_abs(as, terminal_callback, CONTEXT_REG, node.get_id(), CHECKPOINT_REG, INPUT_REG);
-			break;
+            if (node.get_id() >= 0)
+            {
+                as.push(INPUT_REG);
+                as.push(CONTEXT_REG);
+                call_abs(as, push_terminal, CONTEXT_REG, node.get_id(), CHECKPOINT_REG, INPUT_REG);
+                as.pop(CONTEXT_REG);
+                as.pop(INPUT_REG);
+            }
+            break;
 		case ATNNodeType::WhiteSpace:
 			SkipRoutineEM64T<TCHAR>::emit(as);
 			break;
 		case ATNNodeType::Nonterminal:
-            call_abs(as, nonterminal_callback, CONTEXT_REG, grammar.get_machine_id(node.get_invoke()));
+            as.push(CONTEXT_REG);
+            call_abs(as, request_nonterminal, CONTEXT_REG, grammar.get_machine_id(node.get_invoke()), INPUT_REG);
+            as.pop(CONTEXT_REG);
+            as.mov(INPUT_REG, asmjit::x86::rax);
 			break;
 		}
 
@@ -249,6 +266,22 @@ void ChaserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const Grammar<TC
 			LDFARoutineEM64T<TCHAR>::emit(as, rejectlabel, LookaheadDFA<TCHAR>(catn, catn.convert_atn_path(ATNPath(id, i))), exitlabels);
 		}
 	}
+}
+
+template<typename TCHAR>
+const void *ChaserEM64T<TCHAR>::request_nonterminal(void *context, int id, const void *input)
+{
+    BaseListener *instance = reinterpret_cast<BaseListener *>(context);
+
+    return instance->nonterminal_callback(id, input);
+}
+
+template<typename TCHAR>
+void ChaserEM64T<TCHAR>::push_terminal(void *context, int id, const void *start, const void *end)
+{
+    BaseListener *instance = reinterpret_cast<BaseListener *>(context);
+
+    return instance->terminal_callback(id, start, end);
 }
 
 template<typename TCHAR>
@@ -402,9 +435,9 @@ void ParserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const ATNMachine
 template<typename TCHAR>
 void *ParserEM64T<TCHAR>::request_page(void *context)
 {
-    ParserEM64T<TCHAR> *instance = reinterpret_cast<ParserEM64T<TCHAR> *>(context);
+    BaseListener *instance = reinterpret_cast<BaseListener *>(context);
 
-    return instance->m_feed_callback(instance->m_context);
+    return instance->feed_callback();
 }
 
 template<typename TCHAR>
