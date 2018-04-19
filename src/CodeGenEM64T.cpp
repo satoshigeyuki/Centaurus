@@ -389,6 +389,7 @@ void ParserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const ATNMachine
 #if defined(CENTAURUS_BUILD_WINDOWS)
         as.sub(asmjit::x86::rsp, 32);
 #endif
+        as.sfence();
         as.call((uint64_t)request_page);
 #if defined(CENTAURUS_BUILD_WINDOWS)
         as.add(asmjit::x86::rsp, 32);
@@ -415,6 +416,7 @@ void ParserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const ATNMachine
 #if defined(CENTAURUS_BUILD_WINDOWS)
         as.sub(asmjit::x86::rsp, 32);
 #endif
+        as.sfence();
         as.call((uint64_t)request_page);
 #if defined(CENTAURUS_BUILD_WINDOWS)
         as.add(asmjit::x86::rsp, 32);

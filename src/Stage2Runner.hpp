@@ -13,6 +13,7 @@ class Stage2Runner : public BaseRunner
     size_t m_bank_size;
     T& m_chaser;
 	int m_current_bank;
+    const uint64_t *m_sv_list;
 private:
 #if defined(CENTAURUS_BUILD_WINDOWS)
 	static DWORD WINAPI thread_runner(LPVOID param)
@@ -22,6 +23,7 @@ private:
 	{
 		Stage2Runner<T> *instance = reinterpret_cast<Stage2Runner<T> *>(param);
 
+        instance->m_sv_list = NULL;
         instance->m_current_bank = -1;
 
 		while (true)
@@ -63,22 +65,30 @@ private:
         j = position + 1;
 		for (i = position + 1; i < m_bank_size / 8; i++)
 		{
-            if (ast[i] == 0) return m_bank_size / 8;
+            if (ast[i] == 0) throw SimpleException("Null entry in CST window.");
 			CSTMarker marker(ast[i]);
 			if (marker.is_start_marker())
 			{
                 int k = parse_subtree(ast, i);
-                ast[j] = ast[i];
-                ast[j + 1] = ast[i + 1];
-                j += 2;
+                if (k < m_bank_size / 8)
+                {
+                    ast[j] = ast[i];
+                    ast[j + 1] = ast[i + 1];
+                    j += 2;
+                }
                 i = k;
 			}
             else if (marker.is_end_marker())
             {
+                m_sv_list = &ast[position + 1];
                 m_chaser[marker.get_machine_id()](this, start_marker.offset_ptr(m_input_window));
                 ast[position] = ((uint64_t)1 << 63) | marker.get_offset();
                 //ToDo: store SV pointer to the second entry
                 ast[position + 1] = NULL;
+                for (position += 2; position <= i; position++)
+                {
+                    ast[position] = 0;
+                }
                 return i + 1;
             }
 		}
@@ -176,7 +186,9 @@ public:
     }
     virtual const void *nonterminal_callback(int id, const void *input) override
     {
-        return NULL;
+        const void *ret = (const char *)m_input_window + (m_sv_list[0] & 0xFFFFFFFFFFFF);
+        m_sv_list += 2;
+        return ret;
     }
 };
 }
