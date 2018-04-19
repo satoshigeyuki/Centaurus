@@ -5,7 +5,7 @@
 #include "BaseRunner.hpp"
 #include "CodeGenEM64T.hpp"
 
-#define STAGE2_STACK_SIZE (64 * 1024 * 1024)
+#define STAGE2_STACK_SIZE (128 * 1024 * 1024)
 
 namespace Centaurus
 {
