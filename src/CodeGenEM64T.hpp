@@ -41,7 +41,7 @@ public:
     }
 };
 
-typedef void (*ChaserFunc)(void *context, const void *input);
+typedef void *(*ChaserFunc)(void *context, const void *input);
 
 template<typename TCHAR>
 class ChaserEM64T

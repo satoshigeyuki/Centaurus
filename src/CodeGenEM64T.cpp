@@ -27,6 +27,8 @@ ChaserEM64T<TCHAR>::ChaserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *l
 	
 	MyConstPool pool(as);
 
+    asmjit::X86Mem skipfilter_mem = pool.add(pack_charclass(m_skipfilter));
+
     CompositeATN<TCHAR> catn(grammar);
 
 	for (const auto& p : grammar)
@@ -37,9 +39,11 @@ ChaserEM64T<TCHAR>::ChaserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *l
 
 		emit_parser_prolog(as);
 
-        pool.load_charclass_filter(PATTERN_REG, m_skipfilter);
+        as.mov(CONTEXT_REG, asmjit::X86Mem(asmjit::x86::rsp, ARG1_STACK_OFFSET));
+        as.mov(INPUT_REG, asmjit::X86Mem(asmjit::x86::rsp, ARG2_STACK_OFFSET));
+        as.vmovdqa(PATTERN_REG, skipfilter_mem);
 
-		//emit_machine(as, grammar, p.first, catn, rejectlabel, pool);
+		emit_machine(as, grammar, p.first, catn, rejectlabel, pool);
 
 		emit_parser_epilog(as, rejectlabel);
 	}
@@ -53,7 +57,7 @@ ChaserEM64T<TCHAR>::ChaserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *l
 
     for (const auto& p : grammar)
     {
-        m_funcmap[p.first] = (void (*)(void *, const void *))(func_base + m_code.getLabelOffset(machinelabels[p.first]));
+        m_funcmap[p.first] = reinterpret_cast<ChaserFunc>(func_base + m_code.getLabelOffset(machinelabels[p.first]));
     }
 
     for (const auto& p : grammar)
@@ -109,6 +113,7 @@ ParserEM64T<TCHAR>::ParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *l
     as.add(OUTPUT_REG, asmjit::Imm(8));
     as.cmp(OUTPUT_REG, OUTPUT_BOUND_REG);
     as.jne(landfilllabel);
+    as.sfence();
 
     asmjit::Label finishlabel = as.newLabel();
     as.jmp(finishlabel);
@@ -200,6 +205,8 @@ void ChaserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const Grammar<TC
 		statelabels.push_back(as.newLabel());
 	}
 
+    asmjit::Label finishlabel = as.newLabel();
+
 	for (int i = 0; i < machine.get_node_num(); i++)
 	{
 		as.bind(statelabels[i]);
@@ -248,7 +255,7 @@ void ChaserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const Grammar<TC
 		int outbound_num = node.get_transitions().size();
 		if (outbound_num == 0)
 		{
-			as.ret();
+			as.jmp(finishlabel);
 		}
 		else if (outbound_num == 1)
 		{
@@ -266,6 +273,7 @@ void ChaserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const Grammar<TC
 			LDFARoutineEM64T<TCHAR>::emit(as, rejectlabel, LookaheadDFA<TCHAR>(catn, catn.convert_atn_path(ATNPath(id, i))), exitlabels);
 		}
 	}
+    as.bind(finishlabel);
 }
 
 template<typename TCHAR>

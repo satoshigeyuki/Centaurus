@@ -65,7 +65,10 @@ private:
         j = position + 1;
 		for (i = position + 1; i < m_bank_size / 8; i++)
 		{
-            if (ast[i] == 0) throw SimpleException("Null entry in CST window.");
+            if (ast[i] == 0)
+            {
+                throw SimpleException("Null entry in CST window.");
+            }
 			CSTMarker marker(ast[i]);
 			if (marker.is_start_marker())
 			{
@@ -81,15 +84,23 @@ private:
             else if (marker.is_end_marker())
             {
                 m_sv_list = &ast[position + 1];
-                m_chaser[marker.get_machine_id()](this, start_marker.offset_ptr(m_input_window));
+                const void *chaser_result = m_chaser[marker.get_machine_id()](this, start_marker.offset_ptr(m_input_window));
+                if (m_sv_list - &ast[position + 1] < j - position - 1)
+                {
+                    std::cerr << "SV list undigested: " << (m_sv_list - &ast[position + 1]) / 2 << "/" << (j - position - 1) / 2 << "." << std::endl;
+                }
+                if (chaser_result != marker.offset_ptr(m_input_window))
+                {
+                    std::cerr << "Chaser aborted: " << std::hex << (uint64_t)chaser_result << "/" << (uint64_t)marker.offset_ptr(m_input_window) << std::dec << std::endl;
+                }
                 ast[position] = ((uint64_t)1 << 63) | marker.get_offset();
                 //ToDo: store SV pointer to the second entry
                 ast[position + 1] = NULL;
-                for (position += 2; position <= i; position++)
+                /*for (position += 2; position <= i; position++)
                 {
                     ast[position] = 0;
-                }
-                return i + 1;
+                }*/
+                return i;
             }
 		}
 		return i;
