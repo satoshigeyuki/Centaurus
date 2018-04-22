@@ -75,8 +75,13 @@ private:
                 int k = parse_subtree(ast, i);
                 if (k < m_bank_size / 8)
                 {
-                    ast[j] = ast[i];
-                    ast[j + 1] = ast[i + 1];
+                    uint64_t subtree_sv[2];
+                    subtree_sv[0] = ast[i];
+                    ast[i] = 0;
+                    ast[j] = subtree_sv[0];
+                    subtree_sv[1] = ast[i + 1];
+                    ast[i + 1] = 0;
+                    ast[j + 1] = subtree_sv[1];
                     j += 2;
                 }
                 i = k;
@@ -93,13 +98,16 @@ private:
                 {
                     std::cerr << "Chaser aborted: " << std::hex << (uint64_t)chaser_result << "/" << (uint64_t)marker.offset_ptr(m_input_window) << std::dec << std::endl;
                 }
+                //Zero-fill the SV list
+                for (int k = position + 1; k < j; k++)
+                {
+                    ast[k] = 0;
+                }
+                //Zero-fill the end marker
+                ast[i] = 0;
                 ast[position] = ((uint64_t)1 << 63) | marker.get_offset();
                 //ToDo: store SV pointer to the second entry
                 ast[position + 1] = NULL;
-                /*for (position += 2; position <= i; position++)
-                {
-                    ast[position] = 0;
-                }*/
                 return i;
             }
 		}

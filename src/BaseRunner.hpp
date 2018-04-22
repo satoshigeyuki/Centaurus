@@ -41,6 +41,10 @@ public:
 	{
 		return !(m_value & ((uint64_t)1 << 63));
 	}
+    bool is_sv_marker() const
+    {
+        return get_machine_id() == 0;
+    }
 	uint64_t get_offset() const
 	{
 		return m_value & (((uint64_t)1 << 48) - 1);

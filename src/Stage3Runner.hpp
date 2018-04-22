@@ -38,6 +38,14 @@ private:
 		return NULL;
 #endif
 	}
+    int reduce(uint64_t *ast, int position)
+    {
+        CSTMarker start_marker(ast[position]);
+        for (int i = position + 1; i < m_bank_size / 8; i++)
+        {
+
+        }
+    }
     void *acquire_bank()
     {
         WindowBankEntry *banks = reinterpret_cast<WindowBankEntry *>(m_sub_window);
