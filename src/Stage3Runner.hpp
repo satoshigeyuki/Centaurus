@@ -30,16 +30,9 @@ private:
         instance->m_current_window = NULL;
         instance->m_window_position = 0;
 
-        while (true)
-        {
-            const void *window = instance->acquire_bank();
+        instance->reduce();
 
-            if (window == NULL) break;
-
-            instance->release_bank();
-        }
-
-        //instance->reduce();
+        instance->release_bank();
 
 #if defined(CENTAURUS_BUILD_WINDOWS)
 		ExitThread(0);
@@ -62,11 +55,11 @@ private:
             m_window_position = 0;
         }
 
-        CSTMarker start_marker(m_current_window[m_window_position]);
+        CSTMarker start_marker(m_current_window[m_window_position++]);
 
         while (true)
         {
-            for (m_window_position++; m_window_position < m_bank_size / 8;)
+            for (; m_window_position < m_bank_size / 8; m_window_position++)
             {
                 CSTMarker marker(m_current_window[m_window_position]);
 
@@ -79,7 +72,7 @@ private:
                     uint64_t v0 = m_current_window[m_window_position];
                     uint64_t v1 = m_current_window[m_window_position + 1];
                     values.emplace_back(m_input_window, v0, v1);
-                    m_window_position += 2;
+                    m_window_position++;
                 }
                 else if (marker.is_end_marker())
                 {
@@ -94,13 +87,12 @@ private:
                     {
                         std::cerr << "Chaser aborted: " << std::hex << (uint64_t)chaser_result << "/" << (uint64_t)marker.offset_ptr(m_input_window) << std::dec << std::endl;
                     }
-                    m_window_position++;
                     return SVCapsule(m_input_window, marker.get_offset(), 0);
                 }
             }
             release_bank();
             m_current_window = reinterpret_cast<uint64_t *>(acquire_bank());
-            if (m_current_window == NULL) break;
+            if (m_current_window == NULL) return SVCapsule();
             m_window_position = 0;
         }
     }
