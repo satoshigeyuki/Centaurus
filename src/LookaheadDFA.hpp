@@ -123,7 +123,7 @@ private:
 
 		CATNDepartureSet<TCHAR> deptset = catn.build_departure_set(state.label());
 
-		std::cout << deptset << std::endl;
+		//std::cout << deptset << std::endl;
 
 		//Add new states to the LDFA
 		int initial_index = m_states.size();

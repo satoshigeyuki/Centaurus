@@ -1,14 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
 
-from distutils.core import setup, Extension
+from setuptools import setup
 
-centaurus_module = Extension('_centaurus', sources = ['module.cpp'])
-
-setup(name = 'Centaurus',
-	  version = '0.0.1',
-	  description = 'Python binding for Centaurus',
-	  author = 'Hiroka Ihara',
-	  author_email = 'ihara@eidos.ic.i.u-tokyo.ac.jp',
-	  packages = ['centaurus'],
-	  ext_modules = [centaurus_module])
+setup(name='centaurus', version='0.1', description='Python binding for the Centaurus LL(*)-S parser generator', author='Hiroka Ihara', author_email='ihara@eidos.ic.i.u-tokyo.ac.jp', license='GPL', packages=['Centaurus'], zip_safe=False)

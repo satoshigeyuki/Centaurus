@@ -366,7 +366,7 @@ private:
                 {
                     if (stack.find(p.first, i))
                     {
-                        std::cout << "Upward sentinel reached." << std::endl;
+                        //std::cout << "Upward sentinel reached." << std::endl;
                         continue;
                     }
                     stack.push(p.first, i);
@@ -451,7 +451,7 @@ private:
                 {
                     if (stack.find(p.first, i))
                     {
-                        std::cout << "Upward sentinel reached." << std::endl;
+                        //std::cout << "Upward sentinel reached." << std::endl;
                         continue;
                     }
                     stack.push(p.first, i);

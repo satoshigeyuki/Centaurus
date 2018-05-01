@@ -16,7 +16,7 @@ add_subdirectory(asmjit)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-switch -Wno-sign-compare -std=c++11 -fvisibility=hidden")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Os")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2")
 
 set(CENTAURUS_LIB_SRC src/ATN.cpp src/CharClass.cpp src/CodeGenEM64T.cpp src/CompositeATN.cpp src/Util.cpp)
 set(CENTAURUS_DRIVER_SRC src/main.cpp)
@@ -35,6 +35,7 @@ target_include_directories(libcentaurus PRIVATE asmjit/src)
 target_sources(libcentaurus PRIVATE ${CENTAURUS_LIB_SRC})
 
 add_executable(centaurus ${CENTAURUS_DRIVER_SRC})
+target_include_directories(centaurus PRIVATE asmjit/src)
 target_link_libraries(centaurus libcentaurus)
 
 if(NOT MSVC)

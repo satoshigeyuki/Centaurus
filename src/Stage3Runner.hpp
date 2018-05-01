@@ -110,7 +110,7 @@ private:
                     {
                         banks[i].state = WindowBankState::Stage3_Locked;
 
-                        std::cout << "Bank " << banks[i].number << " reached Stage3" << std::endl;
+                        //std::cout << "Bank " << banks[i].number << " reached Stage3" << std::endl;
 
                         m_current_bank = i;
                         m_counter++;
