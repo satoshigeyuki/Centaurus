@@ -220,7 +220,13 @@ public:
 	}
 };
 
-template<typename TCHAR> class ATNMachine
+class IATNMachine
+{
+public:
+    virtual ~IATNMachine() = default;
+};
+
+template<typename TCHAR> class ATNMachine : public IATNMachine
 {
     friend class ATNPrinter<TCHAR>;
 

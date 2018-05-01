@@ -6,7 +6,7 @@
 
 using namespace Centaurus;
 
-extern "C" Grammar *GrammarCreate()
+extern "C" void *GrammarCreate()
 {
     return new Grammar();
 }
@@ -16,4 +16,7 @@ extern "C" void GrammarDestroy(Grammar *grammar)
     delete grammar;
 }
 
-extern "C" void GrammarAddMachine(Grammar *grammar, const wchar_t *name, const ATNMachine<
+extern "C" void GrammarAddMachine(Grammar *grammar, const wchar_t *name, void *machine)
+{
+    
+}

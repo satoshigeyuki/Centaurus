@@ -70,11 +70,14 @@ public:
 
         m_str = stream.cut(begin);
     }
-    virtual ~CppAlienCode()
-    {
-    }
+    virtual ~CppAlienCode() = default;
 };
-template<typename TCHAR> class Grammar
+class IGrammar
+{
+public:
+    virtual ~IGrammar() = default;
+};
+template<typename TCHAR> class Grammar : public IGrammar
 {
     std::unordered_map<Identifier, ATNMachine<TCHAR> > m_networks;
     std::vector<Identifier> m_identifiers;

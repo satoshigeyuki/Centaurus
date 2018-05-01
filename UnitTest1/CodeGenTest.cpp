@@ -179,30 +179,34 @@ public:
         const char *input_path = "C:\\Users\\ihara\\Downloads\\sf-city-lots-json-master\\sf-city-lots-json-master\\citylots.json";
 #elif defined(CENTAURUS_BUILD_LINUX)
         //const char *input_path = "/mnt/c/Users/ihara/Downloads/sf-city-lots-json-master/sf-city-lots-json-master/citylots.json";
-        const char *input_path = "/home/ihara/Downloads/sf-city-lots-json-master/citylots.json";
+        const char *input_path = "/home/ihara/ramdisk/citylots.json";
 #endif
 
-        Stage1Runner<ParserEM64T<char> > runner1{ input_path, parser, 8 * 1024 * 1024, 8 };
+        Stage1Runner<ParserEM64T<char> > runner1{ input_path, parser, 8 * 1024 * 1024, 16 };
 #if defined(CENTAURUS_BUILD_WINDOWS)
         int pid = GetCurrentProcessId();
 #elif defined(CENTAURUS_BUILD_LINUX)
         int pid = getpid();
 #endif
-        Stage2Runner<ChaserEM64T<char> > runner2a{ input_path, chaser, 8 * 1024 * 1024, 8, pid };
-        Stage2Runner<ChaserEM64T<char> > runner2b{ input_path, chaser, 8 * 1024 * 1024, 8, pid };
-        Stage2Runner<ChaserEM64T<char> > runner2c{ input_path, chaser, 8 * 1024 * 1024, 8, pid };
-        Stage3Runner<ChaserEM64T<char> > runner3{ input_path, chaser, 8 * 1024 * 1024, 8, pid };
+        std::vector<Stage2Runner<ChaserEM64T<char> > *> st2_runners;
+        for (int i = 0; i < 4; i++)
+        {
+            st2_runners.push_back(new Stage2Runner<ChaserEM64T<char> >{input_path, chaser, 8 * 1024 * 1024, 16, pid});
+        }
+        Stage3Runner<ChaserEM64T<char> > runner3{ input_path, chaser, 8 * 1024 * 1024, 16, pid };
 
         runner1.start();
-        runner2a.start();
-        runner2b.start();
-        runner2c.start();
+        for (auto p : st2_runners)
+        {
+            p->start();
+        }
         runner3.start();
 
         runner1.wait();
-        runner2a.wait();
-        runner2b.wait();
-        runner2c.wait();
+        for (auto p : st2_runners)
+        {
+            p->wait();
+        }
         runner3.wait();
 
         //Assert::AreEqual((const void *)(json + strlen(json)), context.result);
