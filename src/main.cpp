@@ -10,7 +10,11 @@
 #include "Stage2Runner.hpp"
 #include "Stage3Runner.hpp"
 
+#if defined(CENTAURUS_BUILD_LINUX)
 #include <sys/time.h>
+#elif defined(CENTAURUS_BUILD_WINDOWS)
+#include <Windows.h>
+#endif
 
 std::locale::id std::codecvt<char, char, std::mbstate_t>::id;
 std::locale::id std::codecvt<char16_t, char, std::mbstate_t>::id;
@@ -49,9 +53,17 @@ static Grammar<char> LoadGrammar(const char *filename)
 
 static uint64_t get_us_clock()
 {
+#if defined(CENTAURUS_BUILD_LINUX)
     struct timeval tv;
     gettimeofday(&tv, NULL);
     return tv.tv_sec * 1000000 + tv.tv_usec;
+#elif defined(CENTAURUS_BUILD_WINDOWS)
+	LARGE_INTEGER qpc;
+	QueryPerformanceCounter(&qpc);
+	LARGE_INTEGER qpf;
+	QueryPerformanceFrequency(&qpf);
+	return (uint64_t)qpc.QuadPart * 1000000 / (uint64_t)qpf.QuadPart;
+#endif
 }
 
 int main(int argc, const char *argv[])
