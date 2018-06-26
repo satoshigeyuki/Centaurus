@@ -72,12 +72,7 @@ public:
     }
     virtual ~CppAlienCode() = default;
 };
-class IGrammar
-{
-public:
-    virtual ~IGrammar() = default;
-};
-template<typename TCHAR> class Grammar : public IGrammar
+template<typename TCHAR> class Grammar
 {
     std::unordered_map<Identifier, ATNMachine<TCHAR> > m_networks;
     std::vector<Identifier> m_identifiers;
