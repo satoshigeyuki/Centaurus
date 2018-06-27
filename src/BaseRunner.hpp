@@ -33,17 +33,21 @@ public:
 	{
 		return (m_value >> 48) & 0x7FFF;
 	}
+    bool get_sign_bit() const
+    {
+        return m_value & ((uint64_t)1 << 63);
+    }
 	bool is_start_marker() const
 	{
-		return m_value & ((uint64_t)1 << 63);
+		return get_sign_bit() && get_machine_id() != 0;
 	}
 	bool is_end_marker() const
 	{
-		return !(m_value & ((uint64_t)1 << 63));
+		return !get_sign_bit() && get_machine_id() != 0;
 	}
     bool is_sv_marker() const
     {
-        return get_machine_id() == 0;
+        return get_sign_bit() && get_machine_id() == 0;
     }
 	uint64_t get_offset() const
 	{
@@ -53,6 +57,16 @@ public:
 	{
 		return static_cast<void *>((char *)p + get_offset());
 	}
+};
+template<typename T>
+class SVCapsule
+{
+    
+public:
+    SVCapsule(uint64_t v0, uint64_t v1)
+    {
+
+    }
 };
 class BaseRunner : public BaseListener
 {

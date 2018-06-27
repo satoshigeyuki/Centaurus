@@ -10,6 +10,8 @@ class Stage3Runner : public BaseRunner
 {
     size_t m_bank_size;
     T& m_chaser;
+    const uint64_t *m_window;
+    int m_position;
     int m_current_bank;
     int m_counter;
 private:
@@ -26,9 +28,9 @@ private:
 
         while (true)
         {
-            uint64_t *ast = reinterpret_cast<uint64_t *>(instance->acquire_bank());
+            m_window = reinterpret_cast<const uint64_t *>(instance->acquire_bank());
 
-            if (ast == NULL) break;
+            if (m_window == NULL) break;
 
             instance->release_bank();
         }
@@ -38,12 +40,32 @@ private:
 		return NULL;
 #endif
 	}
-    int reduce(uint64_t *ast, int position)
+    void reduce()
     {
-        CSTMarker start_marker(ast[position]);
-        for (int i = position + 1; i < m_bank_size / 8; i++)
-        {
+        std::vector<SVCapsule> values;
+        CSTMarker start_marker(m_window[m_position]);
 
+        for (int i = m_position + 1; i < m_bank_size / 8; i++)
+        {
+            CSTMarker marker(m_window[m_position]);
+
+            if (marker.is_start_marker())
+            {
+                reduce();
+            }
+            else if (marker.is_end_marker())
+            {
+
+                return;
+            }
+            else if (marker.is_sv_marker())
+            {
+
+            }
+            else
+            {
+
+            }
         }
     }
     void *acquire_bank()
