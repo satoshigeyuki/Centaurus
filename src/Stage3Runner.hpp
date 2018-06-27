@@ -10,10 +10,12 @@ class Stage3Runner : public BaseRunner
 {
     size_t m_bank_size;
     T& m_chaser;
-    const uint64_t *m_window;
-    int m_position;
     int m_current_bank;
     int m_counter;
+    const uint64_t *m_current_window;
+    int m_window_position;
+    int m_sv_index;
+    const std::vector<SVCapsule> *m_sv_list;
 private:
 #if defined(CENTAURUS_BUILD_WINDOWS)
 	static DWORD WINAPI thread_runner(LPVOID param)
@@ -25,47 +27,73 @@ private:
 
         instance->m_current_bank = -1;
         instance->m_counter = 0;
+        instance->m_current_window = NULL;
+        instance->m_window_position = 0;
 
-        while (true)
-        {
-            m_window = reinterpret_cast<const uint64_t *>(instance->acquire_bank());
+        instance->reduce();
 
-            if (m_window == NULL) break;
+        instance->release_bank();
 
-            instance->release_bank();
-        }
 #if defined(CENTAURUS_BUILD_WINDOWS)
 		ExitThread(0);
 #elif defined(CENTAURUS_BUILD_LINUX)
 		return NULL;
 #endif
 	}
-    void reduce()
+    SVCapsule reduce()
     {
         std::vector<SVCapsule> values;
-        CSTMarker start_marker(m_window[m_position]);
 
-        for (int i = m_position + 1; i < m_bank_size / 8; i++)
+        if (m_current_window == NULL || m_window_position >= m_bank_size / 8)
         {
-            CSTMarker marker(m_window[m_position]);
+            release_bank();
 
-            if (marker.is_start_marker())
-            {
-                reduce();
-            }
-            else if (marker.is_end_marker())
-            {
+            m_current_window = reinterpret_cast<uint64_t *>(acquire_bank());
 
-                return;
-            }
-            else if (marker.is_sv_marker())
-            {
+            if (m_current_window == NULL) return SVCapsule();
 
-            }
-            else
-            {
+            m_window_position = 0;
+        }
 
+        CSTMarker start_marker(m_current_window[m_window_position++]);
+
+        while (true)
+        {
+            for (; m_window_position < m_bank_size / 8; m_window_position++)
+            {
+                CSTMarker marker(m_current_window[m_window_position]);
+
+                if (marker.is_start_marker())
+                {
+                    values.push_back(reduce());
+                }
+                else if (marker.is_sv_marker())
+                {
+                    uint64_t v0 = m_current_window[m_window_position];
+                    uint64_t v1 = m_current_window[m_window_position + 1];
+                    values.emplace_back(m_input_window, v0, v1);
+                    m_window_position++;
+                }
+                else if (marker.is_end_marker())
+                {
+                    m_sv_index = 0;
+                    m_sv_list = &values;
+                    const void *chaser_result = m_chaser[start_marker.get_machine_id()](this, start_marker.offset_ptr(m_input_window));
+                    if (m_sv_index != values.size())
+                    {
+                        std::cerr << "SV list undigested: " << m_sv_index << "/" << values.size() << "." << std::endl;
+                    }
+                    if (chaser_result != marker.offset_ptr(m_input_window))
+                    {
+                        std::cerr << "Chaser aborted: " << std::hex << (uint64_t)chaser_result << "/" << (uint64_t)marker.offset_ptr(m_input_window) << std::dec << std::endl;
+                    }
+                    return SVCapsule(m_input_window, marker.get_offset(), 0);
+                }
             }
+            release_bank();
+            m_current_window = reinterpret_cast<uint64_t *>(acquire_bank());
+            if (m_current_window == NULL) return SVCapsule();
+            m_window_position = 0;
         }
     }
     void *acquire_bank()
@@ -82,7 +110,7 @@ private:
                     {
                         banks[i].state = WindowBankState::Stage3_Locked;
 
-                        std::cout << "Bank " << banks[i].number << " reached Stage3" << std::endl;
+                        //std::cout << "Bank " << banks[i].number << " reached Stage3" << std::endl;
 
                         m_current_bank = i;
                         m_counter++;
@@ -98,11 +126,14 @@ private:
     }
     void release_bank()
     {
-        WindowBankEntry *banks = reinterpret_cast<WindowBankEntry *>(m_sub_window);
+        if (m_current_bank != -1)
+        {
+            WindowBankEntry *banks = reinterpret_cast<WindowBankEntry *>(m_sub_window);
 
-        banks[m_current_bank].state.store(WindowBankState::Free);
+            banks[m_current_bank].state.store(WindowBankState::Free);
 
-        m_current_bank = -1;
+            m_current_bank = -1;
+        }
     }
 public:
 	Stage3Runner(const char *filename, T& chaser, size_t bank_size, int bank_num, int master_pid)
@@ -144,5 +175,19 @@ public:
 	{
         _start(Stage3Runner<T>::thread_runner, this);
 	}
+    virtual void terminal_callback(int id, const void *start, const void *end) override
+    {
+        //Do nothing
+    }
+    virtual const void *nonterminal_callback(int id, const void *input) override
+    {
+        if (m_sv_index < m_sv_list->size())
+        {
+            SVCapsule sv = m_sv_list->at(m_sv_index);
+            m_sv_index++;
+            return sv.get_next_ptr();
+        }
+        return NULL;
+    }
 };
 }

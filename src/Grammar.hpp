@@ -70,9 +70,7 @@ public:
 
         m_str = stream.cut(begin);
     }
-    virtual ~CppAlienCode()
-    {
-    }
+    virtual ~CppAlienCode() = default;
 };
 template<typename TCHAR> class Grammar
 {

@@ -41,7 +41,7 @@ ChaserEM64T<TCHAR>::ChaserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *l
 
         as.mov(CONTEXT_REG, asmjit::X86Mem(asmjit::x86::rsp, ARG1_STACK_OFFSET));
         as.mov(INPUT_REG, asmjit::X86Mem(asmjit::x86::rsp, ARG2_STACK_OFFSET));
-        as.vmovdqa(PATTERN_REG, skipfilter_mem);
+        as.movdqa(PATTERN_REG, skipfilter_mem);
 
 		emit_machine(as, grammar, p.first, catn, rejectlabel, pool);
 
@@ -392,7 +392,7 @@ void ParserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const ATNMachine
         as.push(INPUT_BASE_REG);
         as.push(CONTEXT_REG);
         as.push(STACK_BACKUP_REG);
-        as.vmovdqa(asmjit::x86::xmm15, PATTERN_REG);
+        as.movdqa(asmjit::x86::xmm15, PATTERN_REG);
         as.mov(ARG1_REG, asmjit::X86Mem(asmjit::x86::rsp, 8));
 #if defined(CENTAURUS_BUILD_WINDOWS)
         as.sub(asmjit::x86::rsp, 32);
@@ -405,7 +405,7 @@ void ParserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const ATNMachine
         as.mov(OUTPUT_REG, asmjit::x86::rax);
         as.mov(OUTPUT_BOUND_REG, OUTPUT_REG);
         as.add(OUTPUT_BOUND_REG, AST_BUF_SIZE);
-        as.vmovdqa(PATTERN_REG, asmjit::x86::xmm15);
+        as.movdqa(PATTERN_REG, asmjit::x86::xmm15);
         as.pop(STACK_BACKUP_REG);
         as.pop(CONTEXT_REG);
         as.pop(INPUT_BASE_REG);
@@ -419,7 +419,7 @@ void ParserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const ATNMachine
         as.push(INPUT_BASE_REG);
         as.push(CONTEXT_REG);
         as.push(STACK_BACKUP_REG);
-        as.vmovdqa(asmjit::x86::xmm15, PATTERN_REG);
+        as.movdqa(asmjit::x86::xmm15, PATTERN_REG);
         as.mov(ARG1_REG, asmjit::X86Mem(asmjit::x86::rsp, 8));
 #if defined(CENTAURUS_BUILD_WINDOWS)
         as.sub(asmjit::x86::rsp, 32);
@@ -432,7 +432,7 @@ void ParserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const ATNMachine
         as.mov(OUTPUT_REG, asmjit::x86::rax);
         as.mov(OUTPUT_BOUND_REG, OUTPUT_REG);
         as.add(OUTPUT_BOUND_REG, AST_BUF_SIZE);
-        as.vmovdqa(PATTERN_REG, asmjit::x86::xmm15);
+        as.movdqa(PATTERN_REG, asmjit::x86::xmm15);
         as.pop(STACK_BACKUP_REG);
         as.pop(CONTEXT_REG);
         as.pop(INPUT_BASE_REG);

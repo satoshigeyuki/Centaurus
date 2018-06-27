@@ -58,14 +58,24 @@ public:
 		return static_cast<void *>((char *)p + get_offset());
 	}
 };
-template<typename T>
 class SVCapsule
 {
-    
+    const void *m_next_ptr;
+    uint64_t m_tag;
 public:
-    SVCapsule(uint64_t v0, uint64_t v1)
+    SVCapsule(const void *window, uint64_t v0, uint64_t v1)
+        : m_next_ptr(reinterpret_cast<const char *>(window) + (v0 & 0xFFFFFFFFFFFFul)), m_tag(v1)
+    {
+        
+    }
+    SVCapsule()
+        : m_next_ptr(NULL), m_tag(0)
     {
 
+    }
+    const void *get_next_ptr() const
+    {
+        return m_next_ptr;
     }
 };
 class BaseRunner : public BaseListener

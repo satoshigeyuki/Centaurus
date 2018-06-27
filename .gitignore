@@ -14,9 +14,11 @@
 !CMakeLists.txt
 !*.sh
 !vc
+!vc/PyCentaurus
 !UnitTest1
 !src
 !asmjit
 !MsTestEmulator
 !grammar
 !python
+!python/Centaurus
