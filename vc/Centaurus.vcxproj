@@ -179,6 +179,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\src\ATN.hpp" />
+    <ClInclude Include="..\src\ATNTranslator.hpp" />
     <ClInclude Include="..\src\BaseListener.hpp" />
     <ClInclude Include="..\src\BaseRunner.hpp" />
     <ClInclude Include="..\src\CharClass.hpp" />
@@ -187,6 +188,7 @@
     <ClInclude Include="..\src\CodeGenUtilsEM64T.hpp" />
     <ClInclude Include="..\src\CompositeATN.hpp" />
     <ClInclude Include="..\src\DFA.hpp" />
+    <ClInclude Include="..\src\Encoding.hpp" />
     <ClInclude Include="..\src\Exception.hpp" />
     <ClInclude Include="..\src\Grammar.hpp" />
     <ClInclude Include="..\src\Identifier.hpp" />
