@@ -9,6 +9,7 @@
 !*.vcxproj
 !*.vcxproj.filters
 !*.props
+!*.pyproj
 !.gitignore
 !.gitmodules
 !CMakeLists.txt
