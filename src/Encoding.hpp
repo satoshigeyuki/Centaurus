@@ -4,7 +4,13 @@
 #include <sstream>
 #include <utility>
 #include <errno.h>
+
+#if defined(CENTAURUS_BUILD_LINUX)
 #include <iconv.h>
+#elif defined(CENTAURUS_BUILD_WINDOWS)
+#define NOMINMAX
+#include <Windows.h>
+#endif
 #include <string.h>
 #include <stdlib.h>
 
@@ -34,7 +40,9 @@ public:
 };
 template<typename SCHAR, typename DCHAR> class Encoder
 {
+#if defined(CENTAURUS_BUILD_LINUX)
     iconv_t m_iconv;
+#endif
     std::string m_from, m_to;
 private:
     EncodingException error(const std::basic_string<SCHAR>& str) const noexcept

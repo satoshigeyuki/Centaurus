@@ -27,6 +27,7 @@ public:
         return m_msg.c_str();
     }
 };
+
 class Stream
 {
     std::u16string m_str;
