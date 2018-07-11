@@ -31,6 +31,8 @@ public:
 		int machine_index = m_networks.size() + 1;
 
 		m_networks.emplace(lhs, ATNMachine<TCHAR>(machine_index, rhs));
+		
+		m_identifiers.push_back(lhs);
 	}
 	const ATNMachine<TCHAR>& operator[](const std::basic_string<TCHAR>& id) const
 	{

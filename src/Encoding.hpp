@@ -57,11 +57,15 @@ public:
     Encoder(const char *from, const char *to)
         : m_from(from), m_to(to)
     {
+#if defined(CENTAURUS_BUILD_LINUX)
         m_iconv = iconv_open(to, from);
+#endif
     }
     ~Encoder()
     {
+#if defined(CENTAURUS_BUILD_LINUX)
         iconv_close(m_iconv);
+#endif
     }
     std::basic_string<DCHAR> encode_StoS(const std::basic_string<SCHAR>& str)
     {

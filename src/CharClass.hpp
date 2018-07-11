@@ -11,7 +11,7 @@
 #include <array>
 #include <initializer_list>
 
-#include "Stream.hpp"
+#include "Stream2.hpp"
 #include "Util.hpp"
 
 namespace Centaurus
