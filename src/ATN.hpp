@@ -228,6 +228,7 @@ template<typename TCHAR> class ATNMachine
     int m_globalid;
 public:
     void parse(Stream& stream);
+	void parse(GenericStream<TCHAR>& stream);
     int add_node(int from)
     {
         m_nodes[from].add_transition(m_nodes.size());

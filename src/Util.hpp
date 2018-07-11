@@ -9,6 +9,100 @@
 
 namespace Centaurus
 {
+static char ASCII(char ch)
+{
+	return ch;
+}
+static char ASCII(wchar_t ch)
+{
+	switch (ch)
+	{
+	case L'\0': return '\0';
+	case L'\r': return '\r';
+	case L'\n': return '\n';
+	case L'/': return '/';
+	case L'*': return '*';
+	case L'\\': return '\\';
+	case L' ': return ' ';
+	case L'[': return '[';
+	case L']': return ']';
+	case L'+': return '+';
+	case L'-': return '-';
+	case L'"': return '"';
+	case L'\'': return '\'';
+	case L':': return ':';
+	case L';': return ';';
+	case L'|': return '|';
+	case L'(': return '(';
+	case L')': return ')';
+	case L'?': return '?';
+	case L'.': return '.';
+	case L'{': return '{';
+	case L'}': return '}';
+	case L',': return ',';
+	default: return '@';
+	}
+}
+static char ASCII(char16_t ch)
+{
+	switch (ch)
+	{
+	case u'\0': return '\0';
+	case u'\r': return '\r';
+	case u'\n': return '\n';
+	case u'/': return '/';
+	case u'*': return '*';
+	case u'\\': return '\\';
+	case u' ': return ' ';
+	case u'[': return '[';
+	case u']': return ']';
+	case u'+': return '+';
+	case u'-': return '-';
+	case u'"': return '"';
+	case u'\'': return '\'';
+	case u':': return ':';
+	case u';': return ';';
+	case u'|': return '|';
+	case u'(': return '(';
+	case u')': return ')';
+	case u'?': return '?';
+	case u'.': return '.';
+	case u'{': return '{';
+	case u'}': return '}';
+	case u',': return ',';
+	default: return '@';
+	}
+}
+static char ASCII(char32_t ch)
+{
+	switch (ch)
+	{
+	case U'\0': return '\0';
+	case U'\r': return '\r';
+	case U'\n': return '\n';
+	case U'/': return '/';
+	case U'*': return '*';
+	case U'\\': return '\\';
+	case U' ': return ' ';
+	case U'[': return '[';
+	case U']': return ']';
+	case U'+': return '+';
+	case U'-': return '-';
+	case U'"': return '"';
+	case U'\'': return '\'';
+	case U':': return ':';
+	case U';': return ';';
+	case U'|': return '|';
+	case U'(': return '(';
+	case U')': return ')';
+	case U'?': return '?';
+	case U'.': return '.';
+	case U'{': return '{';
+	case U'}': return '}';
+	case U',': return ',';
+	default: return '@';
+	}
+}
 template<typename TCHAR> TCHAR wide_to_target(char16_t ch)
 {
     return static_cast<TCHAR>(ch);

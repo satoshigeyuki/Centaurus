@@ -23,6 +23,15 @@ public:
 	virtual ~GenericGrammar()
 	{
 	}
+	void add_rule(const std::basic_string<TCHAR>& lhs, const std::basic_string<TCHAR>& rhs)
+	{
+		if (m_root_id.empty())
+			m_root_id.assign(lhs);
+
+		int machine_index = m_networks.size() + 1;
+
+		m_networks.emplace(lhs, ATNMachine<TCHAR>(machine_index, rhs));
+	}
 	const ATNMachine<TCHAR>& operator[](const std::basic_string<TCHAR>& id) const
 	{
 		return m_networks.at(id);

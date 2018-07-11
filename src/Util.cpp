@@ -31,4 +31,5 @@ std::ostream& operator<<(std::ostream& os, const IndexVector& v)
     os << ']';
     return os;
 }
+
 }
