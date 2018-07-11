@@ -103,6 +103,41 @@ static char ASCII(char32_t ch)
 	default: return '@';
 	}
 }
+template<typename TCHAR>
+static TCHAR XCHAR(char ch)
+{
+	return static_cast<TCHAR>(ch);
+}
+template<> static wchar_t XCHAR<wchar_t>(char ch)
+{
+	switch (ch)
+	{
+	case '\0': return L'\0';
+	case '\n': return L'\n';
+	default:
+		return static_cast<wchar_t>(ch);
+	}
+}
+template<> static char16_t XCHAR<char16_t>(char ch)
+{
+	switch (ch)
+	{
+	case '\0': return u'\0';
+	case '\n': return u'\n';
+	default:
+		return static_cast<char16_t>(ch);
+	}
+}
+template<> static char32_t XCHAR<char32_t>(char ch)
+{
+	switch (ch)
+	{
+	case '\0': return U'\0';
+	case '\n': return U'\n';
+	default:
+		return static_cast<char32_t>(ch);
+	}
+}
 template<typename TCHAR> TCHAR wide_to_target(char16_t ch)
 {
     return static_cast<TCHAR>(ch);

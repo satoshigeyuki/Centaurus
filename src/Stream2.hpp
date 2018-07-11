@@ -8,19 +8,24 @@ template<typename TCHAR>
 class GenericStream
 {
 public:
+	virtual ~GenericStream()
+	{
+
+	}
 };
 template<typename TCHAR>
 class MemoryStream : public GenericStream<TCHAR>
 {
 	std::basic_string<TCHAR> m_str;
-	std::basic_string<TCHAR>::iterator m_cur;
+	typename std::basic_string<TCHAR>::iterator m_cur;
 	int m_line, m_pos;
 	bool m_newline_flag;
 public:
+	using Sentry = typename std::basic_string<TCHAR>::const_iterator;
 	MemoryStream(std::basic_string<TCHAR>&& str)
 		: m_str(str), m_line(1), m_pos(0), m_newline_flag(false)
 	{
-
+		m_cur = m_str.begin();
 	}
 	virtual ~MemoryStream()
 	{

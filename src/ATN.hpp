@@ -6,6 +6,7 @@
 #include "NFA.hpp"
 #include "Identifier.hpp"
 #include "Stream.hpp"
+#include "Stream2.hpp"
 #include "CharClass.hpp"
 
 namespace Centaurus
