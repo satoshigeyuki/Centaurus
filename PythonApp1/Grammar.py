@@ -8,10 +8,14 @@ corelib = CoreLib.get_instance()
 
 class Grammar(object):
     """EBNF grammar definition."""
+    corelib.GrammarCreate.restype = ctypes.c_void_p
+    corelib.GrammarDestroy.argtypes = [ctypes.c_void_p]
+    corelib.GrammarAddRule.argtypes = [ctypes.c_void_p, ctypes.c_wchar_p, ctypes.c_wchar_p]
 
     def __init__(self):
-        self.handle = ctypes.c_void_p(corelib.GrammarCreate())
-    def __enter__(self):
-        return self
-    def __exit__(self, exc_type, exc_value, traceback):
+        self.handle = corelib.GrammarCreate()
+    def __del__(self):
         corelib.GrammarDestroy(self.handle)
+    def add_rule(self, lhs, rhs):
+        corelib.GrammarAddRule(self.handle, lhs, rhs)
+    def print(self, )
