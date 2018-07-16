@@ -14,9 +14,17 @@
 #include <string.h>
 #include <stdlib.h>
 
+#if defined(CENTAURUS_BUILD_LINUX)
+#define CENTAURUS_ENC_UTF8 "UTF-8"
+#define CENTAURUS_ENC_CP932 "CP932"
+#elif defined(CENTAURUS_BUILD_WINDOWS)
+#define CENTAURUS_ENC_UTF8 (CP_UTF8)
+#define CENTAURUS_ENC_CP932 (932)
+#endif
+
 namespace Centaurus
 {
-class EncodingException : public std::exception
+/*class EncodingException : public std::exception
 {
     std::string m_msg;
 public:
@@ -37,48 +45,58 @@ public:
     {
         return m_msg.c_str();
     }
-};
-template<typename SCHAR, typename DCHAR> class Encoder
+};*/
+template<typename TCHAR> class Encoder
 {
 #if defined(CENTAURUS_BUILD_LINUX)
-    iconv_t m_iconv;
+    iconv_t m_forward, m_backward;
+	std::string m_encoding;
+#elif defined(CENTAURUS_BUILD_WINDOWS)
+	UINT m_codepage;
 #endif
-    std::string m_from, m_to;
 private:
-    EncodingException error(const std::basic_string<SCHAR>& str) const noexcept
+    /*EncodingException error(const std::basic_string<SCHAR>& str) const noexcept
     {
         return EncodingException(m_from, m_to, std::string());
     }
     EncodingException error(SCHAR sch) const noexcept
     {
         return EncodingException(m_from, m_to, std::string());
-    }
+    }*/
 public:
-    Encoder(const char *from, const char *to)
-        : m_from(from), m_to(to)
-    {
 #if defined(CENTAURUS_BUILD_LINUX)
-        m_iconv = iconv_open(to, from);
-#endif
+    Encoder(const char *encoding)
+        : m_encoding(encoding)
+    {
+        m_forward = iconv_open(encoding, "WCHAR_T");
+		m_backward = iconv_open("WCHAR_T", encoding);
     }
+#elif defined(CENTAURUS_BUILD_WINDOWS)
+	Encoder(UINT codepage)
+		: m_codepage(codepage)
+	{
+	}
+#endif
     ~Encoder()
     {
 #if defined(CENTAURUS_BUILD_LINUX)
-        iconv_close(m_iconv);
+        iconv_close(m_forward);
+		iconv_close(m_backward);
 #endif
     }
-    std::basic_string<DCHAR> encode_StoS(const std::basic_string<SCHAR>& str)
+    std::string wcstombs(const std::wstring& str)
     {
-        char *inbuf = (char *)malloc((str.size() + 1) * sizeof(SCHAR));
-        char *inbuf_orig = inbuf;
-        memcpy(inbuf, str.c_str(), str.size() * sizeof(SCHAR));
-        size_t inbytesleft = (str.size() + 1) * sizeof(SCHAR);
+#if defined(CENTAURUS_BUILD_LINUX)
+        wchar_t *inbuf = (wchar_t *)malloc((str.size() + 1) * sizeof(wchar_t));
+        wchar_t *inbuf_orig = inbuf;
+        memcpy(inbuf, str.c_str(), str.size() * sizeof(wchar_t));
+        size_t inbytesleft = (str.size() + 1) * sizeof(wchar_t);
         char *outbuf = (char *)malloc((str.size() + 1) * 8);
         char *outbuf_orig = outbuf;
         size_t outbytesleft = (str.size() + 1) * 8;
         size_t outbytesleft_orig = outbytesleft;
-        iconv(m_iconv, NULL, NULL, NULL, NULL);
-        if (iconv(m_iconv, &inbuf, &inbytesleft, &outbuf, &outbytesleft) != (size_t)-1)
+        iconv(m_forward, NULL, NULL, NULL, NULL);
+        if (iconv(m_forward, &inbuf, &inbytesleft, &outbuf, &outbytesleft) != (size_t)-1)
         {
             std::basic_string<DCHAR> ret((const DCHAR *)outbuf_orig, (outbytesleft_orig - outbytesleft) / sizeof(DCHAR));
             free(inbuf_orig);
@@ -91,6 +109,10 @@ public:
             free(outbuf_orig);
             throw error(str);
         }
+#elif defined(CENTAURUS_BUILD_WINDOWS)
+		int len = WideCharToMultiByte(m_codepage, 0, str.c_str(), -1, NULL, 0, NULL, NULL);
+
+#endif
     }
     std::pair<bool, DCHAR> encode_CtoC(SCHAR ch)
     {

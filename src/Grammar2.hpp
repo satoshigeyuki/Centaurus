@@ -4,16 +4,18 @@
 #include <string>
 #include <unordered_map>
 
+#include "ATN.hpp"
+
 namespace Centaurus
 {
 template<typename TCHAR>
 class WideATNPrinter
 {
-	const std::unordered_map<std::basic_string<TCHAR>, ATNMachine<TCHAR> >& m_networks;
+	const std::unordered_map<std::wstring, ATNMachine<TCHAR> >& m_networks;
 	std::vector<std::basic_string<TCHAR> > m_stack;
 	int m_counter, m_maxdepth;
 private:
-	std::pair<std::basic_string<TCHAR>, std::basic_string<TCHAR> > print_atn(std::wostream& os, const std::basic_string<TCHAR>& key)
+	std::pair<std::wstring, std::wstring> print_atn(std::wostream& os, const std::wstring& key)
 	{
 		std::wstring prefix = key + std::to_wstring(m_counter++);
 
@@ -21,7 +23,7 @@ private:
 
 		const ATNMachine<TCHAR>& atn = m_networks.at(key);
 
-		std::vector<std::pair<std::basic_string<TCHAR>, std::basic_string<TCHAR> > > entry_exit_nodes(atn.m_nodes.size());
+		std::vector<std::pair<std::wstring, std::wstring> > entry_exit_nodes(atn.m_nodes.size());
 
 		for (unsigned int i = 0; i < atn.m_nodes.size(); i++)
 		{
@@ -38,13 +40,13 @@ private:
 				}
 				else
 				{
-					entry_exit_nodes[i] = node.get_entry_exit(node_name);
+					entry_exit_nodes[i] = node.get_entry_exit_wide(node_name);
 					node.print_wide(os, node_name);
 				}
 			}
 			else
 			{
-				entry_exit_nodes[i] = node.get_entry_exit(node_name);
+				entry_exit_nodes[i] = node.get_entry_exit_wide(node_name);
 				node.print_wide(os, node_name);
 			}
 		}
@@ -52,34 +54,34 @@ private:
 		for (unsigned int i = 0; i < atn.m_nodes.size(); i++)
 		{
 			const ATNNode<TCHAR>& node = atn.m_nodes[i];
-			const std::string& exit = entry_exit_nodes[i].second;
+			const std::wstring& exit = entry_exit_nodes[i].second;
 			for (const auto& t : node.m_transitions)
 			{
-				const std::string& entry = entry_exit_nodes[t.dest()].first;
+				const std::wstring& entry = entry_exit_nodes[t.dest()].first;
 
-				os << exit << " -> " << entry << " [ label=\"";
+				os << exit << L" -> " << entry << L" [ label=\"";
 				os << t;
-				os << "\" ];" << std::endl;
+				os << L"\" ];" << std::endl;
 			}
 		}
 
-		os << "label = \"" << key.narrow() << "\";" << std::endl;
-		os << "}" << std::endl;
+		os << L"label = \"" << key << L"\";" << std::endl;
+		os << L"}" << std::endl;
 
-		std::string entry_node = prefix + "_N0";
-		std::string exit_node = prefix + "_N" + std::to_string(atn.m_nodes.size() - 1);
+		std::wstring entry_node = prefix + L"_N0";
+		std::wstring exit_node = prefix + L"_N" + std::to_wstring(atn.m_nodes.size() - 1);
 
-		return std::pair<std::string, std::string>(entry_node, exit_node);
+		return std::pair<std::wstring, std::wstring>(entry_node, exit_node);
 	}
 public:
-	ATNPrinter(const std::unordered_map<Identifier, ATNMachine<TCHAR> >& networks, int maxdepth)
+	WideATNPrinter(const std::unordered_map<std::wstring, ATNMachine<TCHAR> >& networks, int maxdepth)
 		: m_networks(networks), m_counter(0), m_maxdepth(maxdepth)
 	{
 	}
-	virtual ~ATNPrinter()
+	virtual ~WideATNPrinter()
 	{
 	}
-	void print(std::ostream& os, const Identifier& key)
+	void print(std::wostream& os, const std::wstring& key)
 	{
 		print_atn(os, key);
 	}
@@ -110,7 +112,9 @@ public:
 
 		int machine_index = m_networks.size() + 1;
 
-		m_networks.emplace(lhs, ATNMachine<TCHAR>(machine_index, rhs));
+		MemoryStream<TCHAR> stream(rhs);
+
+		m_networks.emplace(lhs, ATNMachine<TCHAR>(machine_index, stream));
 		
 		m_identifiers.push_back(lhs);
 	}

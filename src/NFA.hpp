@@ -216,10 +216,18 @@ public:
     {
         return prefix + "_S0";
     }
+	std::wstring get_entry_wide(const std::wstring& prefix) const
+	{
+		return prefix + L"_S0";
+	}
     std::string get_exit(const std::string& prefix) const
     {
         return prefix + "_S" + std::to_string(m_states.size() - 1);
     }
+	std::wstring get_exit_wide(const std::wstring& prefix) const
+	{
+		return prefix + L"_S" + std::to_wstring(m_states.size() - 1);
+	}
     int get_state_num() const
     {
         return m_states.size();

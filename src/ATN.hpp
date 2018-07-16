@@ -154,6 +154,17 @@ public:
             return std::pair<std::string, std::string>(prefix, prefix);
         }
     }
+	std::pair<std::wstring, std::wstring> get_entry_exit_wide(const std::wstring& prefix) const
+	{
+		if (m_type == ATNNodeType::RegularTerminal)
+		{
+			return std::pair<std::wstring, std::wstring>(m_nfa.get_entry_wide(prefix), m_nfa.get_exit_wide(prefix));
+		}
+		else
+		{
+			return std::pair<std::wstring, std::wstring>(prefix, prefix);
+		}
+	}
     void print(std::ostream& os, const std::string& prefix) const
     {
         switch (m_type)
