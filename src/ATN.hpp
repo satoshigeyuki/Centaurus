@@ -13,29 +13,16 @@ namespace Centaurus
 enum class ATNTransitionType
 {
     Epsilon,
-    SingleCharLookup,
-    LiteralLookup
+	Action
 };
 
 template<typename TCHAR> class ATNTransition
 {
-    template<typename T> friend std::ostream& operator<<(std::ostream& os, const ATNTransition<T>& tr);
-
     ATNTransitionType m_type;
-    CharClass<TCHAR> m_class;
-    std::basic_string<TCHAR> m_literal;
     int m_dest;
 public:
-    ATNTransition(const CharClass<TCHAR>& cls, int dest)
-        : m_type(ATNTransitionType::SingleCharLookup), m_class(cls), m_dest(dest)
-    {
-    }
     ATNTransition(int dest)
         : m_type(ATNTransitionType::Epsilon), m_dest(dest)
-    {
-    }
-    ATNTransition(const std::basic_string<TCHAR>& literal, int dest)
-        : m_type(ATNTransitionType::LiteralLookup), m_literal(literal), m_dest(dest)
     {
     }
     virtual ~ATNTransition()
@@ -45,39 +32,7 @@ public:
     {
         return m_dest;
     }
-    void add_class(const CharClass<TCHAR>& cc)
-    {
-        m_class |= cc;
-    }
-    bool is_epsilon() const
-    {
-        return m_type == ATNTransitionType::Epsilon;
-    }
-    ATNTransitionType type() const
-    {
-        return m_type;
-    }
-    const CharClass<TCHAR>& get_class() const
-    {
-        return m_class;
-    }
 };
-template<typename TCHAR>
-std::ostream& operator<<(std::ostream& os, const ATNTransition<TCHAR>& tr)
-{
-    switch (tr.m_type)
-    {
-    case ATNTransitionType::Epsilon:
-        break;
-    case ATNTransitionType::SingleCharLookup:
-        os << tr.m_class;
-        break;
-    case ATNTransitionType::LiteralLookup:
-        os << "\"" << tr.m_literal << "\"";
-        break;
-    }
-    return os;
-}
 
 enum class ATNNodeType
 {
@@ -260,7 +215,6 @@ template<typename TCHAR> class ATNMachine
     int m_globalid;
 public:
     void parse(Stream& stream);
-	//void parse(GenericStream<wchar_t>& stream);
     int add_node(int from)
     {
         m_nodes[from].add_transition(m_nodes.size());
@@ -290,13 +244,6 @@ public:
 
         parse(stream);
     }
-	/*ATNMachine(int id, GenericStream<wchar_t>& stream)
-		: m_globalid(id)
-	{
-		m_nodes.emplace_back();
-
-		parse(stream);
-	}*/
     ATNMachine(ATNMachine&& atn)
         : m_nodes(std::move(atn.m_nodes)), m_globalid(atn.m_globalid)
     {
@@ -383,6 +330,64 @@ private:
 
         return std::pair<std::string, std::string>(entry_node, exit_node);
     }
+	std::pair<std::wstring, std::wstring> print_atn(std::wostream& os, const Identifier& key)
+	{
+		std::wstring prefix = key + std::to_wstring(m_counter++);
+
+		os << L"subgraph cluster_" << prefix << L" {" << std::endl;
+
+		const ATNMachine<TCHAR>& atn = m_networks.at(key);
+
+		std::vector<std::pair<std::wstring, std::wstring> > entry_exit_nodes(atn.m_nodes.size());
+
+		for (unsigned int i = 0; i < atn.m_nodes.size(); i++)
+		{
+			const ATNNode<TCHAR>& node = atn.m_nodes[i];
+			std::wstring node_name = prefix + L"_N" + std::to_wstring(i);
+
+			if (node.is_nonterminal())
+			{
+				if (m_stack.size() < (size_t)m_maxdepth && std::find(m_stack.begin(), m_stack.end(), node.m_invoke) == m_stack.end())
+				{
+					m_stack.push_back(node.m_invoke);
+					entry_exit_nodes[i] = print_atn(os, node.m_invoke);
+					m_stack.pop_back();
+				}
+				else
+				{
+					entry_exit_nodes[i] = node.get_entry_exit_wide(node_name);
+					node.print(os, node_name);
+				}
+			}
+			else
+			{
+				entry_exit_nodes[i] = node.get_entry_exit_wide(node_name);
+				node.print(os, node_name);
+			}
+		}
+
+		for (unsigned int i = 0; i < atn.m_nodes.size(); i++)
+		{
+			const ATNNode<TCHAR>& node = atn.m_nodes[i];
+			const std::wstring& exit = entry_exit_nodes[i].second;
+			for (const auto& t : node.m_transitions)
+			{
+				const std::wstring& entry = entry_exit_nodes[t.dest()].first;
+
+				os << exit << L" -> " << entry << L" [ label=\"";
+				os << t;
+				os << L"\" ];" << std::endl;
+			}
+		}
+
+		os << L"label = \"" << key << L"\";" << std::endl;
+		os << L"}" << std::endl;
+
+		std::wstring entry_node = prefix + L"_N0";
+		std::wstring exit_node = prefix + L"_N" + std::to_wstring(atn.m_nodes.size() - 1);
+
+		return std::pair<std::wstring, std::wstring>(entry_node, exit_node);
+	}
 public:
     ATNPrinter(const std::unordered_map<Identifier, ATNMachine<TCHAR> >& networks, int maxdepth)
         : m_networks(networks), m_counter(0), m_maxdepth(maxdepth)
@@ -395,5 +400,9 @@ public:
     {
         print_atn(os, key);
     }
+	void print(std::wostream& os, const Identifier& key)
+	{
+		print_atn(os, key);
+	}
 };
 }

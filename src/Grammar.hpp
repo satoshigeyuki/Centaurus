@@ -186,5 +186,9 @@ public:
     {
         return m_identifiers.at(index);
     }
+	void add_rule(const Identifier& lhs, const wchar_t *rhs)
+	{
+
+	}
 };
 }

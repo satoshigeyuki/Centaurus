@@ -179,8 +179,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\src\ATN.hpp" />
-    <ClInclude Include="..\src\ATN2.hpp" />
-    <ClInclude Include="..\src\ATNTranslator.hpp" />
     <ClInclude Include="..\src\BaseListener.hpp" />
     <ClInclude Include="..\src\BaseRunner.hpp" />
     <ClInclude Include="..\src\CharClass.hpp" />
@@ -193,7 +191,6 @@
     <ClInclude Include="..\src\Encoding.hpp" />
     <ClInclude Include="..\src\Exception.hpp" />
     <ClInclude Include="..\src\Grammar.hpp" />
-    <ClInclude Include="..\src\Grammar2.hpp" />
     <ClInclude Include="..\src\Identifier.hpp" />
     <ClInclude Include="..\src\LookaheadDFA.hpp" />
     <ClInclude Include="..\src\NFA.hpp" />
