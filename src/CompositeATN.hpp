@@ -98,6 +98,24 @@ public:
             os << "\" ];" << std::endl;
         }
     }
+	void print(std::wostream& os, int from) const
+	{
+		if (m_submachine)
+		{
+			os << L"N" << from << L" [ label=\"" << m_submachine << L"\" ];" << std::endl;
+		}
+		else
+		{
+			os << L"N" << from << L" [ label=\"" << from << L"\" ];" << std::endl;
+		}
+
+		for (const auto& t : m_transitions)
+		{
+			os << L"N" << from << L" -> N" << t.dest() << L" [ label=\"";
+			os << t.label();
+			os << L"\" ];" << std::endl;
+		}
+	}
 };
 
 template<typename TCHAR>
@@ -225,6 +243,21 @@ public:
 
         os << "}" << std::endl;
     }
+	void print(std::wostream& os, const std::wstring& name) const
+	{
+		os << L"digraph " << name << L" {" << std::endl;
+		os << L"rankdir=\"LR\";" << std::endl;
+		os << L"graph [ charset=\"UTF-8\" ];" << std::endl;
+		os << L"node [ style=\"solid,filled\" ];" << std::endl;
+		os << L"edge [ style=\"solid\" ];" << std::endl;
+
+		for (unsigned int i = 0; i < m_nodes.size(); i++)
+		{
+			m_nodes[i].print(os, i);
+		}
+
+		os << L"}" << std::endl;
+	}
 };
 
 using CATNClosure = std::set<std::pair<ATNPath, int> >;
@@ -285,6 +318,21 @@ std::ostream& operator<<(std::ostream& os, const CATNDepartureSet<TCHAR>& deptse
         os << std::endl;
     }
     return os;
+}
+
+template<typename TCHAR>
+std::wostream& operator<<(std::wostream& os, const CATNDepartureSet<TCHAR>& deptset)
+{
+	for (const auto& p : deptset)
+	{
+		os << p.first << L" -> ";
+		for (const auto& q : p.second)
+		{
+			os << q.first << L":" << q.second << L" ";
+		}
+		os << std::endl;
+	}
+	return os;
 }
 
 template<typename TCHAR>

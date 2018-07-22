@@ -142,6 +142,15 @@ public:
             os << "\" ];" << std::endl;
         }
     }
+	void print(std::wostream& os, int from) const
+	{
+		for (const auto& t : m_transitions)
+		{
+			os << L"S" << from << L" -> " << L"S" << t.dest() << L" [ label=\"";
+			os << t.label();
+			os << L"\" ];" << std::endl;
+		}
+	}
     void print_subgraph(std::ostream& os, int from, const std::string& prefix) const
     {
         for (const auto& t : m_transitions)
@@ -151,6 +160,15 @@ public:
             os << "\" ];" << std::endl;
         }
     }
+	void print_subgraph(std::wostream& os, int from, const std::wstring& prefix) const
+	{
+		for (const auto& t : m_transitions)
+		{
+			os << prefix << L"_S" << from << L" -> " << prefix << L"_S" << t.dest() << L" [ label=\"";
+			os << t.label();
+			os << L"\" ];" << std::endl;
+		}
+	}
     const TLABEL& label() const
     {
         return m_label;
@@ -173,6 +191,10 @@ public:
     {
         os << index;
     }
+	virtual void print_state(std::wostream& os, int index) const
+	{
+		os << index;
+	}
     void print(std::ostream& os, const std::string& graph_name)
     {
         os << "digraph " << graph_name << " {" << std::endl;
@@ -197,6 +219,30 @@ public:
 
         os << "}" << std::endl;
     }
+	void print(std::wostream& os, const std::wstring& graph_name)
+	{
+		os << L"digraph " << graph_name << L" {" << std::endl;
+
+		os << L"graph [ charset=\"UTF-8\", style=\"filled\" ];" << std::endl;
+
+		os << L"node [ style=\"solid,filled\" ];" << std::endl;
+
+		os << L"edge [ style=\"solid\" ];" << std::endl;
+
+		for (unsigned int i = 0; i < m_states.size(); i++)
+		{
+			os << L"S" << i << L" [ label=\"";
+			print_state(os, i);
+			os << L"\", shape=circle ];" << std::endl;
+		}
+
+		for (unsigned int i = 0; i < m_states.size(); i++)
+		{
+			m_states[i].print(os, i);
+		}
+
+		os << L"}" << std::endl;
+	}
     void print_subgraph(std::ostream& os, const std::string& prefix) const
     {
         os << "subgraph cluster_" << prefix << " {" << std::endl;
@@ -212,6 +258,21 @@ public:
         }
         os << "}" << std::endl;
     }
+	void print_subgraph(std::wostream& os, const std::wstring& prefix) const
+	{
+		os << L"subgraph cluster_" << prefix << L" {" << std::endl;
+		for (unsigned int i = 0; i < m_states.size(); i++)
+		{
+			os << prefix << L"_S" << i << L" [ label=\"";
+			print_state(os, i);
+			os << L"\", shape=circle ];" << std::endl;
+		}
+		for (unsigned int i = 0; i < m_states.size(); i++)
+		{
+			m_states[i].print_subgraph(os, i, prefix);
+		}
+		os << L"}" << std::endl;
+	}
     std::string get_entry(const std::string& prefix) const
     {
         return prefix + "_S0";
@@ -368,46 +429,46 @@ public:
     }
     void parse(Stream& stream)
     {
-        for (char16_t ch = stream.get(); ch != u')' && ch != u'/' && ch != u'\0'; ch = stream.get())
+        for (wchar_t ch = stream.get(); ch != L')' && ch != L'/' && ch != L'\0'; ch = stream.get())
         {
             NFA<TCHAR> nfa;
             nfa.parse_selection(stream, ch);
             concat(nfa);
         }
     }
-    void parse_unit(Stream& stream, char16_t ch)
+    void parse_unit(Stream& stream, wchar_t ch)
     {
         switch (ch)
         {
-        case u'\\':
+        case L'\\':
             ch = stream.get();
             switch (ch)
             {
-            case u'[':
-            case u']':
-            case u'+':
-            case u'*':
-            case u'{':
-            case u'}':
-            case u'?':
-            case u'\\':
-            case u'|':
-            case u'(':
-            case u')':
-            case u'.':
+            case L'[':
+            case L']':
+            case L'+':
+            case L'*':
+            case L'{':
+            case L'}':
+            case L'?':
+            case L'\\':
+            case L'|':
+            case L'(':
+            case L')':
+            case L'.':
                 add_state(CharClass<TCHAR>(ch));
                 break;
             default:
                 throw stream.unexpected(ch);
             }
             break;
-        case u'[':
+        case L'[':
             add_state(CharClass<TCHAR>(stream));
             break;
-        case u'.':
+        case L'.':
             add_state(CharClass<TCHAR>::make_star());
             break;
-        case u'(':
+        case L'(':
             concat(NFA<TCHAR>(stream));
             break;
         default:
@@ -417,12 +478,12 @@ public:
         ch = stream.peek();
         switch (ch)
         {
-        case u'+':
+        case L'+':
             stream.discard();
             //Add an epsilon transition to the last state
             add_transition_to(CharClass<TCHAR>(), 1);
             break;
-        case u'*':
+        case L'*':
             stream.discard();
             //Add an epsilon transition to the last state
             add_transition_to(CharClass<TCHAR>(), 1);
@@ -431,14 +492,14 @@ public:
             //Add a skipping transition
             add_transition_from(CharClass<TCHAR>(), 1);
             break;
-        case u'?':
+        case L'?':
             stream.discard();
             //Add a skipping transition
             add_transition_from(CharClass<TCHAR>(), 1);
             break;
         }
     }
-    void parse_selection(Stream& stream, char16_t ch)
+    void parse_selection(Stream& stream, wchar_t ch)
     {
         parse_unit(stream, ch);
 
@@ -446,7 +507,7 @@ public:
         {
             ch = stream.peek();
 
-            if (ch != u'|')
+            if (ch != L'|')
             {
                 break;
             }

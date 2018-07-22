@@ -9,7 +9,7 @@
 
 namespace Centaurus
 {
-class AlienCode
+/*class AlienCode
 {
 protected:
     std::u16string m_str;
@@ -71,7 +71,7 @@ public:
         m_str = stream.cut(begin);
     }
     virtual ~CppAlienCode() = default;
-};
+};*/
 template<typename TCHAR> class Grammar
 {
     std::unordered_map<Identifier, ATNMachine<TCHAR> > m_networks;
@@ -84,9 +84,9 @@ public:
 
         while (1)
         {
-            char16_t ch = stream.skip_whitespace();
+            wchar_t ch = stream.skip_whitespace();
 
-            if (ch == u'\0')
+            if (ch == L'\0')
                 break;
 
             if (machine_id >= 65536)
@@ -134,6 +134,20 @@ public:
 
         os << "}" << std::endl;
     }
+	void print(std::wostream& os, const Identifier& key, int maxdepth = 3)
+	{
+		os << L"digraph " << key << L" {" << std::endl;
+		os << L"rankdir=\"LR\";" << std::endl;
+		os << L"graph [ charset=\"UTF-8\" ];" << std::endl;
+		os << L"node [ style=\"solid,filled\" ];" << std::endl;
+		os << L"edge [ style=\"solid\" ];" << std::endl;
+
+		ATNPrinter<TCHAR> printer(m_networks, maxdepth);
+
+		printer.print(os, key);
+
+		os << L"}" << std::endl;
+	}
     /*CompositeATN<TCHAR> build_catn() const
     {
         CompositeATN<TCHAR> catn(m_networks, m_root_id);

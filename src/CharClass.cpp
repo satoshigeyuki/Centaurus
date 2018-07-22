@@ -12,58 +12,58 @@ template class CharClass<wchar_t>;
 template<typename TCHAR>
 void CharClass<TCHAR>::parse(Stream& stream)
 {
-    char16_t ch;
+    wchar_t ch;
     bool invert_flag = false;
 
     ch = stream.get();
-    if (ch == u'^')
+    if (ch == L'^')
     {
         invert_flag = true;
         ch = stream.get();
     }
 
-    char16_t start = 0;
+    wchar_t start = 0;
     enum
     {
         CC_STATE_START = 0,
         CC_STATE_RANGE,
         CC_STATE_END
     } state = CC_STATE_START;
-    for (; ch != u']'; ch = stream.get())
+    for (; ch != L']'; ch = stream.get())
     {
         bool escaped = false;
 
-        if (ch == u'\0' || ch == 0xFFFF)
+        if (ch == L'\0' || ch == 0xFFFF)
             throw stream.unexpected(ch);
 
-        if (ch == u'\\')
+        if (ch == L'\\')
         {
             ch = stream.get();
             switch (ch)
             {
-            case u'\\':
-                ch = u'\\';
+            case L'\\':
+                ch = L'\\';
                 break;
-            case u'-':
-                ch = u'-';
+            case L'-':
+                ch = L'-';
                 break;
-            case u'[':
-                ch = u'[';
+            case L'[':
+                ch = L'[';
                 break;
-            case u']':
-                ch = u']';
+            case L']':
+                ch = L']';
                 break;
-            case u't':
-            case u'T':
-                ch = u'\t';
+            case L't':
+            case L'T':
+                ch = L'\t';
                 break;
-            case u'r':
-            case u'R':
-                ch = u'\r';
+            case L'r':
+            case L'R':
+                ch = L'\r';
                 break;
-            case u'n':
-            case u'N':
-                ch = u'\n';
+            case L'n':
+            case L'N':
+                ch = L'\n';
                 break;
             default:
                 throw stream.unexpected(ch);
@@ -73,13 +73,13 @@ void CharClass<TCHAR>::parse(Stream& stream)
         switch (state)
         {
         case CC_STATE_START:
-            if (!escaped && ch == u'-')
+            if (!escaped && ch == L'-')
                 throw stream.unexpected(ch);
             start = ch;
             state = CC_STATE_RANGE;
             break;
         case CC_STATE_RANGE:
-            if (!escaped && ch == u'-')
+            if (!escaped && ch == L'-')
             {
                 state = CC_STATE_END;
             }
@@ -91,7 +91,7 @@ void CharClass<TCHAR>::parse(Stream& stream)
             }
             break;
         case CC_STATE_END:
-            if (!escaped && ch == u'-')
+            if (!escaped && ch == L'-')
             {
                 throw stream.unexpected(ch);
             }
@@ -109,7 +109,7 @@ void CharClass<TCHAR>::parse(Stream& stream)
     }
     else if (state == CC_STATE_END)
     {
-        throw stream.unexpected(u']');
+        throw stream.unexpected(L']');
     }
     if (invert_flag) invert();
 }

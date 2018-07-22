@@ -93,9 +93,6 @@
     <ClInclude Include="..\src\Stream2.hpp">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\Identifier2.hpp">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\Charset.hpp">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>

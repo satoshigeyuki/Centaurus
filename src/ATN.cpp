@@ -5,11 +5,11 @@ namespace Centaurus
 template<typename TCHAR>
 void ATNNode<TCHAR>::parse_literal(Stream& stream)
 {
-    char16_t leader = stream.get();
+    wchar_t leader = stream.get();
 
-    char16_t ch = stream.get();
+    wchar_t ch = stream.get();
 
-    for (; ch != u'\0' && ch != u'\'' && ch != u'"'; ch = stream.get())
+    for (; ch != L'\0' && ch != L'\'' && ch != L'"'; ch = stream.get())
     {
         m_literal.push_back(wide_to_target<TCHAR>(ch));
     }
@@ -21,20 +21,20 @@ void ATNNode<TCHAR>::parse_literal(Stream& stream)
 template<typename TCHAR>
 void ATNNode<TCHAR>::parse(Stream& stream)
 {
-    char16_t ch = stream.peek();
+    wchar_t ch = stream.peek();
 
     if (Identifier::is_symbol_leader(ch))
     {
         m_invoke.parse(stream);
         m_type = ATNNodeType::Nonterminal;
     }
-    else if (ch == u'/')
+    else if (ch == L'/')
     {
         stream.discard();
         m_nfa.parse(stream);
         m_type = ATNNodeType::RegularTerminal;
     }
-    else if (ch == u'\'' || ch == u'"')
+    else if (ch == L'\'' || ch == L'"')
     {
         parse_literal(stream);
         m_type = ATNNodeType::LiteralTerminal;
@@ -46,24 +46,24 @@ void ATNNode<TCHAR>::parse(Stream& stream)
 
     ch = stream.skip_whitespace();
 
-    if (ch == u'{')
+    if (ch == L'{')
     {
 		stream.discard();
 
         ch = stream.skip_whitespace();
 
-        if (ch == u'}')
+        if (ch == L'}')
             throw stream.unexpected(ch);
 
         int id = 0;
-        for (; u'0' <= ch && ch <= u'9'; ch = stream.peek())
+        for (; L'0' <= ch && ch <= L'9'; ch = stream.peek())
         {
-            id = id * 10 + static_cast<int>(ch - u'0');
+            id = id * 10 + static_cast<int>(ch - L'0');
             stream.discard();
         }
         
         ch = stream.skip_whitespace();
-        if (ch != u'}')
+        if (ch != L'}')
             throw stream.unexpected(ch);
         stream.discard();
 
@@ -78,14 +78,14 @@ void ATNMachine<TCHAR>::parse(Stream& stream)
 {
     std::vector<int> terminal_states;
 
-    char16_t ch = stream.skip_whitespace();
+    wchar_t ch = stream.skip_whitespace();
 
-    for (; ch != u';'; ch = stream.skip_whitespace())
+    for (; ch != L';'; ch = stream.skip_whitespace())
     {
-        if (ch == u'\0')
+        if (ch == L'\0')
             throw stream.unexpected(ch);
 
-        if (ch == u':' || ch == u'|')
+        if (ch == L':' || ch == L'|')
         {
             stream.discard();
             terminal_states.push_back(add_node(0));

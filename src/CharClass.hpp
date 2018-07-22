@@ -11,7 +11,7 @@
 #include <array>
 #include <initializer_list>
 
-#include "Stream2.hpp"
+#include "Stream.hpp"
 #include "Util.hpp"
 
 namespace Centaurus
@@ -35,10 +35,10 @@ public:
         : m_start(0), m_end(0)
     {
     }
-    static Range<TCHAR> make_from_wide(char16_t start, char16_t end)
-    {
-        return Range<TCHAR>(wide_to_target<TCHAR>(start), wide_to_target<TCHAR>(end));
-    }
+	static Range<TCHAR> make_from_wide(wchar_t start, wchar_t end)
+	{
+		return Range<TCHAR>(wide_to_target<TCHAR>(start), wide_to_target<TCHAR>(end));
+	}
     Range(const Range<TCHAR>& r)
         : m_start(r.m_start), m_end(r.m_end)
     {
@@ -126,18 +126,18 @@ public:
     {
         parse(stream);
     }
-    CharClass(char16_t ch)
+    CharClass(wchar_t ch)
     {
         m_ranges.push_back(Range<TCHAR>::make_from_wide(ch, ch + 1));
     }
-    CharClass(const std::initializer_list<char16_t>& ch_list)
+    CharClass(const std::initializer_list<wchar_t>& ch_list)
     {
-        for (char16_t ch : ch_list)
+        for (wchar_t ch : ch_list)
         {
             m_ranges.push_back(Range<TCHAR>(ch, ch + 1));
         }
     }
-    CharClass(char16_t start, char16_t end)
+    CharClass(wchar_t start, wchar_t end)
     {
         m_ranges.push_back(Range<TCHAR>::make_from_wide(start, end));
     }

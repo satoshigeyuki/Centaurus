@@ -110,11 +110,50 @@ public:
             throw error(str);
         }
 #elif defined(CENTAURUS_BUILD_WINDOWS)
-		int len = WideCharToMultiByte(m_codepage, 0, str.c_str(), -1, NULL, 0, NULL, NULL);
-
+		int outlen = WideCharToMultiByte(m_codepage, 0, str.c_str(), -1, NULL, 0, NULL, NULL);
+		LPSTR *outbuf = (LPSTR)HeapAlloc(GetProcessHeap(), 0, outlen);
+		WideCharToMultiByte(m_codepage, 0, str.c_str(), -1, outbuf, outlen, NULL, NULL);
+		std::basic_string<TCHAR> ret(reinterpret_cast<const TCHAR *>(outbuf));
+		HeapFree(GetProcessHeap(), 0, outbuf);
+		return ret;
 #endif
     }
-    std::pair<bool, DCHAR> encode_CtoC(SCHAR ch)
+	std::wstring mbstowcs(const std::basic_string<TCHAR>& str)
+	{
+#if defined(CENTAURUS_BUILD_LINUX)
+		TCHAR *inbuf = (TCHAR *)malloc((str.size() + 1) * sizeof(TCHAR));
+		TCHAR *inbuf_orig = inbuf;
+		memcpy(inbuf, str.c_str(), str.size() * sizeof(TCHAR));
+		size_t inbytesleft = (str.size() + 1) * sizeof(TCHAR);
+		wchar_t *outbuf = (wchar_t *)malloc((str.size() + 1) * 8);
+		wchar_t *outbuf_orig = outbuf;
+		size_t outbytesleft = (str.size() + 1) * 8;
+		size_t outbytesleft_orig = outbytesleft;
+		iconv(m_backward, NULL, NULL, NULL, NULL);
+		if (iconv(m_backward, &inbuf, &inbytesleft, &outbuf, &outbytesleft) != (size_t)-1)
+		{
+			std::wstring ret((const wchar_t *)outbuf_orig, (outbytesleft_orig - outbytesleft) / sizeof(wchar_t));
+			free(inbuf_orig);
+			free(outbuf_orig);
+			return ret;
+		}
+		else
+		{
+			free(inbuf_orig);
+			free(outbuf_orig);
+			throw error(str);
+		}
+#elif defined(CENTAURUS_BUILD_WINDOWS)
+		int outlen = MultiByteToWideChar(m_codepage, 0, (LPSTR)str.c_str(), -1, NULL, 0);
+		LPWSTR *outbuf = (LPWSTR)HeapAlloc(GetProcessHeap(), 0, outlen);
+		MultiByteToWideChar(m_codepage, 0, str.c_str(), -1, outbuf, outlen);
+		std::wstring ret(reinterpret_cast<const wchar_t *>(outbuf));
+		HeapFree(GetProcessHeap(), 0, outbuf);
+		return ret;
+#endif
+	}
+#if 0
+	std::pair<bool, DCHAR> encode_CtoC(SCHAR ch)
     {
         char *inbuf = (char *)&ch;
         size_t inbytesleft = sizeof(SCHAR);
@@ -178,5 +217,6 @@ public:
             throw error(str);
         }
     }
+#endif
 };
 }

@@ -25,17 +25,11 @@ using namespace Centaurus;
 
 static Grammar<char> LoadGrammar(const char *filename)
 {
-    std::ifstream grammar_file(filename, std::ios::in);
+    std::wifstream grammar_file(filename, std::ios::in);
 
-    std::string raw_grammar(std::istreambuf_iterator<char>(grammar_file), {});
+    std::wstring grammar_str(std::istreambuf_iterator<wchar_t>(grammar_file), {});
 
-    std::wstring_convert<std::codecvt_utf8<char16_t>, char16_t> wide_converter;
-
-    std::u16string wide_grammar = wide_converter.from_bytes(raw_grammar);
-
-    std::string narrow_grammar = wide_converter.to_bytes(wide_grammar);
-
-    Stream stream(std::move(wide_grammar));
+    Stream stream(std::move(grammar_str));
 
     Grammar<char> grammar;
 

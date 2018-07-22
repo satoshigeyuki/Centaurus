@@ -17,7 +17,7 @@ namespace Microsoft
 			public:
 				TEST_METHOD(ConstructDFA1)
 				{
-                    Stream stream(u"(abc)+(def)?");
+                    Stream stream(L"(abc)+(def)?");
 
 					NFA<char> nfa(stream);
 

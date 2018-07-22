@@ -13,7 +13,7 @@ namespace UnitTest1
 	public:
 		TEST_METHOD(ConstructNFA1)
 		{
-			Stream stream(u"([a-f]ABCD)|([c-k]EFGH)/");
+			Stream stream(L"([a-f]ABCD)|([c-k]EFGH)/");
 			NFA<char> nfa;
 
 			nfa.parse(stream);

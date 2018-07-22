@@ -39,7 +39,7 @@ public:
     {
         using namespace Centaurus;
 
-        Stream stream(u"(abc)+def");
+        Stream stream(L"(abc)+def");
         NFA<char> nfa(stream);
         DFA<char> dfa(nfa);
 
@@ -67,7 +67,7 @@ public:
 
         CompositeATN<char> catn = LoadCATN("grammar\\json.cgr");
 
-        LookaheadDFA<char> ldfa(catn, catn.convert_atn_path(ATNPath(u"Object", 0)));
+        LookaheadDFA<char> ldfa(catn, catn.convert_atn_path(ATNPath(L"Object", 0)));
 
         LDFARoutineEM64T<char> ldfa_routine(ldfa);
 

@@ -203,7 +203,6 @@
     <ClInclude Include="..\src\Stream.hpp" />
     <ClInclude Include="..\src\Stream2.hpp" />
     <ClInclude Include="..\src\Util.hpp" />
-    <ClInclude Include="..\src\Identifier2.hpp" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>

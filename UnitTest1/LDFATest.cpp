@@ -34,7 +34,7 @@ public:
 
         Logger::WriteMessage("CATN loaded.\n");
 
-		Centaurus::LookaheadDFA<char> ldfa(catn, Centaurus::ATNPath(u"Object", 0));
+		Centaurus::LookaheadDFA<char> ldfa(catn, Centaurus::ATNPath(L"Object", 0));
 
 		int lookup_result = ldfa.run("{}", 0, 0);
 

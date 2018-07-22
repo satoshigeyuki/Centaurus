@@ -5,27 +5,27 @@
 #include <locale>
 #include <codecvt>
 
-#include "Stream2.hpp"
+#include "Stream.hpp"
 
 namespace Centaurus
 {
 class Identifier
 {
-    std::u16string m_id;
+    std::wstring m_id;
 public:
-    static bool is_symbol_leader(char16_t ch)
+    static bool is_symbol_leader(wchar_t ch)
     {
-        return ch == u'_' || std::iswalpha(ch);
+        return ch == L'_' || std::iswalpha(ch);
     }
-    static bool is_symbol_char(char16_t ch)
+    static bool is_symbol_char(wchar_t ch)
     {
-        return ch == u'_' || std::iswalnum(ch);
+        return ch == L'_' || std::iswalnum(ch);
     }
     void parse(Stream& stream)
     {
         Stream::Sentry sentry = stream.sentry();
 
-        char16_t ch = stream.get();
+        wchar_t ch = stream.get();
         if (!is_symbol_leader(ch))
         {
             throw stream.unexpected(ch);
@@ -50,15 +50,15 @@ public:
     Identifier()
     {
     }
-    Identifier(const std::u16string& str)
+    Identifier(const std::wstring& str)
         : m_id (str)
     {
     }
-    Identifier(const char16_t *str)
+    Identifier(const wchar_t *str)
         : m_id (str)
     {
     }
-    const std::u16string& str() const
+    const std::wstring& str() const
     {
         return m_id;
     }
@@ -67,7 +67,7 @@ public:
     }
     std::string narrow() const
     {
-        std::wstring_convert<std::codecvt_utf8<char16_t>, char16_t> converter;
+        std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> converter;
 
         return converter.to_bytes(m_id);
     }
@@ -86,7 +86,7 @@ namespace std
 {
 template<> struct hash<Centaurus::Identifier>
 {
-    hash<u16string> hasher;
+    hash<wstring> hasher;
     size_t operator()(const Centaurus::Identifier& id) const
     {
         return hasher(id.str());

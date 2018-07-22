@@ -49,6 +49,11 @@ public:
 	{
 		m_cur = m_str.begin();
 	}
+	MemoryStream(const std::basic_string<TCHAR>& str)
+		: m_str(str), m_line(1), m_pos(0), m_newline_flag(false)
+	{
+		m_cur = m_str.begin();
+	}
 	virtual ~MemoryStream()
 	{
 

@@ -5,8 +5,7 @@
 
 #include "NFA.hpp"
 #include "Identifier.hpp"
-//#include "Stream.hpp"
-#include "Stream2.hpp"
+#include "Stream.hpp"
 #include "CharClass.hpp"
 
 namespace Centaurus
@@ -186,6 +185,27 @@ public:
             break;
         }
     }
+	void print(std::wostream& os, const std::wstring& prefix) const
+	{
+		switch (m_type)
+		{
+		case ATNNodeType::Blank:
+			os << prefix << L" [ label=\"\" ];" << std::endl;
+			break;
+		case ATNNodeType::Nonterminal:
+			os << prefix << L" [ label=\"" << m_invoke << "\" ];" << std::endl;
+			break;
+		case ATNNodeType::LiteralTerminal:
+			os << prefix << L" [ label=\"" << m_literal << L"\" ];" << std::endl;
+			break;
+		case ATNNodeType::RegularTerminal:
+			m_nfa.print_subgraph(os, prefix);
+			break;
+		case ATNNodeType::WhiteSpace:
+			os << prefix << L" [ label=\"[ ]\" ];" << std::endl;
+			break;
+		}
+	}
     ATNNodeType type() const
     {
         return m_type;
@@ -240,7 +260,7 @@ template<typename TCHAR> class ATNMachine
     int m_globalid;
 public:
     void parse(Stream& stream);
-	//void parse(GenericStream<TCHAR>& stream);
+	//void parse(GenericStream<wchar_t>& stream);
     int add_node(int from)
     {
         m_nodes[from].add_transition(m_nodes.size());
@@ -270,6 +290,13 @@ public:
 
         parse(stream);
     }
+	/*ATNMachine(int id, GenericStream<wchar_t>& stream)
+		: m_globalid(id)
+	{
+		m_nodes.emplace_back();
+
+		parse(stream);
+	}*/
     ATNMachine(ATNMachine&& atn)
         : m_nodes(std::move(atn.m_nodes)), m_globalid(atn.m_globalid)
     {
