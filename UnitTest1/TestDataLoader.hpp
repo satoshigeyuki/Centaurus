@@ -3,6 +3,8 @@
 #include <iostream>
 #include <fstream>
 
+#include <Windows.h>
+
 char *LoadTextAligned(const char *filename)
 {
     HANDLE hFile = CreateFileA(filename, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);

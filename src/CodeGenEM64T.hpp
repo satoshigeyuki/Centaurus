@@ -4,6 +4,7 @@
 #include "LookaheadDFA.hpp"
 #include "asmjit/asmjit.h"
 #include "BaseListener.hpp"
+#include "CodeGenInterface.hpp"
 
 namespace Centaurus
 {
@@ -41,10 +42,8 @@ public:
     }
 };
 
-typedef void *(*ChaserFunc)(void *context, const void *input);
-
 template<typename TCHAR>
-class ChaserEM64T
+class ChaserEM64T : public IChaser
 {
 	asmjit::JitRuntime m_runtime;
 	asmjit::CodeHolder m_code;
@@ -69,7 +68,7 @@ public:
 };
 
 template<typename TCHAR>
-class ParserEM64T
+class ParserEM64T : public IParser
 {
     static constexpr int64_t AST_BUF_SIZE = 8 * 1024 * 1024;
     asmjit::JitRuntime m_runtime;

@@ -7,11 +7,10 @@
 
 namespace Centaurus
 {
-template<class T>
 class Stage2Runner : public BaseRunner
 {
     size_t m_bank_size;
-    T& m_chaser;
+    IChaser *m_chaser;
 	int m_current_bank;
     const uint64_t *m_sv_list;
 private:
@@ -21,7 +20,7 @@ private:
 	static void *thread_runner(void *param)
 #endif
 	{
-		Stage2Runner<T> *instance = reinterpret_cast<Stage2Runner<T> *>(param);
+		Stage2Runner *instance = reinterpret_cast<Stage2Runner *>(param);
 
         instance->m_sv_list = NULL;
         instance->m_current_bank = -1;
@@ -89,7 +88,7 @@ private:
             else if (marker.is_end_marker())
             {
                 m_sv_list = &ast[position + 1];
-                const void *chaser_result = m_chaser[marker.get_machine_id()](this, start_marker.offset_ptr(m_input_window));
+                const void *chaser_result = (*m_chaser)[marker.get_machine_id()](this, start_marker.offset_ptr(m_input_window));
                 if (m_sv_list - &ast[position + 1] < j - position - 1)
                 {
                     std::cerr << "SV list undigested: " << (m_sv_list - &ast[position + 1]) / 2 << "/" << (j - position - 1) / 2 << "." << std::endl;
@@ -152,7 +151,7 @@ private:
 		m_current_bank = -1;
 	}
 public:
-    Stage2Runner(const char *filename, T& chaser, size_t bank_size, int bank_num, int master_pid)
+    Stage2Runner(const char *filename, IChaser *chaser, size_t bank_size, int bank_num, int master_pid)
         : BaseRunner(filename, bank_size, bank_num, master_pid), m_chaser(chaser), m_bank_size(bank_size)
     {
 #if defined(CENTAURUS_BUILD_WINDOWS)
@@ -195,9 +194,9 @@ public:
             sem_close(m_slave_lock);
 #endif
     }
-	void start()
+	virtual void start() override
 	{
-        _start(Stage2Runner<T>::thread_runner, this);
+        _start(Stage2Runner::thread_runner, this);
     }
     virtual void terminal_callback(int id, const void *start, const void *end) override
     {

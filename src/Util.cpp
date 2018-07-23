@@ -1,5 +1,7 @@
 #include "Util.hpp"
 
+#include <fstream>
+
 namespace Centaurus
 {
 std::ostream& operator<<(std::ostream& os, const Identifier& id)
@@ -31,5 +33,16 @@ std::ostream& operator<<(std::ostream& os, const IndexVector& v)
     os << ']';
     return os;
 }
+std::string readmbsfromfile(const char *filename)
+{
+	std::ifstream ifs(filename);
 
+	return std::string(std::istreambuf_iterator<char>(ifs), {});
+}
+std::wstring readwcsfromfile(const char *filename)
+{
+	std::wifstream ifs(filename);
+
+	return std::wstring(std::istreambuf_iterator<wchar_t>(ifs), {});
+}
 }

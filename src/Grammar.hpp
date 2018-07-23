@@ -72,7 +72,15 @@ public:
     }
     virtual ~CppAlienCode() = default;
 };*/
-template<typename TCHAR> class Grammar
+class IGrammar
+{
+public:
+	IGrammar() {}
+	virtual ~IGrammar() {}
+
+	void print(std::wofstream& ofs, int maxdepth);
+};
+template<typename TCHAR> class Grammar : public IGrammar
 {
     std::unordered_map<Identifier, ATNMachine<TCHAR> > m_networks;
     std::vector<Identifier> m_identifiers;
@@ -117,7 +125,7 @@ public:
         : m_networks(std::move(old.m_networks)), m_root_id(old.m_root_id)
     {
     }
-    ~Grammar()
+    virtual ~Grammar()
     {
     }
     void print(std::ostream& os, const Identifier& key, int maxdepth = 3)
@@ -147,6 +155,10 @@ public:
 		printer.print(os, key);
 
 		os << L"}" << std::endl;
+	}
+	void print(std::wofstream& os, int maxdepth)
+	{
+		print(os, get_root_id(), maxdepth);
 	}
     /*CompositeATN<TCHAR> build_catn() const
     {
@@ -186,9 +198,5 @@ public:
     {
         return m_identifiers.at(index);
     }
-	void add_rule(const Identifier& lhs, const wchar_t *rhs)
-	{
-
-	}
 };
 }

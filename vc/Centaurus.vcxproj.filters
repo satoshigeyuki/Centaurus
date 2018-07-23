@@ -84,10 +84,10 @@
     <ClInclude Include="..\src\Encoding.hpp">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\Stream2.hpp">
+    <ClInclude Include="..\src\Charset.hpp">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\Charset.hpp">
+    <ClInclude Include="..\src\CodeGenInterface.hpp">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>

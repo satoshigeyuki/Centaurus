@@ -185,6 +185,7 @@
     <ClInclude Include="..\src\Charset.hpp" />
     <ClInclude Include="..\src\CodeGenCommonEM64T.hpp" />
     <ClInclude Include="..\src\CodeGenEM64T.hpp" />
+    <ClInclude Include="..\src\CodeGenInterface.hpp" />
     <ClInclude Include="..\src\CodeGenUtilsEM64T.hpp" />
     <ClInclude Include="..\src\CompositeATN.hpp" />
     <ClInclude Include="..\src\DFA.hpp" />
@@ -198,7 +199,6 @@
     <ClInclude Include="..\src\Stage2Runner.hpp" />
     <ClInclude Include="..\src\Stage3Runner.hpp" />
     <ClInclude Include="..\src\Stream.hpp" />
-    <ClInclude Include="..\src\Stream2.hpp" />
     <ClInclude Include="..\src\Util.hpp" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />

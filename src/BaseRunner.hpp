@@ -181,6 +181,7 @@ protected:
         return m_input_window;
     }
 public:
+	virtual void start() = 0;
     template<typename F>
     void _start(F runner, void *context)
     {

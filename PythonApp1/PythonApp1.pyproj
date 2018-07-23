@@ -24,6 +24,9 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="CodeGen.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="CoreLib.py">
       <SubType>Code</SubType>
     </Compile>
@@ -31,6 +34,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="PythonApp1.py" />
+    <Compile Include="Runner.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="unittest1.py">
       <SubType>Code</SubType>
     </Compile>

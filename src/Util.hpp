@@ -192,6 +192,9 @@ std::ostream& operator<<(std::ostream& os, const ATNPath& path);
 std::ostream& operator<<(std::ostream& os, const IndexVector& v);
 
 using ATNStateStack = ATNPath;
+
+std::string readmbsfromfile(const char *filename);
+std::wstring readwcsfromfile(const char *filename);
 }
 
 namespace std

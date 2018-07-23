@@ -4,10 +4,9 @@
 
 namespace Centaurus
 {
-template<class T>
 class Stage1Runner : public BaseRunner
 {
-    T& m_parser;
+    IParser *m_parser;
     int m_current_bank, m_counter;
 private:
 #if defined(CENTAURUS_BUILD_WINDOWS)
@@ -16,13 +15,13 @@ private:
     static void *thread_runner(void *param)
 #endif
     {
-		Stage1Runner<T> *instance = reinterpret_cast<Stage1Runner<T> *>(param);
+		Stage1Runner *instance = reinterpret_cast<Stage1Runner *>(param);
 
         instance->m_current_bank = -1;
         instance->m_counter = 0;
         instance->reset_banks();
 
-        instance->m_parser(static_cast<BaseListener *>(instance), instance->m_input_window);
+        (*instance->m_parser)(static_cast<BaseListener *>(instance), instance->m_input_window);
 
         instance->release_bank();
 
@@ -107,7 +106,7 @@ private:
         }
     }
 public:
-    Stage1Runner(const char *filename, T& parser, size_t bank_size, int bank_num)
+    Stage1Runner(const char *filename, IParser *parser, size_t bank_size, int bank_num)
 #if defined(CENTAURUS_BUILD_WINDOWS)
         : BaseRunner(filename, bank_size, bank_num, GetCurrentProcessId()),
 #elif defined(CENTAURUS_BUILD_LINUX)
@@ -162,9 +161,9 @@ public:
             sem_close(m_slave_lock);
 #endif
 	}
-    void start()
+    virtual void start() override
     {
-        _start(Stage1Runner<T>::thread_runner, static_cast<void *>(this));
+        _start(Stage1Runner::thread_runner, static_cast<void *>(this));
     }
     virtual void *feed_callback() override
     {
