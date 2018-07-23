@@ -24,17 +24,20 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="CodeGen.py">
+    <Compile Include="Centaurus\__init__.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="CoreLib.py">
+    <Compile Include="Centaurus\CodeGen.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Grammar.py">
+    <Compile Include="Centaurus\CoreLib.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Centaurus\Grammar.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="PythonApp1.py" />
-    <Compile Include="Runner.py">
+    <Compile Include="Centaurus\Runner.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="unittest1.py">
@@ -47,6 +50,9 @@
       <Project>{5845a67d-1501-40a7-8192-a13ce0530446}</Project>
       <Private>True</Private>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Centaurus\" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in

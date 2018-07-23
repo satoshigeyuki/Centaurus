@@ -97,6 +97,7 @@ private:
                 {
                     std::cerr << "Chaser aborted: " << std::hex << (uint64_t)chaser_result << "/" << (uint64_t)marker.offset_ptr(m_input_window) << std::dec << std::endl;
                 }
+
                 //Zero-fill the SV list
                 for (int k = position + 1; k < j; k++)
                 {
