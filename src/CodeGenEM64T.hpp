@@ -88,7 +88,7 @@ public:
 };
 
 template<typename TCHAR>
-class DryParserEM64T
+class DryParserEM64T : public IParser
 {
     asmjit::JitRuntime m_runtime;
     asmjit::CodeHolder m_code;

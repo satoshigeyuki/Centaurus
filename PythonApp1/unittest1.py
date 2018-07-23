@@ -7,7 +7,6 @@ class Test_unittest1(unittest.TestCase):
         corelib = CoreLib.get_instance()
     def test_grammar(self):
         grammar = Grammar.Grammar()
-        grammar.add_rule("LHS", "a b c")
 
 if __name__ == '__main__':
     unittest.main()

@@ -82,18 +82,18 @@ int main(int argc, const char *argv[])
     const char *input_path = "/home/ihara/ramdisk/citylots.json";
 #endif
 
-    Stage1Runner<ParserEM64T<char> > runner1{ input_path, parser, 8 * 1024 * 1024, 16 };
+    Stage1Runner runner1{ input_path, &parser, 8 * 1024 * 1024, 16 };
 #if defined(CENTAURUS_BUILD_WINDOWS)
     int pid = GetCurrentProcessId();
 #elif defined(CENTAURUS_BUILD_LINUX)
     int pid = getpid();
 #endif
-    std::vector<Stage2Runner<ChaserEM64T<char> > *> st2_runners;
+    std::vector<Stage2Runner *> st2_runners;
     for (int i = 0; i < atoi(argv[2]); i++)
     {
-        st2_runners.push_back(new Stage2Runner<ChaserEM64T<char> >{input_path, chaser, 8 * 1024 * 1024, 16, pid});
+        st2_runners.push_back(new Stage2Runner{input_path, &chaser, 8 * 1024 * 1024, 16, pid});
     }
-    Stage3Runner<ChaserEM64T<char> > runner3{ input_path, chaser, 8 * 1024 * 1024, 16, pid };
+    Stage3Runner runner3{ input_path, &chaser, 8 * 1024 * 1024, 16, pid };
 
     uint64_t start_clock = get_us_clock();
 

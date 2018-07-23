@@ -79,6 +79,14 @@ public:
     {
         return !m_id.empty();
     }
+	operator const std::wstring&() const
+	{
+		return m_id;
+	}
+	std::wstring operator+(const std::wstring& str) const
+	{
+		return m_id + str;
+	}
 };
 }
 

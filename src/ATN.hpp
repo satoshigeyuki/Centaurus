@@ -46,6 +46,15 @@ public:
 	}
 };
 
+template<typename TCHAR> std::ostream& operator<<(std::ostream& os, const ATNTransition<TCHAR>& tr)
+{
+	return os;
+}
+template<typename TCHAR> std::wostream& operator<<(std::wostream& os, const ATNTransition<TCHAR>& tr)
+{
+	return os;
+}
+
 enum class ATNNodeType
 {
     Blank,
@@ -163,7 +172,7 @@ public:
 			os << prefix << L" [ label=\"" << m_invoke << "\" ];" << std::endl;
 			break;
 		case ATNNodeType::LiteralTerminal:
-			os << prefix << L" [ label=\"" << m_literal << L"\" ];" << std::endl;
+			os << prefix << L" [ label=\"" << /*m_literal <<*/ L"\" ];" << std::endl;
 			break;
 		case ATNNodeType::RegularTerminal:
 			m_nfa.print_subgraph(os, prefix);

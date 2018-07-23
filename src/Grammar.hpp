@@ -78,7 +78,7 @@ public:
 	IGrammar() {}
 	virtual ~IGrammar() {}
 
-	void print(std::wofstream& ofs, int maxdepth);
+	virtual void print(std::wostream& ofs, int maxdepth) {}
 };
 template<typename TCHAR> class Grammar : public IGrammar
 {
@@ -156,7 +156,7 @@ public:
 
 		os << L"}" << std::endl;
 	}
-	void print(std::wofstream& os, int maxdepth)
+	virtual void print(std::wostream& os, int maxdepth) override
 	{
 		print(os, get_root_id(), maxdepth);
 	}
