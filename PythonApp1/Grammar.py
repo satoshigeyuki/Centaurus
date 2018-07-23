@@ -6,6 +6,10 @@ import ctypes
 
 corelib = CoreLib.get_instance()
 
+class GrammarAction(object):
+    def __init__(self):
+        pass
+
 class Grammar(object):
     """EBNF grammar definition."""
     corelib.GrammarCreate.restype = ctypes.c_void_p
@@ -15,9 +19,10 @@ class Grammar(object):
 
     def __init__(self):
         self.handle = corelib.GrammarCreate()
+        self.actions = []
     def __del__(self):
         corelib.GrammarDestroy(self.handle)
-    def add_rule(self, lhs, rhs):
+    def add_rule(self, lhs, rhs, action):
         corelib.GrammarAddRule(self.handle, lhs, rhs)
     def print(self, filename):
         corelib.GrammarPrint(self.handle, filename.encode('utf-8'), 4)

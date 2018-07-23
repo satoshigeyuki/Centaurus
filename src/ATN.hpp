@@ -19,19 +19,31 @@ enum class ATNTransitionType
 template<typename TCHAR> class ATNTransition
 {
     ATNTransitionType m_type;
-    int m_dest;
+    int m_dest, m_tag;
 public:
     ATNTransition(int dest)
         : m_type(ATNTransitionType::Epsilon), m_dest(dest)
     {
     }
+	ATNTransition(ATNTransitionType type, int dest, int tag = 0)
+		: m_type(type), m_dest(dest), m_tag(tag)
+	{
+	}
     virtual ~ATNTransition()
     {
     }
+	ATNTransitionType type() const
+	{
+		return m_type;
+	}
     int dest() const
     {
         return m_dest;
     }
+	int tag() const
+	{
+		return m_tag;
+	}
 };
 
 enum class ATNNodeType
