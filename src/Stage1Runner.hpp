@@ -57,7 +57,7 @@ private:
             WindowBankEntry *banks = (WindowBankEntry *)m_sub_window;
 
             banks[m_current_bank].number = m_counter++;
-            banks[m_current_bank].state.store(WindowBankState::Free);
+            banks[m_current_bank].state.store(WindowBankState::Stage1_Unlocked);
 
             m_current_bank = -1;
 

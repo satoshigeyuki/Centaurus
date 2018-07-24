@@ -2,13 +2,8 @@
 # -*- coding: utf-8 -*-
 
 from .CoreLib import CoreLib
+from .Semantics import *
 import ctypes
-
-class SymbolEntry(ctypes.Structure):
-    _fields_ = (('id', ctypes.c_int),
-                ('key', ctypes.c_int),
-                ('start', ctypes.c_long),
-                ('end', ctypes.c_long))
 
 ReductionListener = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.POINTER(SymbolEntry), ctypes.c_int)
 
@@ -17,10 +12,11 @@ class BaseRunner(object):
     CoreLib.RunnerStart.argtypes = [ctypes.c_void_p]
     CoreLib.RunnerWait.argtypes = [ctypes.c_void_p]
     CoreLib.RunnerRegisterListener.argtypes = [ctypes.c_void_p, ReductionListener]
+    CoreLib.RunnerGetWindow.restype = ctypes.c_void_p
+    CoreLib.RunnerGetWindow.argtypes = [ctypes.c_void_p]
 
     def __init__(self, handle):
         self.handle = handle
-        CoreLib.RunnerRegisterListener(self.handle, ReductionListener(self.default_listener))
 
     def __del__(self):
         CoreLib.RunnerDestroy(self.handle)
@@ -31,8 +27,11 @@ class BaseRunner(object):
     def wait(self):
         CoreLib.RunnerWait(self.handle)
 
-    def default_listener(self, symbols, num):
-        return 0
+    def attach(self, listener):
+        CoreLib.RunnerRegisterListener(self.handle, ReductionListener(listener))
+
+    def get_window(self):
+        return CoreLib.RunnerGetWindow(self.handle)
 
 class Stage1Runner(BaseRunner):
     CoreLib.Stage1RunnerCreate.restype = ctypes.c_void_p

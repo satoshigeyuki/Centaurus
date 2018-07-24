@@ -91,6 +91,7 @@ private:
             else if (marker.is_end_marker())
             {
 				m_sym_stack.clear();
+				m_sym_stack.emplace_back(marker.get_machine_id(), start_marker.get_offset(), marker.get_offset());
                 m_sv_list = &ast[position + 1];
                 const void *chaser_result = (*m_chaser)[marker.get_machine_id()](this, start_marker.offset_ptr(m_input_window));
                 if (m_sv_list - &ast[position + 1] < j - position - 1)
@@ -103,8 +104,8 @@ private:
                 }
 
 				int tag = 0;
-				if (m_listener != nullptr)
-					tag = m_listener(m_sym_stack.data(), m_sym_stack.size());
+				/*if (m_listener != nullptr)
+					tag = m_listener(m_sym_stack.data(), m_sym_stack.size());*/
 
                 //Zero-fill the SV list
                 for (int k = position + 1; k < j; k++)

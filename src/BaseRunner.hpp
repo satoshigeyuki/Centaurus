@@ -167,7 +167,7 @@ public:
         munmap(const_cast<void *>(m_input_window), m_input_size);
 #endif
 	}
-protected:
+public:
 	size_t get_main_window_size() const
 	{
 		return ALIGN_NEXT(m_bank_size, IPC_PAGESIZE) * m_bank_num;
@@ -188,7 +188,6 @@ protected:
     {
         return m_input_window;
     }
-public:
 	virtual void start() = 0;
     template<typename F>
     void _start(F runner, void *context)

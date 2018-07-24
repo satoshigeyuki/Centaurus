@@ -24,6 +24,9 @@ class Grammar(object):
         self.actions = []
         self.ids = {}
         CoreLib.GrammarEnumMachines(self.handle, EnumMachinesCallback(self.enum_machines_callback))
+        self.names = [''] * len(self.ids)
+        for name, id in self.ids.items():
+            self.names[id - 1] = name
     def enum_machines_callback(self, name, id):
         self.ids[name] = id
         #print("%s: %d" % (name, id))
@@ -31,3 +34,7 @@ class Grammar(object):
         CoreLib.GrammarDestroy(self.handle)
     def print(self, filename):
         CoreLib.GrammarPrint(self.handle, filename.encode('utf-8'), 4)
+    def get_machine_id(self, name):
+        return self.ids[name]
+    def get_machine_name(self, id):
+        return self.names[id]

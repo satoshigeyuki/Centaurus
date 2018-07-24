@@ -78,6 +78,7 @@ private:
                 else if (marker.is_end_marker())
                 {
 					m_sym_stack.clear();
+					m_sym_stack.emplace_back(start_marker.get_machine_id(), start_marker.get_offset(), marker.get_offset());
 					m_sv_index = 0;
                     m_sv_list = &values;
                     const void *chaser_result = (*m_chaser)[start_marker.get_machine_id()](this, start_marker.offset_ptr(m_input_window));
@@ -90,8 +91,8 @@ private:
                         std::cerr << "Chaser aborted: " << std::hex << (uint64_t)chaser_result << "/" << (uint64_t)marker.offset_ptr(m_input_window) << std::dec << std::endl;
                     }
 					int tag = 0;
-					if (m_listener != nullptr)
-						tag = m_listener(m_sym_stack.data(), m_sym_stack.size());
+					/*if (m_listener != nullptr)
+						tag = m_listener(m_sym_stack.data(), m_sym_stack.size());*/
                     return SVCapsule(m_input_window, marker.get_offset(), tag);
                 }
             }
