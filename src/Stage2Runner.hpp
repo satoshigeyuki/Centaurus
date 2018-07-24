@@ -206,13 +206,8 @@ public:
     }
 	virtual void start() override
 	{
-        //_start(Stage2Runner::thread_runner, this);
-		thread_runner(this);
+        _start(Stage2Runner::thread_runner, this);
     }
-	virtual void wait() override
-	{
-
-	}
     virtual void terminal_callback(int id, const void *start, const void *end) override
     {
 		long start_offset = (const char *)start - (const char *)m_input_window;

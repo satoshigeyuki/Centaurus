@@ -37,4 +37,4 @@ class Grammar(object):
     def get_machine_id(self, name):
         return self.ids[name]
     def get_machine_name(self, id):
-        return self.names[id]
+        return self.names[id - 1]
