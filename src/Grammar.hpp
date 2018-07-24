@@ -72,7 +72,7 @@ public:
     }
     virtual ~CppAlienCode() = default;
 };*/
-typedef void (*__cdecl EnumMachinesCallback)(const wchar_t *name, int id);
+typedef void (__cdecl * EnumMachinesCallback)(const wchar_t *name, int id);
 
 class IGrammar
 {

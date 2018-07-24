@@ -83,7 +83,7 @@ public:
 	}
 };
 
-typedef int (* __cdecl ReductionListener)(const SymbolEntry *symbols, int symbol_num);
+typedef int (__cdecl * ReductionListener)(const SymbolEntry *symbols, int symbol_num);
 
 class BaseRunner : public BaseListener
 {
@@ -120,9 +120,13 @@ protected:
 	sem_t *m_slave_lock;
 	char m_memory_name[256], m_slave_lock_name[256];
 #endif
+	static int __cdecl default_listener(const SymbolEntry *symbols, int num)
+	{
+		return 0;
+	}
 public:
 	BaseRunner(const char *filename, size_t bank_size, int bank_num, int pid)
-		: m_bank_size(bank_size), m_bank_num(bank_num), m_listener(nullptr)
+		: m_bank_size(bank_size), m_bank_num(bank_num), m_listener(default_listener)
 	{
 #if defined(CENTAURUS_BUILD_WINDOWS)
 		HANDLE hInputFile = CreateFileA(filename, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
@@ -213,7 +217,7 @@ public:
         //snprintf(buf, 64, "Elapsed time = %lf[ms]\r\n", (double)(end_time - start_time) * 1000.0 / CLOCKS_PER_SEC);
         //Logger::WriteMessage(buf);
     }
-	void wait()
+	virtual void wait()
 	{
 #if defined(CENTAURUS_BUILD_WINDOWS)
 		WaitForSingleObject(m_thread, INFINITE);

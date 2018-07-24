@@ -87,7 +87,7 @@ class Stage3Process(object):
                 return
             elif cmd[0] == 'parse':
                 runner = Stage3Runner(cmd[1], self.chaser, self.context.bank_size, self.context.bank_num, self.master_pid)
-                #adapter = ListenerAdapter(self.grammar, self.listener, runner)
+                adapter = ListenerAdapter(self.grammar, self.listener, runner)
                 runner.start()
                 runner.wait()
     def attach(self, listener):

@@ -30,7 +30,6 @@ class Grammar(object):
             self.names[id - 1] = name
     def enum_machines_callback(self, name, id):
         self.ids[name] = id
-        logging.debug("%s: %d" % (name, id))
     def __del__(self):
         CoreLib.GrammarDestroy(self.handle)
     def print(self, filename):

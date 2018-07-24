@@ -5,7 +5,7 @@ from .CoreLib import CoreLib
 from .Semantics import *
 import ctypes
 
-ReductionListener = ctypes.CFUNCTYPE(ctypes.c_int)#, ctypes.POINTER(SymbolEntry), ctypes.c_int)
+ReductionListener = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.POINTER(SymbolEntry), ctypes.c_int)
 
 class BaseRunner(object):
     CoreLib.RunnerDestroy.argtypes = [ctypes.c_void_p]
@@ -28,7 +28,8 @@ class BaseRunner(object):
         CoreLib.RunnerWait(self.handle)
 
     def attach(self, listener):
-        CoreLib.RunnerRegisterListener(self.handle, ReductionListener(listener))
+        self.listener = ReductionListener(listener)
+        CoreLib.RunnerRegisterListener(self.handle, self.listener)
 
     def get_window(self):
         return CoreLib.RunnerGetWindow(self.handle)

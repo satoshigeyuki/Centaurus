@@ -28,8 +28,6 @@ private:
         instance->m_current_bank = -1;
 		instance->m_sym_stack.clear();
 
-		instance->m_listener(nullptr, 0);
-
 		while (true)
 		{
             uint64_t *data = reinterpret_cast<uint64_t *>(instance->acquire_bank());
@@ -106,8 +104,8 @@ private:
                 }
 
 				int tag = 0;
-				/*if (m_listener != nullptr)
-					tag = m_listener(m_sym_stack.data(), m_sym_stack.size());*/
+				if (m_listener != nullptr)
+					tag = m_listener(m_sym_stack.data(), m_sym_stack.size());
 
                 //Zero-fill the SV list
                 for (int k = position + 1; k < j; k++)
@@ -208,8 +206,13 @@ public:
     }
 	virtual void start() override
 	{
-        _start(Stage2Runner::thread_runner, this);
+        //_start(Stage2Runner::thread_runner, this);
+		thread_runner(this);
     }
+	virtual void wait() override
+	{
+
+	}
     virtual void terminal_callback(int id, const void *start, const void *end) override
     {
 		long start_offset = (const char *)start - (const char *)m_input_window;
