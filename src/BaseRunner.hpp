@@ -77,7 +77,14 @@ public:
     {
         return m_next_ptr;
     }
+	uint64_t get_tag() const
+	{
+		return m_tag;
+	}
 };
+
+typedef int (* __cdecl ReductionListener)(const SymbolEntry *symbols, int symbol_num);
+
 class BaseRunner : public BaseListener
 {
     static constexpr size_t STACK_SIZE = 1024 * 1024 * 1024;
@@ -102,6 +109,7 @@ protected:
     void *m_main_window, *m_sub_window;
     size_t m_bank_size;
 	int m_bank_num;
+	ReductionListener m_listener;
 #if defined(CENTAURUS_BUILD_WINDOWS)
     HANDLE m_mem_handle;
     HANDLE m_slave_lock;
@@ -213,6 +221,10 @@ public:
 #elif defined(CENTAURUS_BUILD_LINUX)
 		pthread_join(m_thread, NULL);
 #endif
+	}
+	void register_listener(ReductionListener listener)
+	{
+		m_listener = listener;
 	}
 };
 }

@@ -24,6 +24,12 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Centaurus\Context.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Centaurus\Semantics.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Centaurus\__init__.py">
       <SubType>Code</SubType>
     </Compile>

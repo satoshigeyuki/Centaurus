@@ -72,12 +72,15 @@ public:
     }
     virtual ~CppAlienCode() = default;
 };*/
+typedef void (*__cdecl EnumMachinesCallback)(const wchar_t *name, int id);
+
 class IGrammar
 {
 public:
 	IGrammar() {}
 	virtual ~IGrammar() {}
 
+	virtual void enum_machines(EnumMachinesCallback callback) = 0;
 	virtual void print(std::wostream& ofs, int maxdepth) {}
 };
 template<typename TCHAR> class Grammar : public IGrammar
@@ -198,5 +201,12 @@ public:
     {
         return m_identifiers.at(index);
     }
+	virtual void enum_machines(EnumMachinesCallback callback) override
+	{
+		for (int i = 0; i < m_identifiers.size(); i++)
+		{
+			callback(m_identifiers[i].str().c_str(), i + 1);
+		}
+	}
 };
 }

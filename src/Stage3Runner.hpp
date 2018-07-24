@@ -15,6 +15,7 @@ class Stage3Runner : public BaseRunner
     int m_window_position;
     int m_sv_index;
     const std::vector<SVCapsule> *m_sv_list;
+	std::vector<SymbolEntry> m_sym_stack;
 private:
 #if defined(CENTAURUS_BUILD_WINDOWS)
 	static DWORD WINAPI thread_runner(LPVOID param)
@@ -28,6 +29,7 @@ private:
         instance->m_counter = 0;
         instance->m_current_window = NULL;
         instance->m_window_position = 0;
+		instance->m_sym_stack.clear();
 
         instance->reduce();
 
@@ -75,7 +77,8 @@ private:
                 }
                 else if (marker.is_end_marker())
                 {
-                    m_sv_index = 0;
+					m_sym_stack.clear();
+					m_sv_index = 0;
                     m_sv_list = &values;
                     const void *chaser_result = (*m_chaser)[start_marker.get_machine_id()](this, start_marker.offset_ptr(m_input_window));
                     if (m_sv_index != values.size())
@@ -86,7 +89,10 @@ private:
                     {
                         std::cerr << "Chaser aborted: " << std::hex << (uint64_t)chaser_result << "/" << (uint64_t)marker.offset_ptr(m_input_window) << std::dec << std::endl;
                     }
-                    return SVCapsule(m_input_window, marker.get_offset(), 0);
+					int tag = 0;
+					if (m_listener != nullptr)
+						tag = m_listener(m_sym_stack.data(), m_sym_stack.size());
+                    return SVCapsule(m_input_window, marker.get_offset(), tag);
                 }
             }
             release_bank();
@@ -176,7 +182,9 @@ public:
 	}
     virtual void terminal_callback(int id, const void *start, const void *end) override
     {
-        //Do nothing
+		long start_offset = (const char *)start - (const char *)m_input_window;
+		long end_offset = (const char *)end - (const char *)m_input_window;
+		m_sym_stack.emplace_back(-id, start_offset, end_offset);
     }
     virtual const void *nonterminal_callback(int id, const void *input) override
     {
@@ -184,6 +192,9 @@ public:
         {
             SVCapsule sv = m_sv_list->at(m_sv_index);
             m_sv_index++;
+			long start_offset = (const char *)input - (const char *)m_input_window;
+			long end_offset = (const char *)sv.get_next_ptr() - (const char *)m_input_window;
+			m_sym_stack.emplace_back(id, start_offset, end_offset, sv.get_tag());
             return sv.get_next_ptr();
         }
         return NULL;

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vector>
 #include <stdint.h>
 #include <time.h>
 #include "BaseRunner.hpp"
@@ -13,6 +14,7 @@ class Stage2Runner : public BaseRunner
     IChaser *m_chaser;
 	int m_current_bank;
     const uint64_t *m_sv_list;
+	std::vector<SymbolEntry> m_sym_stack;
 private:
 #if defined(CENTAURUS_BUILD_WINDOWS)
 	static DWORD WINAPI thread_runner(LPVOID param)
@@ -24,6 +26,7 @@ private:
 
         instance->m_sv_list = NULL;
         instance->m_current_bank = -1;
+		instance->m_sym_stack.clear();
 
 		while (true)
 		{
@@ -87,6 +90,7 @@ private:
 			}
             else if (marker.is_end_marker())
             {
+				m_sym_stack.clear();
                 m_sv_list = &ast[position + 1];
                 const void *chaser_result = (*m_chaser)[marker.get_machine_id()](this, start_marker.offset_ptr(m_input_window));
                 if (m_sv_list - &ast[position + 1] < j - position - 1)
@@ -98,6 +102,10 @@ private:
                     std::cerr << "Chaser aborted: " << std::hex << (uint64_t)chaser_result << "/" << (uint64_t)marker.offset_ptr(m_input_window) << std::dec << std::endl;
                 }
 
+				int tag = 0;
+				if (m_listener != nullptr)
+					tag = m_listener(m_sym_stack.data(), m_sym_stack.size());
+
                 //Zero-fill the SV list
                 for (int k = position + 1; k < j; k++)
                 {
@@ -107,7 +115,7 @@ private:
                 ast[i] = 0;
                 ast[position] = ((uint64_t)1 << 63) | marker.get_offset();
                 //ToDo: store SV pointer to the second entry
-                ast[position + 1] = NULL;
+                ast[position + 1] = tag;
                 return i;
             }
 		}
@@ -201,13 +209,17 @@ public:
     }
     virtual void terminal_callback(int id, const void *start, const void *end) override
     {
-        //Do nothing
+		long start_offset = (const char *)start - (const char *)m_input_window;
+		long end_offset = (const char *)end - (const char *)m_input_window;
+		m_sym_stack.emplace_back(-id, start_offset, end_offset);
     }
     virtual const void *nonterminal_callback(int id, const void *input) override
     {
-        const void *ret = (const char *)m_input_window + (m_sv_list[0] & 0xFFFFFFFFFFFF);
-        m_sv_list += 2;
-        return ret;
+		long start_offset = (const char *)input - (const char *)m_input_window;
+		long end_offset = m_sv_list[0] & 0xFFFFFFFFFFFFul;
+		m_sym_stack.emplace_back(id, start_offset, end_offset, m_sv_list[1]);
+		m_sv_list += 2;
+        return (const char *)m_input_window + end_offset;
     }
 };
 }
