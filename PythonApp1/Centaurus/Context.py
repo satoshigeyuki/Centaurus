@@ -1,6 +1,8 @@
 import os
 import sys
+import time
 import multiprocessing as mp
+import logging
 from .Grammar import *
 from .CodeGen import *
 from .Runner import *
@@ -41,22 +43,24 @@ class Stage2Process(object):
         self.cmd_queue.put(('parse', path))
     """Methods invoked from the worker process"""
     def worker(self):
-        sys.stdout = open("stage2.out", "w")
-        sys.stderr = open("stage2.err", "w")
         self.grammar = Grammar(self.context.grammar_path)
         self.chaser = Chaser(self.grammar)
+        logging.basicConfig(filename="log%d.log" % os.getpid(), level=logging.DEBUG)
         while True:
             cmd = self.cmd_queue.get()
             if cmd[0] == 'stop':
-                print("Stage2 worker stopped.", file=sys.stderr)
                 return
             elif cmd[0] == 'parse':
-                print("Stage2 parsing: %s" % cmd[1])
+                logging.debug('Stage2 process started.')
+                start_time = time.time()
                 runner = Stage2Runner(cmd[1], self.chaser, self.context.bank_size, self.context.bank_num, self.master_pid)
                 adapter = ListenerAdapter(self.grammar, self.listener, runner)
                 runner.start()
+                logging.debug('Stage2 thread started.')
                 runner.wait()
-                print("Stage2 processed: %s" % cmd[1])
+                elapsed_time = time.time() - start_time
+                logging.debug('Stage2 process finished.')
+                logging.debug('Elapsed time = %.1f' % (elapsed_time * 1E+3,))
     def attach(self, listener):
         self.listener = listener
 
@@ -83,7 +87,7 @@ class Stage3Process(object):
                 return
             elif cmd[0] == 'parse':
                 runner = Stage3Runner(cmd[1], self.chaser, self.context.bank_size, self.context.bank_num, self.master_pid)
-                adapter = ListenerAdapter(self.grammar, self.listener, runner)
+                #adapter = ListenerAdapter(self.grammar, self.listener, runner)
                 runner.start()
                 runner.wait()
     def attach(self, listener):

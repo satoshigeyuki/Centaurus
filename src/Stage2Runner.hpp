@@ -28,6 +28,8 @@ private:
         instance->m_current_bank = -1;
 		instance->m_sym_stack.clear();
 
+		instance->m_listener(nullptr, 0);
+
 		while (true)
 		{
             uint64_t *data = reinterpret_cast<uint64_t *>(instance->acquire_bank());

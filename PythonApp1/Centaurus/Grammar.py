@@ -3,6 +3,7 @@
 
 from .CoreLib import CoreLib
 import ctypes
+import logging
 
 class GrammarAction(object):
     def __init__(self):
@@ -29,7 +30,7 @@ class Grammar(object):
             self.names[id - 1] = name
     def enum_machines_callback(self, name, id):
         self.ids[name] = id
-        #print("%s: %d" % (name, id))
+        logging.debug("%s: %d" % (name, id))
     def __del__(self):
         CoreLib.GrammarDestroy(self.handle)
     def print(self, filename):

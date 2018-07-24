@@ -5,7 +5,7 @@ from .CoreLib import CoreLib
 from .Semantics import *
 import ctypes
 
-ReductionListener = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.POINTER(SymbolEntry), ctypes.c_int)
+ReductionListener = ctypes.CFUNCTYPE(ctypes.c_int)#, ctypes.POINTER(SymbolEntry), ctypes.c_int)
 
 class BaseRunner(object):
     CoreLib.RunnerDestroy.argtypes = [ctypes.c_void_p]

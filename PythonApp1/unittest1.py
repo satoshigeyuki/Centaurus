@@ -1,5 +1,6 @@
 import unittest
 import os
+import logging
 import multiprocessing as mp
 from Centaurus import *
 
@@ -7,10 +8,7 @@ class JsonListener(object):
     def __init__(self):
         pass
     def parseNumber(self, ctx):
-        with open("log.txt", "a") as output:
-            print(ctx.read(), file=output)
-        #val = float(ctx.read())
-        #print(val)
+        val = float(ctx.read())
 
 class Test_unittest1(unittest.TestCase):
     def test_grammar(self):
@@ -39,7 +37,9 @@ class Test_unittest1(unittest.TestCase):
         for runner in runners:
             runner.wait()
     def test_wet_parser_mp(self):
-        context = Context(r"..\grammar\json.cgr", 3)
+        logging.basicConfig(filename="log%d.log" % os.getpid(), level=logging.DEBUG)
+        logging.debug('Started logging.')
+        context = Context(r"..\grammar\json.cgr", 1)
         input_path = r"C:\Users\ihara\Downloads\sf-city-lots-json-master\sf-city-lots-json-master\citylots.json"
         listener = JsonListener()
         context.attach(listener)

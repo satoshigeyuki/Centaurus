@@ -122,7 +122,7 @@ protected:
 #endif
 public:
 	BaseRunner(const char *filename, size_t bank_size, int bank_num, int pid)
-		: m_bank_size(bank_size), m_bank_num(bank_num)
+		: m_bank_size(bank_size), m_bank_num(bank_num), m_listener(nullptr)
 	{
 #if defined(CENTAURUS_BUILD_WINDOWS)
 		HANDLE hInputFile = CreateFileA(filename, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
