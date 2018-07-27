@@ -6,6 +6,7 @@
 
 #include "Identifier.hpp"
 #include "ATN.hpp"
+#include "Platform.hpp"
 
 namespace Centaurus
 {
@@ -72,7 +73,8 @@ public:
     }
     virtual ~CppAlienCode() = default;
 };*/
-typedef void (__cdecl * EnumMachinesCallback)(const wchar_t *name, int id);
+
+typedef void (CENTAURUS_CALLBACK * EnumMachinesCallback)(const wchar_t *name, int id);
 
 class IGrammar
 {

@@ -99,7 +99,7 @@ public:
     {
         m_transitions.push_back(transition);
     }
-    void add_transition(const CharClass<TCHAR>& cc, int dest)
+    /*void add_transition(const CharClass<TCHAR>& cc, int dest)
     {
         if (!cc.is_epsilon())
         {
@@ -117,7 +117,7 @@ public:
         {
             m_transitions.emplace_back(dest);
         }
-    }
+    }*/
     std::pair<std::string, std::string> get_entry_exit(const std::string& prefix) const
     {
         if (m_type == ATNNodeType::RegularTerminal)

@@ -179,7 +179,7 @@ public:
         const char *input_path = "C:\\Users\\ihara\\Downloads\\sf-city-lots-json-master\\sf-city-lots-json-master\\citylots.json";
 #elif defined(CENTAURUS_BUILD_LINUX)
         //const char *input_path = "/mnt/c/Users/ihara/Downloads/sf-city-lots-json-master/sf-city-lots-json-master/citylots.json";
-        const char *input_path = "/home/ihara/ramdisk/citylots.json";
+        const char *input_path = "/home/ihara/Downloads/sf-city-lots-json-master/citylots.json";
 #endif
 
         Stage1Runner runner1{ input_path, &parser, 8 * 1024 * 1024, 16 };

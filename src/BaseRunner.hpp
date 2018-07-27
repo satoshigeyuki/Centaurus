@@ -16,6 +16,7 @@
 #include <atomic>
 
 #include "BaseListener.hpp"
+#include "Platform.hpp"
 
 #define ALIGN_NEXT(x, a) (((x) + (a) - 1) / (a) * (a))
 #define PROGRAM_UUID "{57DF45C9-6D0C-4DD2-9B41-B71F8CF66B13}"
@@ -83,7 +84,7 @@ public:
 	}
 };
 
-typedef int (__cdecl * ReductionListener)(const SymbolEntry *symbols, int symbol_num);
+typedef int (CENTAURUS_CALLBACK * ReductionListener)(const SymbolEntry *symbols, int symbol_num);
 
 class BaseRunner : public BaseListener
 {
@@ -120,13 +121,9 @@ protected:
 	sem_t *m_slave_lock;
 	char m_memory_name[256], m_slave_lock_name[256];
 #endif
-	static int __cdecl default_listener(const SymbolEntry *symbols, int num)
-	{
-		return 0;
-	}
 public:
 	BaseRunner(const char *filename, size_t bank_size, int bank_num, int pid)
-		: m_bank_size(bank_size), m_bank_num(bank_num), m_listener(default_listener)
+		: m_bank_size(bank_size), m_bank_num(bank_num), m_listener(nullptr)
 	{
 #if defined(CENTAURUS_BUILD_WINDOWS)
 		HANDLE hInputFile = CreateFileA(filename, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
