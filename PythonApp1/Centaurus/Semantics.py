@@ -17,4 +17,5 @@ class SemanticStore(object):
     def read(self):
         start_addr = self.window + self.symbols[0].start
         end_addr = self.window + self.symbols[0].end
-        return ctypes.string_at(ctypes.c_void_p(start_addr), end_addr - start_addr).decode('utf-8')
+        return ctypes.string_at(ctypes.c_void_p(start_addr), end_addr - start_addr)
+        #return ctypes.string_at(ctypes.c_void_p(start_addr), end_addr - start_addr).decode('utf-8')

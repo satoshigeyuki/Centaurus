@@ -97,7 +97,7 @@ class Context(object):
     def __init__(self, grammar_path, worker_num):
         self.grammar_path = grammar_path
         self.bank_size = 8 * 1024 * 1024
-        self.bank_num = 8
+        self.bank_num = worker_num * 2
         self.workers = []
         self.workers.append(Stage1Process(self))
         for i in range(worker_num):

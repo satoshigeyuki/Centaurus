@@ -21,7 +21,11 @@ private:
         instance->m_counter = 0;
         instance->reset_banks();
 
+        std::cout << "Executing generated code." << std::endl;
+
         (*instance->m_parser)(static_cast<BaseListener *>(instance), instance->m_input_window);
+
+        std::cout << "Finished running generated code." << std::endl;
 
         instance->release_bank();
 

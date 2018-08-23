@@ -11,6 +11,6 @@ def load_dll():
         dl_path = os.path.join(dl_path_env, "libpycentaurus.dll")
     elif platform.uname()[0] == "Linux":
         dl_path = os.path.join(dl_path_env, "libpycentaurus.so")
-    return ctypes.CDLL(dl_path)
+    return ctypes.CDLL(dl_path, mode=ctypes.RTLD_GLOBAL)
 
 CoreLib = load_dll()

@@ -16,6 +16,8 @@ class ListenerAdapter(object):
     def callback(self, symbols, num):
         ss = SemanticStore(self.grammar, self.window, symbols, num)
         lhs = self.grammar.get_machine_name(symbols[0].id)
+        ss.read()
+        return 0
         if self.handler:
             if 'parse' + lhs in dir(self.handler):
                 result = getattr(self.handler, 'parse' + lhs)(ss)

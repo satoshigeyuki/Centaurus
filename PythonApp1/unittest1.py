@@ -8,25 +8,29 @@ class JsonListener(object):
     def __init__(self):
         pass
     def parseNumber(self, ctx):
-        val = float(ctx.read())
+        return 0
+        #val = float(ctx.read())
         #logging.debug("Number = " + ctx.read())
 
 class Test_unittest1(unittest.TestCase):
     def test_grammar(self):
-        grammar = Grammar(r"..\grammar\json.cgr")
-        grammar.print(r"..\grammar\json.dot")
+        grammar = Grammar(r"../grammar/json.cgr")
+        grammar.print(r"../grammar/json.dot")
     def test_dry_parser(self):
-        grammar = Grammar(r"..\grammar\json.cgr")
+        grammar = Grammar(r"../grammar/json.cgr")
         parser = Parser(grammar, True)
-        input_path = r"C:\Users\ihara\Downloads\sf-city-lots-json-master\sf-city-lots-json-master\citylots.json"
+        #input_path = r"C:\Users\ihara\Downloads\sf-city-lots-json-master\sf-city-lots-json-master\citylots.json"
+        input_path = r"/home/ihara/Downloads/sf-city-lots-json-master/citylots.json"
         st1_runner = Stage1Runner(input_path, parser, 8 * 1024 * 1024, 8)
         st1_runner.start()
+        print("Runner started.", flush=True)
         st1_runner.wait()
     def test_wet_parser(self):
-        grammar = Grammar(r"..\grammar\json.cgr")
+        grammar = Grammar(r"../grammar/json.cgr")
         parser = Parser(grammar)
         chaser = Chaser(grammar)
-        input_path = r"C:\Users\ihara\Downloads\sf-city-lots-json-master\sf-city-lots-json-master\citylots.json"
+        #input_path = r"C:\Users\ihara\Downloads\sf-city-lots-json-master\sf-city-lots-json-master\citylots.json"
+        input_path = r"/home/ihara/Downloads/sf-city-lots-json-master/citylots.json"
         pid = os.getpid()
         runners = []
         runners.append(Stage1Runner(input_path, parser, 8 * 1024 * 1024, 8))
@@ -40,13 +44,18 @@ class Test_unittest1(unittest.TestCase):
     def test_wet_parser_mp(self):
         #logging.basicConfig(filename="log%d.log" % os.getpid(), level=logging.DEBUG)
         #logging.debug('Started logging.')
-        context = Context(r"..\grammar\json.cgr", 1)
-        input_path = r"C:\Users\ihara\Downloads\sf-city-lots-json-master\sf-city-lots-json-master\citylots.json"
+        context = Context(r"../grammar/json.cgr", 34)
+        print("Centaurus initialized.")
+        #input_path = r"C:\Users\ihara\Downloads\sf-city-lots-json-master\sf-city-lots-json-master\citylots.json"
+        input_path = r"/home/ihara/Downloads/sf-city-lots-json-master/citylots.json"
         listener = JsonListener()
         context.attach(listener)
         context.start()
+        print("Parser started.", flush=True)
         context.parse(input_path)
         context.stop()
+        print("Parser stopped.")
 
 if __name__ == '__main__':
+    mp.set_start_method('spawn')
     unittest.main()
