@@ -95,9 +95,9 @@ namespace Centaurus __attribute__((visibility("default")))
 		delete runner;
 	}
 
-	CENTAURUS_EXPORT(void) RunnerRegisterListener(BaseRunner *runner, ReductionListener listener)
+	CENTAURUS_EXPORT(void) RunnerRegisterListener(BaseRunner *runner, ReductionListener listener, TransferListener xferlistener)
 	{
-		runner->register_listener(listener);
+		runner->register_listener(listener, xferlistener);
 	}
 
 	CENTAURUS_EXPORT(const void *) RunnerGetWindow(BaseRunner *runner)

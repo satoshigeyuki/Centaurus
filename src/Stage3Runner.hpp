@@ -116,6 +116,9 @@ private:
                     {
                         banks[i].state = WindowBankState::Stage3_Locked;
 
+                        if (m_xferlistener != nullptr)
+                            m_xferlistener(i, banks[i].number);
+
                         //std::cout << "Bank " << banks[i].number << " reached Stage3" << std::endl;
 
                         m_current_bank = i;
@@ -185,7 +188,7 @@ public:
     {
 		long start_offset = (const char *)start - (const char *)m_input_window;
 		long end_offset = (const char *)end - (const char *)m_input_window;
-		m_sym_stack.emplace_back(-id, start_offset, end_offset);
+		//m_sym_stack.emplace_back(-id, start_offset, end_offset);
     }
     virtual const void *nonterminal_callback(int id, const void *input) override
     {

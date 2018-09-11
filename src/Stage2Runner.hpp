@@ -139,6 +139,8 @@ private:
 
 				if (banks[i].state.compare_exchange_weak(old_state, WindowBankState::Stage2_Locked))
 				{
+                    if (m_xferlistener != nullptr)
+                        m_xferlistener(-1, banks[i].number);
 					m_current_bank = i;
 					return (char *)m_main_window + m_bank_size * i;
 				}
@@ -155,6 +157,9 @@ private:
 	void release_bank()
 	{
 		WindowBankEntry *banks = reinterpret_cast<WindowBankEntry *>(m_sub_window);
+
+        if (m_xferlistener != nullptr)
+            m_xferlistener(m_current_bank, -1);
 
 		banks[m_current_bank].state.store(WindowBankState::Stage2_Unlocked);
 
@@ -212,7 +217,7 @@ public:
     {
 		long start_offset = (const char *)start - (const char *)m_input_window;
 		long end_offset = (const char *)end - (const char *)m_input_window;
-		m_sym_stack.emplace_back(-id, start_offset, end_offset);
+		//m_sym_stack.emplace_back(-id, start_offset, end_offset);
     }
     virtual const void *nonterminal_callback(int id, const void *input) override
     {

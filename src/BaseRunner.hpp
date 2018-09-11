@@ -85,6 +85,7 @@ public:
 };
 
 typedef int (CENTAURUS_CALLBACK * ReductionListener)(const SymbolEntry *symbols, int symbol_num);
+typedef void (CENTAURUS_CALLBACK * TransferListener)(int index, int new_index);
 
 class BaseRunner : public BaseListener
 {
@@ -111,6 +112,7 @@ protected:
     size_t m_bank_size;
 	int m_bank_num;
 	ReductionListener m_listener;
+    TransferListener m_xferlistener;
 #if defined(CENTAURUS_BUILD_WINDOWS)
     HANDLE m_mem_handle;
     HANDLE m_slave_lock;
@@ -222,9 +224,10 @@ public:
 		pthread_join(m_thread, NULL);
 #endif
 	}
-	void register_listener(ReductionListener listener)
+	void register_listener(ReductionListener listener, TransferListener xferlistener = nullptr)
 	{
 		m_listener = listener;
+        m_xferlistener = xferlistener;
 	}
 };
 }

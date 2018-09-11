@@ -1,4 +1,4 @@
-Object : Number | String | List | Dictionary | Boolean | 'null' ;
+Object : Number | String | List | Dictionary | Boolean | None ;
 Number : /-?[0-9]+[.]?[0-9]*/ ;
 String : /"([\t\n\r !#-\[\]-~]|(\\["]))*"/ ;
 List : '[' ListContent ']' ;
@@ -9,3 +9,4 @@ DictionaryContent : | DictionaryEntry DictionaryEntries ;
 DictionaryEntry : String ':' Object ;
 DictionaryEntries : | ',' DictionaryEntry DictionaryEntries ;
 Boolean : 'true' | 'false' ;
+None : 'null' ;

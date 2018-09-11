@@ -6,12 +6,13 @@ from .Semantics import *
 import ctypes
 
 ReductionListener = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.POINTER(SymbolEntry), ctypes.c_int)
+TransferListener = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.c_int)
 
 class BaseRunner(object):
     CoreLib.RunnerDestroy.argtypes = [ctypes.c_void_p]
     CoreLib.RunnerStart.argtypes = [ctypes.c_void_p]
     CoreLib.RunnerWait.argtypes = [ctypes.c_void_p]
-    CoreLib.RunnerRegisterListener.argtypes = [ctypes.c_void_p, ReductionListener]
+    CoreLib.RunnerRegisterListener.argtypes = [ctypes.c_void_p, ReductionListener, TransferListener]
     CoreLib.RunnerGetWindow.restype = ctypes.c_void_p
     CoreLib.RunnerGetWindow.argtypes = [ctypes.c_void_p]
 
@@ -27,9 +28,10 @@ class BaseRunner(object):
     def wait(self):
         CoreLib.RunnerWait(self.handle)
 
-    def attach(self, listener):
+    def attach(self, listener, xferlistener):
         self.listener = ReductionListener(listener)
-        CoreLib.RunnerRegisterListener(self.handle, self.listener)
+        self.xferlistener = TransferListener(xferlistener)
+        CoreLib.RunnerRegisterListener(self.handle, self.listener, self.xferlistener)
 
     def get_window(self):
         return CoreLib.RunnerGetWindow(self.handle)

@@ -38,3 +38,5 @@ class Grammar(object):
         return self.ids[name]
     def get_machine_name(self, id):
         return self.names[id - 1]
+    def get_machine_num(self):
+        return len(self.ids)
