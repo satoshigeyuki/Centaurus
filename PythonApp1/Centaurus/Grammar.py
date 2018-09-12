@@ -3,7 +3,9 @@
 
 from .CoreLib import CoreLib
 import ctypes
-import logging
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 class GrammarAction(object):
     def __init__(self):

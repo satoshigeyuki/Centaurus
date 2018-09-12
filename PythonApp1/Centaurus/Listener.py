@@ -8,8 +8,8 @@ from .Grammar import Grammar
 from .Runner import *
 from .Semantics import SemanticStore
 
-def default_callback(symbols, num):
-    return 0
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 class BaseListenerAdapter(object):
     def __init__(self, grammar, handler, channels, runner):
@@ -33,29 +33,26 @@ class Stage2ListenerAdapter(BaseListenerAdapter):
     def reduction_callback(self, symbols, num):
         try:
             ss = SemanticStore(self.grammar, self.window, None, self.values, symbols, num)
-            if self.handlers[symbols[0].id - 1]:
-                lhs_value = self.handlers[symbols[0].id - 1](ss)
-            else:
-                lhs_value = None
+            lhs_value = self.handlers[symbols[0].id - 1](ss)
             for i in range(num - 1):
                 self.values.pop()
             self.values.append(lhs_value)
             return ((self.page_index + 1) << 20) | (len(self.values) - 1)
         except:
-            logging.debug('Exception in Stage2Listener:')
-            logging.debug(traceback.format_exc())
+            logger.debug('Exception in Stage2Listener:')
+            logger.debug(traceback.format_exc())
             sys.exit()
     
     def transfer_callback(self, index, new_index):
         if self.values:
-            logging.debug("Writing page %d to bank %d..." % (self.page_index, index))
+            logger.debug("Writing page %d to bank %d..." % (self.page_index, index))
             self.channels[index].put(list(self.values))
             self.values = None
-            logging.debug("Wrote page %d to bank %d" % (self.page_index, index))
+            logger.debug("Wrote page %d to bank %d" % (self.page_index, index))
         else:
             self.page_index = new_index
             self.values = collections.deque()
-            logging.debug("Started parsing page %d" % (self.page_index,))
+            logger.debug("Started parsing page %d" % (self.page_index,))
 
 class Stage3ListenerAdapter(BaseListenerAdapter):
     def __init__(self, grammar, handler, channels, runner):
@@ -67,20 +64,18 @@ class Stage3ListenerAdapter(BaseListenerAdapter):
     def reduction_callback(self, symbols, num):
         try:
             ss = SemanticStore(self.grammar, self.window, self.page_values, self.values, symbols, num)
-            if self.handlers[symbols[0].id - 1]:
-                lhs_value = self.handlers[symbols[0].id - 1](ss)
-            else:
-                lhs_value = None
+            lhs_value = self.handlers[symbols[0].id - 1](ss)
             self.values.append(lhs_value)
             return len(self.values) - 1
         except:
-            logging.debug('Exception in Stage3Listener:')
-            logging.debug(traceback.format_exc())
+            logger.debug('Exception in Stage3Listener:')
+            logger.debug(traceback.format_exc())
             sys.exit()
         
     def transfer_callback(self, index, new_index):
-        logging.debug("Accepting page %d from bank %d..." % (new_index, index))
+        logger.debug("Accepting page %d from bank %d..." % (new_index, index))
         values = self.channels[index].get()
+        #logging.debug(values)
         self.page_values.append(values)
-        logging.debug("Accepted page %d from bank %d" % (new_index, index))
-        logging.debug("Stack size = %d" % len(self.values))
+        logger.debug("Accepted page %d from bank %d" % (new_index, index))
+        logger.debug("Stack size = %d" % len(self.values))

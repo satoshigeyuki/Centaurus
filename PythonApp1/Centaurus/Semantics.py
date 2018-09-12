@@ -1,6 +1,8 @@
-import logging
+from logging import getLogger
 import ctypes
 from .CoreLib import CoreLib
+
+logger = getLogger(__name__)
 
 class SymbolEntry(ctypes.Structure):
     _fields_ = [('id', ctypes.c_int),

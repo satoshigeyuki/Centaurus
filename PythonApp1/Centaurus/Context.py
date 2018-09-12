@@ -3,11 +3,13 @@ import sys
 import time
 import multiprocessing as mp
 import logging
+from logging.handlers import QueueHandler, QueueListener
 import traceback
 from .Grammar import *
 from .CodeGen import *
 from .Runner import *
 from .Listener import *
+from .Logger import *
 
 class Stage1Process(object):
     def __init__(self, context):
@@ -44,24 +46,28 @@ class Stage2Process(object):
         self.cmd_queue.put(('parse', path))
     """Methods invoked from the worker process"""
     def worker(self):
+        LoggerManifold.init_process(self.context.log_queue)
+
+        logger = logging.getLogger("Centaurus.Stage2Process[%d]" % os.getpid())
+        logger.setLevel(logging.DEBUG)
+
         self.grammar = Grammar(self.context.grammar_path)
         self.chaser = Chaser(self.grammar)
-        logging.basicConfig(filename="log%d.log" % os.getpid(), level=logging.DEBUG)
         while True:
             cmd = self.cmd_queue.get()
             if cmd[0] == 'stop':
                 return
             elif cmd[0] == 'parse':
-                logging.debug('Stage2 process started.')
+                logger.debug('Stage2 process started.')
                 start_time = time.time()
                 runner = Stage2Runner(cmd[1], self.chaser, self.context.bank_size, self.context.bank_num, self.master_pid)
                 adapter = Stage2ListenerAdapter(self.grammar, self.listener, self.context.channels, runner)
                 runner.start()
-                logging.debug('Stage2 thread started.')
+                logger.debug('Stage2 thread started.')
                 runner.wait()
                 elapsed_time = time.time() - start_time
-                logging.debug('Stage2 process finished.')
-                logging.debug('Elapsed time = %.1f' % (elapsed_time * 1E+3,))
+                logger.debug('Stage2 process finished.')
+                logger.debug('Elapsed time = %.1f' % (elapsed_time * 1E+3,))
     def attach(self, listener):
         self.listener = listener
 
@@ -80,24 +86,31 @@ class Stage3Process(object):
     def parse(self, path):
         self.cmd_queue.put(('parse', path))
     def worker(self):
+        LoggerManifold.init_process(self.context.log_queue)
+
+        logger = logging.getLogger("Centaurus.Stage3Process[%d]" % os.getpid())
+        logger.setLevel(logging.DEBUG)
+
         self.grammar = Grammar(self.context.grammar_path)
         self.chaser = Chaser(self.grammar)
-        logging.basicConfig(filename="log%d.log" % os.getpid(), level=logging.DEBUG)
         while True:
             cmd = self.cmd_queue.get()
             if cmd[0] == 'stop':
                 return
             elif cmd[0] == 'parse':
-                logging.debug('Stage3 process started.')
+                logger.debug('Stage3 process started.')
                 start_time = time.time()
                 runner = Stage3Runner(cmd[1], self.chaser, self.context.bank_size, self.context.bank_num, self.master_pid)
                 adapter = Stage3ListenerAdapter(self.grammar, self.listener, self.context.channels, runner)
                 runner.start()
-                logging.debug('Stage3 thread started.')
+                logger.debug('Stage3 thread started.')
                 runner.wait()
                 elapsed_time = time.time() - start_time
-                logging.debug('Stage3 process finished.')
-                logging.debug('Elapsed time = %.1f' % (elapsed_time * 1E+3,))
+                logger.debug('Stage3 process finished.')
+                logger.debug('Elapsed time = %.1f' % (elapsed_time * 1E+3,))
+                logger.debug('Reporting the parse result to Stage1...')
+                self.context.drain.put(adapter.values[-1])
+                logger.debug('Reporting complete.')
             
     def attach(self, listener):
         self.listener = listener
@@ -110,6 +123,8 @@ class Context(object):
         self.channels = []
         for i in range(self.bank_num):
             self.channels.append(mp.Queue())
+        self.drain = mp.Queue()
+        self.log_queue = LoggerManifold.get_queue()
         self.workers = []
         self.workers.append(Stage1Process(self))
         for i in range(worker_num):
@@ -121,6 +136,8 @@ class Context(object):
     def parse(self, path):
         for worker in self.workers:
             worker.parse(path)
+        result = self.drain.get()
+        return result
     def stop(self):
         for worker in self.workers:
             worker.stop()

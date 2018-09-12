@@ -1,9 +1,13 @@
 import unittest
 import os
-import logging
+from logging import basicConfig, getLogger, DEBUG
+from logging.handlers import QueueHandler
 import multiprocessing as mp
 import collections
+import time
 from Centaurus import *
+
+logger = getLogger(__name__)
 
 class JsonListener(object):
     def __init__(self):
@@ -71,6 +75,14 @@ class JsonListener(object):
             return d
 
 class Test_unittest1(unittest.TestCase):
+    def setUp(self):
+        mp.set_start_method('spawn')
+        log_queue = mp.Queue()
+        basicConfig(level=DEBUG, handlers=[QueueHandler(log_queue)])
+        self.log_proc = LoggerProcess(log_queue, 'app.log')
+        self.log_proc.start()
+    def tearDown(self):
+        self.log_proc.stop()
     def test_grammar(self):
         grammar = Grammar(r"../grammar/json.cgr")
         grammar.print(r"../grammar/json.dot")
@@ -105,9 +117,27 @@ class Test_unittest1(unittest.TestCase):
         listener = JsonListener()
         context.attach(listener)
         context.start()
-        context.parse(input_path)
+        result = context.parse(input_path)
+        result_log = open('result.log', 'w')
+        features_list = result['features']
+        for item in features_list:
+            if isinstance(item, dict) and len(item) > 0:
+                print(item, file=result_log)
         context.stop()
+    def measure_performance(self):
+        worker_num = [36, 40, 44, 46]
+        input_path = r"/home/ihara/Downloads/sf-city-lots-json-master/citylots.json"
+        listener = JsonListener()
+        for num in worker_num:
+            context = Context(r"../grammar/json.cgr", num)
+            context.attach(listener)
+            context.start()
+            start_time = time.time()
+            result = context.parse(input_path)
+            #The entire parse tree resides in the Stage1 Process here
+            end_time = time.time()
+            logger.debug("%d St2 workers, Time = %f" % (num, end_time - start_time))
+            context.stop()
 
 if __name__ == '__main__':
-    mp.set_start_method('spawn')
     unittest.main()
