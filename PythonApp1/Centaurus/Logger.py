@@ -1,14 +1,45 @@
 import logging
-from logging.handlers import QueueHandler, QueueListener
+import threading
 import multiprocessing as mp
 
-class CustomQueueListener(QueueListener):
+class CustomQueueHandler(logging.Handler):
+    def __init__(self, queue):
+        logging.Handler.__init__(self)
+        self.queue = queue
+    def prepare(self, record):
+        msg = self.format(record)
+        record.message = msg
+        record.msg = msg
+        record.args = None
+        record.exc_info = None
+        return record
+    def emit(self, record):
+        try:
+            self.queue.put_nowait(self.prepare(record))
+        except Exception:
+            self.handleError(record)
+
+class CustomQueueListener(object):
     def __init__(self, queue, name):
-        QueueListener.__init__(self, queue)
+        self.queue = queue
         self.target = logging.getLogger(name)
+    def start(self):
+        self._thread = t = threading.Thread(target=self._monitor)
+        t.daemon = True
+        t.start()
+    def _monitor(self):
+        while True:
+            record = self.queue.get()
+            if record is None:
+                break
+            self.handle(record)
     def handle(self, record):
-        record = self.prepare(record)
-        self.target.handle(record)
+        if record.levelno >= self.target.getEffectiveLevel():
+            self.target.handle(record)
+    def stop(self):
+        self.queue.put_nowait(None)
+        self._thread.join()
+        self._thread = None
 
 class LoggerManifold(object):
     def __init__(self, name):
@@ -25,6 +56,6 @@ class LoggerManifold(object):
         return klass.queue
     @classmethod
     def init_process(klass, queue):
-        root_logger = logger.getLogger()
+        root_logger = logging.getLogger()
         root_logger.setLevel(logging.DEBUG)
-        root_logger.addHandler(QueueHandler(queue))
+        root_logger.addHandler(CustomQueueHandler(queue))

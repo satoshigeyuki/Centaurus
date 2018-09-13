@@ -3,7 +3,6 @@ import sys
 import time
 import multiprocessing as mp
 import logging
-from logging.handlers import QueueHandler, QueueListener
 import traceback
 from .Grammar import *
 from .CodeGen import *
@@ -12,31 +11,36 @@ from .Listener import *
 from .Logger import *
 
 class Stage1Process(object):
-    def __init__(self, context):
+    def __init__(self, context, core_affinity=-1):
         self.context = context
         self.grammar = Grammar(context.grammar_path)
         self.parser = Parser(self.grammar)
         self.runner = None
+        self.core_affinity=core_affinity
     def parse(self, path):
         self.runner = Stage1Runner(path, self.parser, self.context.bank_size, self.context.bank_num)
         self.runner.start()
     def start(self):
-        pass
+        if sys.platform.startswith('linux') and self.core_affinity >= 0:
+            os.system("taskset -p -c %d %d" % (self.core_affinity, os.getpid()))
     def stop(self):
         if self.runner:
             self.runner.wait()
             self.runner = None
     def attach(self, listener):
         pass
+    def set_core_affinity(self, core_affinity):
+        self.core_affinity = core_affinity
 
 class Stage2Process(object):
     """Methods invoked from the master process"""
-    def __init__(self, context):
+    def __init__(self, context, core_affinity=-1):
         self.context = context
         self.master_pid = os.getpid()
         self.proc = mp.Process(target=self.worker)
-        self.cmd_queue = mp.SimpleQueue()
+        self.cmd_queue = mp.Queue()
         self.listener = None
+        self.core_affinity = core_affinity
     def start(self):
         self.proc.start()
     def stop(self):
@@ -46,6 +50,9 @@ class Stage2Process(object):
         self.cmd_queue.put(('parse', path))
     """Methods invoked from the worker process"""
     def worker(self):
+        if sys.platform.startswith('linux') and self.core_affinity >= 0:
+            os.system("taskset -p -c %d %d" % (self.core_affinity, os.getpid()))
+
         LoggerManifold.init_process(self.context.log_queue)
 
         logger = logging.getLogger("Centaurus.Stage2Process[%d]" % os.getpid())
@@ -58,26 +65,24 @@ class Stage2Process(object):
             if cmd[0] == 'stop':
                 return
             elif cmd[0] == 'parse':
-                logger.debug('Stage2 process started.')
-                start_time = time.time()
                 runner = Stage2Runner(cmd[1], self.chaser, self.context.bank_size, self.context.bank_num, self.master_pid)
+                #adapter = Stage2BytecodeListenerAdapter(self.grammar, self.listener, self.context.channels, runner)
                 adapter = Stage2ListenerAdapter(self.grammar, self.listener, self.context.channels, runner)
                 runner.start()
-                logger.debug('Stage2 thread started.')
                 runner.wait()
-                elapsed_time = time.time() - start_time
-                logger.debug('Stage2 process finished.')
-                logger.debug('Elapsed time = %.1f' % (elapsed_time * 1E+3,))
     def attach(self, listener):
         self.listener = listener
+    def set_core_affinity(self, core_affinity):
+        self.core_affinity = core_affinity
 
 class Stage3Process(object):
-    def __init__(self, context):
+    def __init__(self, context, core_affinity=-1):
         self.context = context
         self.master_pid = os.getpid()
         self.proc = mp.Process(target=self.worker)
-        self.cmd_queue = mp.SimpleQueue()
+        self.cmd_queue = mp.Queue()
         self.listener = None
+        self.core_affinity = core_affinity
     def start(self):
         self.proc.start()
     def stop(self):
@@ -86,6 +91,9 @@ class Stage3Process(object):
     def parse(self, path):
         self.cmd_queue.put(('parse', path))
     def worker(self):
+        if sys.platform.startswith('linux') and self.core_affinity >= 0:
+            os.system("taskset -p -c %d %d" % (self.core_affinity, os.getpid()))
+
         LoggerManifold.init_process(self.context.log_queue)
 
         logger = logging.getLogger("Centaurus.Stage3Process[%d]" % os.getpid())
@@ -98,22 +106,17 @@ class Stage3Process(object):
             if cmd[0] == 'stop':
                 return
             elif cmd[0] == 'parse':
-                logger.debug('Stage3 process started.')
-                start_time = time.time()
                 runner = Stage3Runner(cmd[1], self.chaser, self.context.bank_size, self.context.bank_num, self.master_pid)
                 adapter = Stage3ListenerAdapter(self.grammar, self.listener, self.context.channels, runner)
+                #adapter = Stage3BytecodeListenerAdapter(self.grammar, self.listener, self.context.channels, runner)
                 runner.start()
-                logger.debug('Stage3 thread started.')
                 runner.wait()
-                elapsed_time = time.time() - start_time
-                logger.debug('Stage3 process finished.')
-                logger.debug('Elapsed time = %.1f' % (elapsed_time * 1E+3,))
-                logger.debug('Reporting the parse result to Stage1...')
                 self.context.drain.put(adapter.values[-1])
-                logger.debug('Reporting complete.')
             
     def attach(self, listener):
         self.listener = listener
+    def set_core_affinity(self, core_affinity):
+        self.core_affinity = core_affinity
 
 class Context(object):
     def __init__(self, grammar_path, worker_num):

@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
 from .CoreLib import CoreLib
 import ctypes
 from logging import getLogger
+from .Exception import GrammarException
 
 logger = getLogger(__name__)
 
@@ -42,3 +44,8 @@ class Grammar(object):
         return self.names[id - 1]
     def get_machine_num(self):
         return len(self.ids)
+    def validate_handler(self, handler):
+        for index in range(1, len(self.ids) + 1):
+            handler_name = 'parse' + self.names[index - 1]
+            if not handler_name in dir(handler):
+                raise GrammarException("Handler for Nonterminal %s is missing." % self.names[index - 1])

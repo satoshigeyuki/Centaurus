@@ -2,8 +2,13 @@
 # -*- coding: utf-8 -*-
 
 from .CoreLib import CoreLib
-from .Semantics import *
 import ctypes
+
+class SymbolEntry(ctypes.Structure):
+    _fields_ = [('id', ctypes.c_int),
+                ('key', ctypes.c_int),
+                ('start', ctypes.c_long),
+                ('end', ctypes.c_long)]
 
 ReductionListener = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.POINTER(SymbolEntry), ctypes.c_int)
 TransferListener = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.c_int)
