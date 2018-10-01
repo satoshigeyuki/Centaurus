@@ -30,9 +30,6 @@
     <Compile Include="Centaurus\Listener.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Centaurus\Semantics.py">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="Centaurus\__init__.py">
       <SubType>Code</SubType>
     </Compile>

@@ -1,6 +1,8 @@
 ﻿// PyCentaurus.cpp : DLL アプリケーション用にエクスポートされる関数を定義します。
 //
 
+#include "stdafx.h"
+
 #include "Grammar.hpp"
 #include "Util.hpp"
 #include "CodeGenEM64T.hpp"
@@ -14,7 +16,11 @@
 #define CENTAURUS_EXPORT(T) extern "C" T
 #endif
 
+#if defined(CENTAURUS_BUILD_WINDOWS)
+namespace Centaurus
+#elif defined(CENTAURUS_BUILD_LINUX)
 namespace Centaurus __attribute__((visibility("default")))
+#endif
 {
 	CENTAURUS_EXPORT(IGrammar *) GrammarCreate(const char *filename)
 	{

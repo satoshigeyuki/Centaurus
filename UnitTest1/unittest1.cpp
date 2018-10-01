@@ -56,5 +56,21 @@ namespace UnitTest1
 			Assert::AreEqual(diff2, dai[1]);
 			Assert::AreEqual(inter, dai[2]);
 		}
+		TEST_METHOD(InvertCC)
+		{
+			using namespace Centaurus;
+
+			Stream src_stream(L"^\\\\\"]");
+
+			CharClass<char> cc1(src_stream);
+
+			CharClass<char> cc1_ref;
+
+			cc1_ref.append(Range<char>('\0', '"'));
+			cc1_ref.append(Range<char>('#', '\\'));
+			cc1_ref.append(Range<char>(']', '\x7F'));
+
+			Assert::AreEqual(cc1_ref, cc1);
+		}
 	};
 }

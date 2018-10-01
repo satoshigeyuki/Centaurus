@@ -162,6 +162,8 @@ public:
     }
     void invert()
     {
+
+
         TCHAR last_end = 0;
 
         for (auto& i : m_ranges)

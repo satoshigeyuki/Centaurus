@@ -111,6 +111,9 @@ void CharClass<TCHAR>::parse(Stream& stream)
     {
         throw stream.unexpected(L']');
     }
+
+	std::sort(m_ranges.begin(), m_ranges.end());
+
     if (invert_flag) invert();
 }
 
