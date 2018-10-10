@@ -90,6 +90,9 @@
     <ClInclude Include="..\src\CodeGenInterface.hpp">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\UnifiedRunner.hpp">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\ATN.cpp">

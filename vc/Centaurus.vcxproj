@@ -169,6 +169,7 @@
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
       <LanguageStandard>stdcpp14</LanguageStandard>
       <DisableSpecificWarnings>4267;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <AdditionalIncludeDirectories>.\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -200,6 +201,7 @@
     <ClInclude Include="..\src\Stage2Runner.hpp" />
     <ClInclude Include="..\src\Stage3Runner.hpp" />
     <ClInclude Include="..\src\Stream.hpp" />
+    <ClInclude Include="..\src\UnifiedRunner.hpp" />
     <ClInclude Include="..\src\Util.hpp" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />

@@ -24,6 +24,7 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="bench.py" />
     <Compile Include="Centaurus\Context.py">
       <SubType>Code</SubType>
     </Compile>
