@@ -1,8 +1,8 @@
 #pragma once
 
-#if defined(CENTAURUS_BUILD_WINDOWS)
-#include <Windows.h>
-#elif defined(CENTAURUS_BUILD_LINUX)
+#include "stdafx.h"
+
+#if defined(CENTAURUS_BUILD_LINUX)
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
