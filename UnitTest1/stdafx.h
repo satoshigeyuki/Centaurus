@@ -11,3 +11,6 @@
 #include "CppUnitTest.h"
 
 // TODO: プログラムに必要な追加ヘッダーをここで参照してください
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <Windows.h>

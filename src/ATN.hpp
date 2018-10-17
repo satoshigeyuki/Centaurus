@@ -140,7 +140,7 @@ public:
 			return std::pair<std::wstring, std::wstring>(prefix, prefix);
 		}
 	}
-    void print(std::ostream& os, const std::string& prefix) const
+    /*void print(std::ostream& os, const std::string& prefix) const
     {
         switch (m_type)
         {
@@ -148,7 +148,7 @@ public:
             os << prefix << " [ label=\"\" ];" << std::endl;
             break;
         case ATNNodeType::Nonterminal:
-            os << prefix << " [ label=\"" << m_invoke.narrow() << "\" ];" << std::endl;
+            os << prefix << " [ label=\"" << m_invoke << "\" ];" << std::endl;
             break;
         case ATNNodeType::LiteralTerminal:
             os << prefix << " [ label=\"" << m_literal << "\" ];" << std::endl;
@@ -160,7 +160,7 @@ public:
             os << prefix << " [ label=\"[ ]\" ];" << std::endl;
             break;
         }
-    }
+    }*/
 	void print(std::wostream& os, const std::wstring& prefix) const
 	{
 		switch (m_type)
@@ -172,7 +172,7 @@ public:
 			os << prefix << L" [ label=\"" << m_invoke << "\" ];" << std::endl;
 			break;
 		case ATNNodeType::LiteralTerminal:
-			os << prefix << L" [ label=\"" << /*m_literal <<*/ L"\" ];" << std::endl;
+			os << prefix << L" [ label=\"\\\"\\\"" << /*m_literal <<*/ L"\" ];" << std::endl;
 			break;
 		case ATNNodeType::RegularTerminal:
 			m_nfa.print_subgraph(os, prefix);
@@ -234,6 +234,10 @@ template<typename TCHAR> class ATNMachine
 
     std::vector<ATNNode<TCHAR> > m_nodes;
     int m_globalid;
+	
+	void parse_atom(Stream& stream);
+	void parse_sequence(Stream& stream);
+	void parse_selection(Stream& stream);
 public:
     void parse(Stream& stream);
     int add_node(int from)
@@ -261,8 +265,6 @@ public:
     ATNMachine(int id, Stream& stream)
         : m_globalid(id)
     {
-        m_nodes.emplace_back();
-
         parse(stream);
     }
     ATNMachine(ATNMachine&& atn)

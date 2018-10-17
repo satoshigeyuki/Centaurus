@@ -53,8 +53,14 @@
     <ClCompile Include="CodeGenTest.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="GrammarTest.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\grammar\json.cgr" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\grammar\json2.cgr" />
   </ItemGroup>
 </Project>

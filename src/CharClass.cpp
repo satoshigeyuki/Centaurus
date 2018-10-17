@@ -256,6 +256,54 @@ std::ostream& operator<<(std::ostream& os, const CharClass<TCHAR>& cc)
     }
     return os;
 }
+static std::wostream& printc(std::wostream& os, char ch)
+{
+	if (!isgraph(ch))
+	{
+		wchar_t buf[8];
+		swprintf_s(buf, L"\\x%0X", (int)ch);
+		return os << buf;
+	}
+	else
+	{
+		switch (ch)
+		{
+		case '"':
+			return os << L"\\\"";
+		case '\\':
+			return os << L"\\\\";
+		default:
+			return os << os.widen(ch);
+		}
+	}
+}
+static std::wostream& printc(std::wostream& os, wchar_t ch)
+{
+	if (!iswgraph(ch))
+	{
+		wchar_t buf[8];
+		swprintf_s(buf, L"\\x%0X", (wint_t)ch);
+		return os << buf;
+	}
+	else
+	{
+		switch (ch)
+		{
+		case L'"':
+			return os << L"\\\"";
+		case L'\\':
+			return os << L"\\\\";
+		default:
+			return os << ch;
+		}
+	}
+}
+static std::wostream& printc(std::wostream& os, char16_t ch)
+{
+	wchar_t buf[8];
+	swprintf_s(buf, L"\\x%0X", ch);
+	return os << buf;
+}
 template<typename TCHAR>
 std::wostream& operator<<(std::wostream& os, const CharClass<TCHAR>& cc)
 {
@@ -265,37 +313,22 @@ std::wostream& operator<<(std::wostream& os, const CharClass<TCHAR>& cc)
     {
         if (i->end() == i->start() + 1)
         {
-            if (i->start() == wide_to_target<TCHAR>(u'"'))
+            /*if (i->start() == wide_to_target<TCHAR>(L'"'))
                 os << L"\\\"";
-            else if (i->start() == wide_to_target<TCHAR>(u'\\'))
+            else if (i->start() == wide_to_target<TCHAR>(L'\\'))
                 os << L"\\\\";
             else
             {
-                char ch = os.narrow(i->start(), '@');
+                wchar_t ch = os.widen(i->start(), '@');
                 os << (std::isprint(ch) ? ch : '@');
-            }
+            }*/
+			printc(os, i->start());
         }
         else
         {
-            if (i->start() == wide_to_target<TCHAR>(u'"'))
-                os << L"\\\"";
-            else if (i->start() == wide_to_target<TCHAR>(u'\\'))
-                os << L"\\\\";
-            else
-            {
-                char ch = os.narrow(i->start(), '@');
-                os << (std::isprint(ch) ? ch : '@');
-            }
+			printc(os, i->start());
             os << L'-';
-            if (i->end() - 1 == wide_to_target<TCHAR>(u'"'))
-                os << L"\\\"";
-            else if (i->end() - 1 == wide_to_target<TCHAR>(u'\\'))
-                os << L"\\\\";
-            else
-            {
-                char ch = os.narrow(i->end(), '@');
-                os << (std::isprint(ch) ? ch : '@');
-            }
+			printc(os, (TCHAR)(i->end() - 1));
         }
         i++;
     }

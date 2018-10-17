@@ -88,6 +88,10 @@ public:
 		return m_id + str;
 	}
 };
+static std::wostream& operator<<(std::wostream& os, const Identifier& id)
+{
+	return os << id.str();
+}
 }
 
 namespace std

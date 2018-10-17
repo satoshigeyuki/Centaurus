@@ -74,9 +74,121 @@ void ATNNode<TCHAR>::parse(Stream& stream)
 }
 
 template<typename TCHAR>
+void ATNMachine<TCHAR>::parse_atom(Stream& stream)
+{
+	int origin_state = m_nodes.size() - 1;
+	wchar_t ch = stream.skip_whitespace();
+
+	if (ch == L'(')
+	{
+		stream.discard();
+		parse_selection(stream);
+
+		ch = stream.skip_whitespace();
+		if (ch != L')')
+			throw stream.unexpected(ch);
+		stream.discard();
+	}
+	else
+	{
+		m_nodes.back().add_transition(m_nodes.size());
+		m_nodes.emplace_back(ATNNodeType::WhiteSpace);
+		m_nodes.back().add_transition(m_nodes.size());
+		m_nodes.emplace_back(stream);
+	}
+
+	ch = stream.skip_whitespace();
+	switch (ch)
+	{
+	case L'*':
+		add_node(m_nodes.size() - 1);
+		m_nodes.back().add_transition(origin_state);
+		add_node(m_nodes.size() - 1);
+		m_nodes[origin_state].add_transition(m_nodes.size() - 1);
+		stream.discard();
+		break;
+	case L'+':
+		add_node(m_nodes.size() - 1);
+		m_nodes.back().add_transition(origin_state);
+		stream.discard();
+		break;
+	case L'?':
+		add_node(m_nodes.size() - 1);
+		m_nodes[origin_state].add_transition(m_nodes.size() - 1);
+		stream.discard();
+		break;
+	}
+}
+
+template<typename TCHAR>
+void ATNMachine<TCHAR>::parse_selection(Stream& stream)
+{
+	int origin_state = m_nodes.size() - 1;
+	std::vector<int> terminal_states;
+	
+	for (;;)
+	{
+		terminal_states.push_back(add_node(origin_state));
+
+		parse_sequence(stream);
+
+		terminal_states.back() = m_nodes.size() - 1;
+
+		wchar_t ch = stream.skip_whitespace();
+		if (ch == L';' || ch == L')')
+		{
+			break;
+		}
+		else if (ch == L'|')
+		{
+			stream.discard();
+			continue;
+		}
+		else
+		{
+			throw stream.unexpected(ch);
+		}
+	}
+
+	m_nodes.emplace_back();
+	int final_node = m_nodes.size() - 1;
+	for (int from : terminal_states)
+	{
+		m_nodes[from].add_transition(final_node);
+	}
+}
+
+template<typename TCHAR>
+void ATNMachine<TCHAR>::parse_sequence(Stream& stream)
+{
+	while (true)
+	{
+		wchar_t ch = stream.skip_whitespace();
+		if (ch == L'|' || ch == L')' || ch == L';')
+			return;
+		parse_atom(stream);
+	}
+}
+
+template<typename TCHAR>
 void ATNMachine<TCHAR>::parse(Stream& stream)
 {
-    std::vector<int> terminal_states;
+	wchar_t ch = stream.skip_whitespace();
+	
+	if (ch != L':')
+		throw stream.unexpected(ch);
+	stream.discard();
+
+	m_nodes.emplace_back();
+	parse_selection(stream);
+
+	ch = stream.skip_whitespace();
+	
+	if (ch != L';')
+		throw stream.unexpected(ch);
+	stream.discard();
+
+    /*std::vector<int> terminal_states;
 
     wchar_t ch = stream.skip_whitespace();
 
@@ -108,7 +220,7 @@ void ATNMachine<TCHAR>::parse(Stream& stream)
     for (int from : terminal_states)
     {
         m_nodes[from].add_transition(final_node);
-    }
+    }*/
 }
 
 template class ATNMachine<char>;

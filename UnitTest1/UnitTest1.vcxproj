@@ -185,6 +185,7 @@
   <ItemGroup>
     <ClCompile Include="CodeGenTest.cpp" />
     <ClCompile Include="DFATest.cpp" />
+    <ClCompile Include="GrammarTest.cpp" />
     <ClCompile Include="JITTest.cpp" />
     <ClCompile Include="LDFATest.cpp" />
     <ClCompile Include="NFATest.cpp" />
@@ -202,6 +203,9 @@
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
       <FileType>Document</FileType>
     </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\grammar\json2.cgr" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

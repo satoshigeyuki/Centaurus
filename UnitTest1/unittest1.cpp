@@ -14,13 +14,6 @@ namespace UnitTest1
 	TEST_CLASS(CharClassTest)
     {
 	public:
-		TEST_METHOD(LoadGrammarFile)
-		{
-			// TODO: テスト コードをここに挿入します
-			Centaurus::CompositeATN<char> catn = LoadCATN("json.cgr");
-
-			//Logger::WriteMessage("Hello World!!");
-		}
 		TEST_METHOD(DiffAndInt)
 		{
 			using namespace Centaurus;
