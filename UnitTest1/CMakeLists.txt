@@ -1,5 +1,5 @@
 add_library(UnitTest1 SHARED NFATest.cpp DFATest.cpp LDFATest.cpp unittest1.cpp JITTest.cpp CodeGenTest.cpp)
 target_link_libraries(UnitTest1 libcentaurus)
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,defs")
-target_include_directories(UnitTest1 PRIVATE ../MsTestEmulator/include ../src ../asmjit/src)
+target_include_directories(UnitTest1 PRIVATE ../MsTestEmulator/include ../src ../asmjit/src ../UnitTest1)
 add_custom_target(mstest COMMAND bash ${PROJECT_SOURCE_DIR}/MsTestEmulator/scripts/run.sh -d $<TARGET_FILE:testdriver> $<TARGET_FILE:UnitTest1> DEPENDS UnitTest1 testdriver)

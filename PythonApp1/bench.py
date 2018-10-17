@@ -83,7 +83,7 @@ if __name__ == "__main__":
     log_sink.start()
 
     #worker_num = [2, 6, 10, 14, 18, 22, 26, 30, 34, 38, 42, 46]
-    worker_num = [46]
+    worker_num = [34]
 
     perf_log = open('perf.log', 'w')
 

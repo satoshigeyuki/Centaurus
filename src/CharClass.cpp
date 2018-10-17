@@ -261,7 +261,7 @@ static std::wostream& printc(std::wostream& os, char ch)
 	if (!isgraph(ch))
 	{
 		wchar_t buf[8];
-		swprintf_s(buf, L"\\x%0X", (int)ch);
+		swprintf(buf, 8, L"\\x%0X", (int)ch);
 		return os << buf;
 	}
 	else
@@ -282,7 +282,7 @@ static std::wostream& printc(std::wostream& os, wchar_t ch)
 	if (!iswgraph(ch))
 	{
 		wchar_t buf[8];
-		swprintf_s(buf, L"\\x%0X", (wint_t)ch);
+		swprintf(buf, 8, L"\\x%0X", (wint_t)ch);
 		return os << buf;
 	}
 	else
@@ -301,7 +301,7 @@ static std::wostream& printc(std::wostream& os, wchar_t ch)
 static std::wostream& printc(std::wostream& os, char16_t ch)
 {
 	wchar_t buf[8];
-	swprintf_s(buf, L"\\x%0X", ch);
+	swprintf(buf, 8, L"\\x%0X", ch);
 	return os << buf;
 }
 template<typename TCHAR>
