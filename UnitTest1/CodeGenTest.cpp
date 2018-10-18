@@ -106,11 +106,15 @@ public:
     {
         using namespace Centaurus;
 
-        Grammar<char> grammar = LoadGrammar("grammar/json.cgr");
+        Grammar<char> grammar = LoadGrammar("grammar/json2.cgr");
 
-        asmjit::StringLogger logger;
+		/*FILE *logFile;
+		fopen_s(&logFile, "parser.asm", "w");
+        asmjit::FileLogger logger(logFile);*/
+		
+        DryParserEM64T<char> parser(grammar, NULL);
 
-        DryParserEM64T<char> parser(grammar, &logger);
+		//fclose(logFile);
 
         //Logger::WriteMessage(logger.getString());
 
@@ -118,6 +122,7 @@ public:
 
 #if defined(CENTAURUS_BUILD_WINDOWS)
 		const char *input_path = "C:\\Users\\ihara\\Downloads\\sf-city-lots-json-master\\sf-city-lots-json-master\\citylots.json";
+		//const char *input_path = "test2.json";
 #elif defined(CENTAURUS_BUILD_LINUX)
 		//const char *input_path = "/mnt/c/Users/ihara/Downloads/sf-city-lots-json-master/sf-city-lots-json-master/citylots.json";
         const char *input_path = "/home/ihara/Downloads/sf-city-lots-json-master/citylots.json";
@@ -137,7 +142,7 @@ public:
     {
         using namespace Centaurus;
 
-        Grammar<char> grammar = LoadGrammar("grammar/json.cgr");
+        Grammar<char> grammar = LoadGrammar("grammar/json2.cgr");
 
         asmjit::StringLogger logger;
 
@@ -166,7 +171,7 @@ public:
     {
         using namespace Centaurus;
 
-        Grammar<char> grammar = LoadGrammar("grammar/json.cgr");
+        Grammar<char> grammar = LoadGrammar("grammar/json2.cgr");
 
         asmjit::StringLogger logger;
 
@@ -176,7 +181,8 @@ public:
         ChaserEM64T<char> chaser(grammar);
 
 #if defined(CENTAURUS_BUILD_WINDOWS)
-        const char *input_path = "C:\\Users\\ihara\\Downloads\\sf-city-lots-json-master\\sf-city-lots-json-master\\citylots.json";
+		//const char *input_path = "test2.json";
+		const char *input_path = "C:\\Users\\ihara\\Downloads\\sf-city-lots-json-master\\sf-city-lots-json-master\\citylots.json";
 #elif defined(CENTAURUS_BUILD_LINUX)
         //const char *input_path = "/mnt/c/Users/ihara/Downloads/sf-city-lots-json-master/sf-city-lots-json-master/citylots.json";
         const char *input_path = "/home/ihara/Downloads/sf-city-lots-json-master/citylots.json";

@@ -79,6 +79,8 @@ void ATNMachine<TCHAR>::parse_atom(Stream& stream)
 	int origin_state = m_nodes.size() - 1;
 	wchar_t ch = stream.skip_whitespace();
 
+	int anchor_state = m_nodes.size();
+
 	if (ch == L'(')
 	{
 		stream.discard();
@@ -102,14 +104,14 @@ void ATNMachine<TCHAR>::parse_atom(Stream& stream)
 	{
 	case L'*':
 		add_node(m_nodes.size() - 1);
-		m_nodes.back().add_transition(origin_state);
+		m_nodes.back().add_transition(anchor_state);
 		add_node(m_nodes.size() - 1);
 		m_nodes[origin_state].add_transition(m_nodes.size() - 1);
 		stream.discard();
 		break;
 	case L'+':
 		add_node(m_nodes.size() - 1);
-		m_nodes.back().add_transition(origin_state);
+		m_nodes.back().add_transition(anchor_state);
 		stream.discard();
 		break;
 	case L'?':

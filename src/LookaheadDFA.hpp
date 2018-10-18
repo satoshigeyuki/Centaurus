@@ -123,6 +123,12 @@ private:
 
 		CATNDepartureSet<TCHAR> deptset = catn.build_departure_set(state.label());
 
+		/*std::wofstream deptsetLog("deptset.log", std::ios::app);
+
+		deptsetLog << deptset << std::endl;
+
+		deptsetLog.close();*/
+
 		//std::cout << deptset << std::endl;
 
 		//Add new states to the LDFA

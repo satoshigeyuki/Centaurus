@@ -27,6 +27,7 @@ template<typename TCHAR> int target_strlen(const TCHAR *str)
 class ATNPath
 {
     friend std::ostream& operator<<(std::ostream& os, const ATNPath& path);
+	friend std::wostream& operator<<(std::wostream& os, const ATNPath& path);
 
     std::vector<std::pair<Identifier, int> > m_path;
 public:
@@ -189,6 +190,7 @@ public:
 };
 std::ostream& operator<<(std::ostream& os, const Identifier& id);
 std::ostream& operator<<(std::ostream& os, const ATNPath& path);
+std::wostream& operator<<(std::wostream& os, const ATNPath& path);
 std::ostream& operator<<(std::ostream& os, const IndexVector& v);
 
 using ATNStateStack = ATNPath;

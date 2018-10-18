@@ -636,5 +636,12 @@ public:
 
         return deptset_factory.build_departure_set();
     }
+	/*void print(std::wostream& os)
+	{
+		for (const auto& machine : m_dict)
+		{
+			machine.second.print(os, machine.first);
+		}
+	}*/
 };
 }

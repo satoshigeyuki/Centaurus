@@ -26,6 +26,8 @@ public:
 		Centaurus::CompositeATN<char> catn = LoadCATN("grammar/json2.cgr");
 
 		//Logger::WriteMessage("Hello World!!");
+
+		
 	}
 	TEST_METHOD(GenerateATN)
 	{

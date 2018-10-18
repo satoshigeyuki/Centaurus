@@ -206,5 +206,14 @@
     <ClCompile Include="..\asmjit\src\asmjit\x86\x86regalloc.cpp">
       <Filter>ソース ファイル\asmjit</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\Stage1Runner.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Stage2Runner.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Stage3Runner.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
