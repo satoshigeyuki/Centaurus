@@ -224,8 +224,10 @@ void ChaserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const Grammar<TC
             {
                 as.push(INPUT_REG);
                 as.push(CONTEXT_REG);
+				as.push(STACK_BACKUP_REG);
                 call_abs(as, push_terminal, CONTEXT_REG, node.get_id(), CHECKPOINT_REG, INPUT_REG);
-                as.pop(CONTEXT_REG);
+				as.pop(STACK_BACKUP_REG);
+				as.pop(CONTEXT_REG);
                 as.pop(INPUT_REG);
             }
             break;
@@ -236,8 +238,10 @@ void ChaserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const Grammar<TC
             {
                 as.push(INPUT_REG);
                 as.push(CONTEXT_REG);
-                call_abs(as, push_terminal, CONTEXT_REG, node.get_id(), CHECKPOINT_REG, INPUT_REG);
-                as.pop(CONTEXT_REG);
+				as.push(STACK_BACKUP_REG);
+				call_abs(as, push_terminal, CONTEXT_REG, node.get_id(), CHECKPOINT_REG, INPUT_REG);
+				as.pop(STACK_BACKUP_REG);
+				as.pop(CONTEXT_REG);
                 as.pop(INPUT_REG);
             }
             break;
@@ -246,8 +250,10 @@ void ChaserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const Grammar<TC
 			break;
 		case ATNNodeType::Nonterminal:
             as.push(CONTEXT_REG);
+			as.push(STACK_BACKUP_REG);
             call_abs(as, request_nonterminal, CONTEXT_REG, grammar.get_machine_id(node.get_invoke()), INPUT_REG);
-            as.pop(CONTEXT_REG);
+			as.pop(STACK_BACKUP_REG);
+			as.pop(CONTEXT_REG);
             as.mov(INPUT_REG, asmjit::x86::rax);
 			break;
 		}
