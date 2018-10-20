@@ -36,10 +36,10 @@ class JsonListener(object):
             ret.append(ctx.value(i))
         return ret
     def parseDictionary(self, ctx):
-        ret = {}
-        for i in range(1, ctx.count() + 1):
+        ret = dict(ctx.all())
+        """for i in range(1, ctx.count() + 1):
             p = ctx.value(i)
-            ret[p[0]] = p[1]
+            ret[p[0]] = p[1]"""
         if 'type' in ret:
             if ret['type'] == "Feature":
                 if 'properties' in ret:
