@@ -1,6 +1,7 @@
 Object : Number | String | List | Dictionary | Boolean | None;
 Number : /-?[0-9]+[.]?[0-9]*/ ;
-String : /"([\t\n\r !#-\[\]-~]|(\\["]))*"/ ;
+//String : /"([\t\n\r !#-\[\]-~]|(\\["]))*"/ ;
+String : /"([^\\]|(\\["]))*"/ ;
 List : '[' Object? (',' Object)* ']' ;
 DictionaryEntry : String ':' Object ;
 Dictionary : '{' DictionaryEntry? (',' DictionaryEntry)* '}' ;

@@ -149,6 +149,16 @@ public:
     {
         m_ranges.push_back(r);
     }
+	CharClass<TCHAR>& operator=(const CharClass<TCHAR>& cc)
+	{
+		m_ranges = cc.m_ranges;
+		return *this;
+	}
+	CharClass<TCHAR>& operator=(CharClass<TCHAR>&& cc)
+	{
+		m_ranges = std::move(cc.m_ranges);
+		return *this;
+	}
     virtual ~CharClass()
     {
     }
@@ -160,27 +170,30 @@ public:
     {
         return m_ranges.empty();
     }
-    void invert()
-    {
-
-
-        TCHAR last_end = 0;
-
-        for (auto& i : m_ranges)
-        {
-            TCHAR new_end = i.end();
-            i = Range<TCHAR>(last_end, i.start());
-            last_end = new_end;
-        }
-
-        if (last_end < std::numeric_limits<TCHAR>::max())
-            m_ranges.emplace_back(last_end, std::numeric_limits<TCHAR>::max());
-    }
     CharClass<TCHAR> operator~() const
     {
-        CharClass<TCHAR> cc(*this);
+        CharClass<TCHAR> cc;
 
-        cc.invert();
+		typename std::vector<Range<TCHAR> >::const_iterator i = m_ranges.cbegin();
+		TCHAR last_end = 1;
+
+		if (i != m_ranges.cend())
+		{
+			if (i->start() == 1)
+			{
+				last_end = i->end();
+				i++;
+			}
+		}
+
+		for (; i != m_ranges.cend(); i++)
+		{
+			cc.m_ranges.emplace_back(last_end, i->start());
+			last_end = i->end();
+		}
+
+		if (last_end < std::numeric_limits<TCHAR>::max())
+			cc.m_ranges.emplace_back(last_end, std::numeric_limits<TCHAR>::max());
 
         return cc;
     }

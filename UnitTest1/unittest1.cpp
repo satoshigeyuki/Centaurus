@@ -65,5 +65,19 @@ namespace UnitTest1
 
 			Assert::AreEqual(cc1_ref, cc1);
 		}
+		TEST_METHOD(InvertCC2)
+		{
+			using namespace Centaurus;
+
+			Stream src_stream(L"^\\\\\"]");
+			Stream src_stream_ref(L"\\\\\"]");
+
+			CharClass<char> cc1(src_stream);
+			CharClass<char> cc1_ref(src_stream_ref);
+
+			Logger::WriteMessage(Microsoft::VisualStudio::CppUnitTestFramework::ToString(cc1).c_str());
+			
+			Assert::AreEqual(cc1_ref, ~cc1);
+		}
 	};
 }

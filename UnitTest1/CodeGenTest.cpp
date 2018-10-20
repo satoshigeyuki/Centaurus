@@ -10,11 +10,9 @@
 
 #include <time.h>
 
-namespace Microsoft
-{
-namespace VisualStudio
-{
-namespace CppUnitTestFramework
+using namespace Microsoft::VisualStudio::CppUnitTestFramework;
+
+namespace UnitTest1
 {
 class MyErrorHandler : public asmjit::ErrorHandler
 {
@@ -188,18 +186,18 @@ public:
         const char *input_path = "/home/ihara/Downloads/sf-city-lots-json-master/citylots.json";
 #endif
 
-        Stage1Runner runner1{ input_path, &parser, 8 * 1024 * 1024, 16 };
+        Stage1Runner runner1{ input_path, &parser, 8 * 1024 * 1024, 4 };
 #if defined(CENTAURUS_BUILD_WINDOWS)
         int pid = GetCurrentProcessId();
 #elif defined(CENTAURUS_BUILD_LINUX)
         int pid = getpid();
 #endif
         std::vector<Stage2Runner *> st2_runners;
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < 2; i++)
         {
-            st2_runners.push_back(new Stage2Runner{input_path, &chaser, 8 * 1024 * 1024, 16, pid});
+            st2_runners.push_back(new Stage2Runner{input_path, &chaser, 8 * 1024 * 1024, 4, pid});
         }
-        Stage3Runner runner3{ input_path, &chaser, 8 * 1024 * 1024, 16, pid };
+        Stage3Runner runner3{ input_path, &chaser, 8 * 1024 * 1024, 4, pid };
 
         runner1.start();
         for (auto p : st2_runners)
@@ -221,6 +219,4 @@ public:
         //_aligned_free(json);
     }
 };
-}
-}
 }

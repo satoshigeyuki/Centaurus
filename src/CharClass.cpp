@@ -114,7 +114,10 @@ void CharClass<TCHAR>::parse(Stream& stream)
 
 	std::sort(m_ranges.begin(), m_ranges.end());
 
-    if (invert_flag) invert();
+	if (invert_flag)
+	{
+		*this = this->operator~();
+	}
 }
 
 template<typename TCHAR>

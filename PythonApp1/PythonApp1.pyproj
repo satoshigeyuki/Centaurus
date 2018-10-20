@@ -25,6 +25,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="bench.py" />
+    <Compile Include="bench2.py" />
     <Compile Include="Centaurus\Context.py">
       <SubType>Code</SubType>
     </Compile>
@@ -45,9 +46,6 @@
     </Compile>
     <Compile Include="PythonApp1.py" />
     <Compile Include="Centaurus\Runner.py">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="unittest1.py">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>
