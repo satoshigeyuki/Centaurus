@@ -75,6 +75,14 @@ public:
     {
         return m_id == id.m_id;
     }
+	bool operator==(const std::wstring& str) const
+	{
+		return m_id == str;
+	}
+	bool operator==(const wchar_t *str) const
+	{
+		return m_id.compare(str) == 0;
+	}
     operator bool() const
     {
         return !m_id.empty();

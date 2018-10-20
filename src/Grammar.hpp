@@ -90,6 +90,7 @@ template<typename TCHAR> class Grammar : public IGrammar
     std::unordered_map<Identifier, ATNMachine<TCHAR> > m_networks;
     std::vector<Identifier> m_identifiers;
     Identifier m_root_id;
+	Identifier m_grammar_name;
 public:
     void parse(Stream& stream)
     {
@@ -106,14 +107,38 @@ public:
                 throw stream.toomany(65535);
 
             Identifier id(stream);
-            ATNMachine<TCHAR> atn(machine_id++, stream);
 
-            if (m_root_id.str().empty())
-                m_root_id = id;
+			if (id == L"grammar")
+			{
+				stream.skip_whitespace();
 
-            m_networks.insert(std::pair<Identifier, ATNMachine<TCHAR> >(id, std::move(atn)));
+				m_grammar_name.parse(stream);
 
-            m_identifiers.push_back(id);
+				wchar_t ch = stream.skip_whitespace();
+
+				if (ch != L';')
+					throw stream.unexpected(ch);
+				stream.discard();
+			}
+			else if (id == L"options")
+			{
+
+			}
+			else if (id == L"fragment")
+			{
+
+			}
+			else
+			{
+				ATNMachine<TCHAR> atn(machine_id++, stream);
+
+				if (m_root_id.str().empty())
+					m_root_id = id;
+
+				m_networks.insert(std::pair<Identifier, ATNMachine<TCHAR> >(id, std::move(atn)));
+
+				m_identifiers.push_back(id);
+			}
 
             //m_networks.emplace(Identifier(stream), ATN<TCHAR>(stream));
         }
