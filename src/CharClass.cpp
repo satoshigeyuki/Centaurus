@@ -6,7 +6,7 @@
 namespace Centaurus
 {
 template class CharClass<char>;
-template class CharClass<char16_t>;
+template class CharClass<unsigned char>;
 template class CharClass<wchar_t>;
 
 template<typename TCHAR>
@@ -280,6 +280,10 @@ static std::wostream& printc(std::wostream& os, char ch)
 		}
 	}
 }
+static std::wostream& printc(std::wostream& os, unsigned char ch)
+{
+	return printc(os, (char)ch);
+}
 static std::wostream& printc(std::wostream& os, wchar_t ch)
 {
 	if (!iswgraph(ch))
@@ -338,10 +342,10 @@ std::wostream& operator<<(std::wostream& os, const CharClass<TCHAR>& cc)
     return os;
 }
 template std::ostream& operator<<(std::ostream& os, const CharClass<char>& cc);
-template std::ostream& operator<<(std::ostream& os, const CharClass<char16_t>& cc);
+template std::ostream& operator<<(std::ostream& os, const CharClass<unsigned char>& cc);
 template std::ostream& operator<<(std::ostream& os, const CharClass<wchar_t>& cc);
 template std::wostream& operator<<(std::wostream& os, const CharClass<char>& cc);
-template std::wostream& operator<<(std::wostream& os, const CharClass<char16_t>& cc);
+template std::wostream& operator<<(std::wostream& os, const CharClass<unsigned char>& cc);
 template std::wostream& operator<<(std::wostream& os, const CharClass<wchar_t>& cc);
 }
 
@@ -372,6 +376,7 @@ namespace Microsoft
             }
 
             template std::wstring ToString(const Centaurus::CharClass<char>& cc);
+			template std::wstring ToString(const Centaurus::CharClass<unsigned char>& cc);
             template std::wstring ToString(const Centaurus::CharClass<wchar_t>& cc);
         }
     }

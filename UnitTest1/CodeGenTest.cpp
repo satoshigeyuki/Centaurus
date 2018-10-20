@@ -104,13 +104,13 @@ public:
     {
         using namespace Centaurus;
 
-        Grammar<char> grammar = LoadGrammar("grammar/json2.cgr");
+        Grammar<unsigned char> grammar = LoadGrammar<unsigned char>("grammar/json2.cgr");
 
 		/*FILE *logFile;
 		fopen_s(&logFile, "parser.asm", "w");
         asmjit::FileLogger logger(logFile);*/
 		
-        DryParserEM64T<char> parser(grammar, NULL);
+        DryParserEM64T<unsigned char> parser(grammar, NULL);
 
 		//fclose(logFile);
 
@@ -140,13 +140,13 @@ public:
     {
         using namespace Centaurus;
 
-        Grammar<char> grammar = LoadGrammar("grammar/json2.cgr");
+        Grammar<unsigned char> grammar = LoadGrammar<unsigned char>("grammar/json2.cgr");
 
         asmjit::StringLogger logger;
 
         MyErrorHandler errhandler;
 
-        ParserEM64T<char> parser(grammar, &logger, &errhandler);
+        ParserEM64T<unsigned char> parser(grammar, &logger, &errhandler);
 
 #if defined(CENTAURUS_BUILD_WINDOWS)
 		const char *input_path = "C:\\Users\\ihara\\Downloads\\sf-city-lots-json-master\\sf-city-lots-json-master\\citylots.json";
@@ -169,14 +169,14 @@ public:
     {
         using namespace Centaurus;
 
-        Grammar<char> grammar = LoadGrammar("grammar/json2.cgr");
+        Grammar<unsigned char> grammar = LoadGrammar<unsigned char>("grammar/json2.cgr");
 
         asmjit::StringLogger logger;
 
         MyErrorHandler errhandler;
 
-        ParserEM64T<char> parser(grammar, &logger, &errhandler);
-        ChaserEM64T<char> chaser(grammar);
+        ParserEM64T<unsigned char> parser(grammar, &logger, &errhandler);
+        ChaserEM64T<unsigned char> chaser(grammar);
 
 #if defined(CENTAURUS_BUILD_WINDOWS)
 		//const char *input_path = "test2.json";

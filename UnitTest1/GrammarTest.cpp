@@ -31,7 +31,7 @@ public:
 	}
 	TEST_METHOD(GenerateATN)
 	{
-		Centaurus::Grammar<char> grammar = LoadGrammar("grammar/json2.cgr");
+		Centaurus::Grammar<unsigned char> grammar = LoadGrammar<unsigned char>("grammar/json2.cgr");
 
 		std::wofstream ofs("atn.dot");
 

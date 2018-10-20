@@ -226,5 +226,6 @@ void ATNMachine<TCHAR>::parse(Stream& stream)
 }
 
 template class ATNMachine<char>;
+template class ATNMachine<unsigned char>;
 template class ATNMachine<wchar_t>;
 }

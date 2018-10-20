@@ -33,7 +33,8 @@ static Centaurus::CompositeATN<char> LoadCATN(const char *filename)
     return catn;
 }
 
-static Centaurus::Grammar<char> LoadGrammar(const char *filename)
+template<typename TCHAR>
+static Centaurus::Grammar<TCHAR> LoadGrammar(const char *filename)
 {
     using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -45,7 +46,7 @@ static Centaurus::Grammar<char> LoadGrammar(const char *filename)
 
     Centaurus::Stream stream(std::move(wide_grammar));
 
-    Centaurus::Grammar<char> grammar;
+    Centaurus::Grammar<TCHAR> grammar;
 
     try
     {

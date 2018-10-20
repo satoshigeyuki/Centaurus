@@ -185,12 +185,15 @@ DryParserEM64T<TCHAR>::DryParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Log
 }
 
 template<> CharClass<char> ParserEM64T<char>::m_skipfilter({ ' ', '\t', '\r', '\n' });
+template<> CharClass<unsigned char> ParserEM64T<unsigned char>::m_skipfilter({ ' ', '\t', '\r', '\n' });
 template<> CharClass<wchar_t> ParserEM64T<wchar_t>::m_skipfilter({ L' ', L'\t', L'\r', L'\n' });
 
 template<> CharClass<char> DryParserEM64T<char>::m_skipfilter({' ', '\t', '\r', '\n'});
+template<> CharClass<unsigned char> DryParserEM64T<unsigned char>::m_skipfilter({ ' ', '\t', '\r', '\n' });
 template<> CharClass<wchar_t> DryParserEM64T<wchar_t>::m_skipfilter({L' ', L'\t', L'\r', L'\n'});
 
 template<> CharClass<char> ChaserEM64T<char>::m_skipfilter({ ' ', '\t', '\r', '\n' });
+template<> CharClass<unsigned char> ChaserEM64T<unsigned char>::m_skipfilter({ ' ', '\t', '\r', '\n' });
 template<> CharClass<wchar_t> ChaserEM64T<wchar_t>::m_skipfilter({ L' ', L'\t', L'\r', L'\n' });
 
 template<typename TCHAR>
@@ -848,17 +851,24 @@ SkipRoutineEM64T<TCHAR>::SkipRoutineEM64T(const CharClass<TCHAR>& filter, asmjit
 }
 
 template class ChaserEM64T<char>;
+template class ChaserEM64T<unsigned char>;
 template class ChaserEM64T<wchar_t>;
 template class ParserEM64T<char>;
+template class ParserEM64T<unsigned char>;
 template class ParserEM64T<wchar_t>;
 template class DryParserEM64T<char>;
+template class DryParserEM64T<unsigned char>;
 template class DryParserEM64T<wchar_t>;
 template class DFARoutineEM64T<char>;
+template class DFARoutineEM64T<unsigned char>;
 template class DFARoutineEM64T<wchar_t>;
 template class LDFARoutineEM64T<char>;
+template class LDFARoutineEM64T<unsigned char>;
 template class LDFARoutineEM64T<wchar_t>;
 template class MatchRoutineEM64T<char>;
+template class MatchRoutineEM64T<unsigned char>;
 template class MatchRoutineEM64T<wchar_t>;
 template class SkipRoutineEM64T<char>;
+template class SkipRoutineEM64T<unsigned char>;
 template class SkipRoutineEM64T<wchar_t>;
 }

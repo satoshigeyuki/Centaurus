@@ -26,7 +26,7 @@ namespace Centaurus __attribute__((visibility("default")))
 	{
 		Stream grammar_stream(readwcsfromfile(filename));
 
-		return new Grammar<char>(grammar_stream);
+		return new Grammar<unsigned char>(grammar_stream);
 	}
 
 	CENTAURUS_EXPORT(void) GrammarDestroy(IGrammar *grammar)
@@ -48,14 +48,14 @@ namespace Centaurus __attribute__((visibility("default")))
 
 	CENTAURUS_EXPORT(IParser *) ParserCreate(IGrammar *grammar, bool dry)
 	{
-		Grammar<char> *g_c = dynamic_cast<Grammar<char> *>(grammar);
+		Grammar<unsigned char> *g_c = dynamic_cast<Grammar<unsigned char> *>(grammar);
 
 		if (g_c)
 		{
 			if (dry)
-				return new DryParserEM64T<char>(*g_c);
+				return new DryParserEM64T<unsigned char>(*g_c);
 			else
-				return new ParserEM64T<char>(*g_c);
+				return new ParserEM64T<unsigned char>(*g_c);
 		}
 
 		return nullptr;
@@ -68,10 +68,10 @@ namespace Centaurus __attribute__((visibility("default")))
 
 	CENTAURUS_EXPORT(IChaser *) ChaserCreate(IGrammar *grammar)
 	{
-		Grammar<char> *g_c = dynamic_cast<Grammar<char> *>(grammar);
+		Grammar<unsigned char> *g_c = dynamic_cast<Grammar<unsigned char> *>(grammar);
 
 		if (g_c)
-			return new ChaserEM64T<char>(*g_c);
+			return new ChaserEM64T<unsigned char>(*g_c);
 
 		return nullptr;
 	}

@@ -27,6 +27,27 @@ static asmjit::Data128 pack_charclass(const CharClass<char>& cc)
     return d128;
 }
 
+static asmjit::Data128 pack_charclass(const CharClass<unsigned char>& cc)
+{
+	asmjit::Data128 d128;
+
+	for (int i = 0; i < 8; i++)
+	{
+		if (cc[i].empty())
+		{
+			d128.ub[i * 2 + 0] = 0xFF;
+			d128.ub[i * 2 + 1] = 0;
+		}
+		else
+		{
+			d128.ub[i * 2 + 0] = cc[i].start();
+			d128.ub[i * 2 + 1] = cc[i].end() - 1;
+		}
+	}
+
+	return d128;
+}
+
 static asmjit::Data128 pack_charclass(const CharClass<wchar_t>& cc)
 {
     asmjit::Data128 d128;
