@@ -47,7 +47,7 @@ public:
             m_sv_index++;
 			long start_offset = (const char *)input - (const char *)m_input_window;
 			long end_offset = (const char *)sv.get_next_ptr() - (const char *)m_input_window;
-			//m_sym_stack.emplace_back(id, start_offset, end_offset, sv.get_tag());
+			m_sym_stack.emplace_back(id, start_offset, end_offset, sv.get_tag());
             return sv.get_next_ptr();
         }
         return NULL;

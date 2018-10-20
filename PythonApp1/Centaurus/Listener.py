@@ -119,6 +119,8 @@ class Stage2ListenerAdapter(BaseListenerAdapter):
 
     def value(self, index):
         return self.values[-self.num + index]
+    def all(self):
+        return [self.values[i] for i in range(-self.num + 1, 0)]
 
 """
 class Stage3BytecodeListenerAdapter(BaseListenerAdapter):
@@ -209,3 +211,5 @@ class Stage3ListenerAdapter(BaseListenerAdapter):
             return self.values[key]
         else:
             return self.page_values[page - 1][key]
+    def all(self):
+        return [self.value(index) for index in range(1, self.num)]
