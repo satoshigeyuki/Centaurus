@@ -132,7 +132,7 @@ public:
         runner.wait();
 
         //Assert::AreEqual((const void *)(json + strlen(json)), context.result);
-        //Assert::IsTrue(runner.get_result() != NULL);
+        Assert::IsTrue(runner.get_result() != NULL);
 
         //_aligned_free(json);
     }

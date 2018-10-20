@@ -14,7 +14,7 @@ void *Stage1Runner::thread_runner(void *param)
 	instance->m_counter = 0;
 	instance->reset_banks();
 
-	(*instance->m_parser)(static_cast<BaseListener *>(instance), instance->m_input_window);
+	instance->m_result = (*instance->m_parser)(static_cast<BaseListener *>(instance), instance->m_input_window);
 
 	instance->release_bank();
 

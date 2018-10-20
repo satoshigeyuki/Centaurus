@@ -9,6 +9,7 @@ class Stage1Runner : public BaseRunner
 {
     IParser *m_parser;
     int m_current_bank, m_counter;
+	const void *m_result;
 private:
 #if defined(CENTAURUS_BUILD_WINDOWS)
 	static DWORD WINAPI thread_runner(LPVOID param);
@@ -31,5 +32,9 @@ public:
         release_bank();
         return acquire_bank();
     }
+	const void *get_result() const
+	{
+		return m_result;
+	}
 };
 }
