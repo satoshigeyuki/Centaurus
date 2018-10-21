@@ -80,24 +80,6 @@ public:
     {
         return m_source;
     }
-    void print(std::ostream& os, int from) const
-    {
-        if (m_submachine)
-        {
-            os << "N" << from << " [ label=\"" << m_submachine.narrow() << "\" ];" << std::endl;
-        }
-        else
-        {
-            os << "N" << from << " [ label=\"" << from << "\" ];" << std::endl;
-        }
-
-        for (const auto& t : m_transitions)
-        {
-            os << "N" << from << " -> N" << t.dest() << " [ label=\"";
-            os << t.label();
-            os << "\" ];" << std::endl;
-        }
-    }
 	void print(std::wostream& os, int from) const
 	{
 		if (m_submachine)
@@ -228,21 +210,6 @@ public:
         }
         return -1;
     }
-    void print(std::ostream& os, const std::string& name) const
-    {
-        os << "digraph " << name << " {" << std::endl;
-        os << "rankdir=\"LR\";" << std::endl;
-        os << "graph [ charset=\"UTF-8\" ];" << std::endl;
-        os << "node [ style=\"solid,filled\" ];" << std::endl;
-        os << "edge [ style=\"solid\" ];" << std::endl;
-
-        for (unsigned int i = 0; i < m_nodes.size(); i++)
-        {
-            m_nodes[i].print(os, i);
-        }
-
-        os << "}" << std::endl;
-    }
 	void print(std::wostream& os, const std::wstring& name) const
 	{
 		os << L"digraph " << name << L" {" << std::endl;
@@ -262,11 +229,11 @@ public:
 
 using CATNClosure = std::set<std::pair<ATNPath, int> >;
 
-static std::ostream& operator<<(std::ostream& os, const CATNClosure& closure)
+static std::wostream& operator<<(std::wostream& os, const CATNClosure& closure)
 {
     for (const auto& p : closure)
     {
-        os << p.first << ":" << p.second << std::endl;
+        os << p.first << L':' << p.second << std::endl;
     }
     return os;
 }
@@ -304,21 +271,6 @@ public:
         return true;
     }
 };
-
-template<typename TCHAR>
-std::ostream& operator<<(std::ostream& os, const CATNDepartureSet<TCHAR>& deptset)
-{
-    for (const auto& p : deptset)
-    {
-        os << p.first << " -> ";
-        for (const auto& q : p.second)
-        {
-            os << q.first << ":" << q.second << " ";
-        }
-        os << std::endl;
-    }
-    return os;
-}
 
 template<typename TCHAR>
 std::wostream& operator<<(std::wostream& os, const CATNDepartureSet<TCHAR>& deptset)

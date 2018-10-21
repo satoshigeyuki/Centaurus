@@ -185,6 +185,7 @@
     <ClInclude Include="..\src\BaseRunner.hpp" />
     <ClInclude Include="..\src\CharClass.hpp" />
     <ClInclude Include="..\src\Charset.hpp" />
+    <ClInclude Include="..\src\clipp.h" />
     <ClInclude Include="..\src\CodeGenCommonEM64T.hpp" />
     <ClInclude Include="..\src\CodeGenEM64T.hpp" />
     <ClInclude Include="..\src\CodeGenInterface.hpp" />

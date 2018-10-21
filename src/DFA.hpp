@@ -103,7 +103,7 @@ public:
 	virtual ~DFA()
 	{
 	}
-	virtual void print_state(std::ostream& os, int index)
+	virtual void print_state(std::wostream& os, int index)
 	{
 		os << m_states[index].label();
 	}

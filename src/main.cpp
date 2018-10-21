@@ -3,7 +3,10 @@
 #include <fstream>
 #include <locale>
 #include <codecvt>
+#include <vector>
+#include <string>
 
+#include "clipp.h"
 #include "Grammar.hpp"
 #include "CodeGenEM64T.hpp"
 #include "Stage1Runner.hpp"
@@ -60,13 +63,44 @@ static uint64_t get_us_clock()
 #endif
 }
 
-int main(int argc, const char *argv[])
+int main(int argc, char *argv[])
 {
-    if (argc < 3)
-    {
-        std::cerr << "Usage: centaurus [GrammarFile] [Nthreads]" << std::endl;
-        return -1;
-    }
+	enum
+	{
+		GenerateATN,
+		GenerateNFA,
+		GenerateLDFA,
+		GenerateDFA
+	} mode;
+	bool help_flag = false;
+
+	auto cli = (
+		((clipp::command("generate-atn").set(mode, GenerateATN) & clipp::value("grammar file").required(true)) |
+		(clipp::command("generate-nfa").set(mode, GenerateNFA)) |
+		(clipp::command("generate-ldfa").set(mode, GenerateLDFA)) |
+		(clipp::command("generate-dfa").set(mode, GenerateDFA))),
+		clipp::option("-h", "--help").doc("Display this help message").set(help_flag)
+	);
+
+	if (clipp::parse(argc, argv, cli))
+	{
+		if (help_flag)
+		{
+			std::cerr << clipp::make_man_page(cli, argv[0]);
+			return 0;
+		}
+		switch (mode)
+		{
+		case GenerateATN:
+
+			return 0;
+		}
+	}
+	else
+	{
+		std::cerr << clipp::make_man_page(cli, argv[0]);
+		return -1;
+	}
 
     Grammar<char> grammar = LoadGrammar(argv[1]);
 

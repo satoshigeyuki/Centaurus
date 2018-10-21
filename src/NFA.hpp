@@ -133,15 +133,6 @@ public:
     {
         return m_transitions;
     }
-    void print(std::ostream& os, int from) const
-    {
-        for (const auto& t : m_transitions)
-        {
-            os << "S" << from << " -> " << "S" << t.dest() << " [ label=\"";
-            os << t.label();
-            os << "\" ];" << std::endl;
-        }
-    }
 	void print(std::wostream& os, int from) const
 	{
 		for (const auto& t : m_transitions)
@@ -151,15 +142,6 @@ public:
 			os << L"\" ];" << std::endl;
 		}
 	}
-    void print_subgraph(std::ostream& os, int from, const std::string& prefix) const
-    {
-        for (const auto& t : m_transitions)
-        {
-            os << prefix << "_S" << from << " -> " << prefix << "_S" << t.dest() << " [ label=\"";
-            os << t.label();
-            os << "\" ];" << std::endl;
-        }
-    }
 	void print_subgraph(std::wostream& os, int from, const std::wstring& prefix) const
 	{
 		for (const auto& t : m_transitions)
@@ -187,38 +169,10 @@ public:
     virtual ~NFABase()
     {
     }
-    virtual void print_state(std::ostream& os, int index) const
-    {
-        os << index;
-    }
 	virtual void print_state(std::wostream& os, int index) const
 	{
 		os << index;
 	}
-    void print(std::ostream& os, const std::string& graph_name)
-    {
-        os << "digraph " << graph_name << " {" << std::endl;
-
-        os << "graph [ charset=\"UTF-8\", style=\"filled\" ];" << std::endl;
-
-        os << "node [ style=\"solid,filled\" ];" << std::endl;
-
-        os << "edge [ style=\"solid\" ];" << std::endl;
-
-        for (unsigned int i = 0; i < m_states.size(); i++)
-        {
-            os << "S" << i << " [ label=\"";
-            print_state(os, i);
-            os << "\", shape=circle ];" << std::endl;
-        }
-         
-        for (unsigned int i = 0; i < m_states.size(); i++)
-        {
-            m_states[i].print(os, i);
-        }
-
-        os << "}" << std::endl;
-    }
 	void print(std::wostream& os, const std::wstring& graph_name)
 	{
 		os << L"digraph " << graph_name << L" {" << std::endl;
@@ -243,24 +197,10 @@ public:
 
 		os << L"}" << std::endl;
 	}
-    void print_subgraph(std::ostream& os, const std::string& prefix) const
-    {
-        os << "subgraph cluster_" << prefix << " {" << std::endl;
-        for (unsigned int i = 0; i < m_states.size(); i++)
-        {
-            os << prefix << "_S" << i << " [ label=\"";
-            print_state(os, i);
-            os << "\", shape=circle ];" << std::endl;
-        }
-        for (unsigned int i = 0; i < m_states.size(); i++)
-        {
-            m_states[i].print_subgraph(os, i, prefix);
-        }
-        os << "}" << std::endl;
-    }
-	void print_subgraph(std::wostream& os, const std::wstring& prefix) const
+	void print_subgraph(std::wostream& os, int index, const std::wstring& prefix) const
 	{
 		os << L"subgraph cluster_" << prefix << L" {" << std::endl;
+		os << L"label=\"[" << index << L"]\"" << std::endl;
 		for (unsigned int i = 0; i < m_states.size(); i++)
 		{
 			os << prefix << L"_S" << i << L" [ label=\"";
@@ -273,18 +213,10 @@ public:
 		}
 		os << L"}" << std::endl;
 	}
-    std::string get_entry(const std::string& prefix) const
-    {
-        return prefix + "_S0";
-    }
 	std::wstring get_entry_wide(const std::wstring& prefix) const
 	{
 		return prefix + L"_S0";
 	}
-    std::string get_exit(const std::string& prefix) const
-    {
-        return prefix + "_S" + std::to_string(m_states.size() - 1);
-    }
 	std::wstring get_exit_wide(const std::wstring& prefix) const
 	{
 		return prefix + L"_S" + std::to_wstring(m_states.size() - 1);

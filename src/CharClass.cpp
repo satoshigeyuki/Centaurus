@@ -214,51 +214,6 @@ CharClass<TCHAR> CharClass<TCHAR>::operator&(const CharClass<TCHAR>& cc) const
     return new_class;
 }
 
-template<typename TCHAR>
-std::ostream& operator<<(std::ostream& os, const CharClass<TCHAR>& cc)
-{
-    auto i = cc.m_ranges.cbegin();
-
-    for (; i != cc.m_ranges.cend();)
-    {
-        if (i->end() == i->start() + 1)
-        {
-            if (i->start() == wide_to_target<TCHAR>(u'"'))
-                os << "\\\"";
-            else if (i->start() == wide_to_target<TCHAR>(u'\\'))
-                os << "\\\\";
-            else
-            {
-                char ch = os.narrow(i->start(), '@');
-                os << (std::isprint(ch) ? ch : '@');
-            }
-        }
-        else
-        {
-            if (i->start() == wide_to_target<TCHAR>(u'"'))
-                os << "\\\"";
-            else if (i->start() == wide_to_target<TCHAR>(u'\\'))
-                os << "\\\\";
-            else
-            {
-                char ch = os.narrow(i->start(), '@');
-                os << (std::isprint(ch) ? ch : '@');
-            }
-            os << '-';
-            if (i->end() - 1 == wide_to_target<TCHAR>(u'"'))
-                os << "\\\"";
-            else if (i->end() - 1 == wide_to_target<TCHAR>(u'\\'))
-                os << "\\\\";
-            else
-            {
-                char ch = os.narrow(i->end(), '@');
-                os << (std::isprint(ch) ? ch : '@');
-            }
-        }
-        i++;
-    }
-    return os;
-}
 static std::wostream& printc(std::wostream& os, char ch)
 {
 	if (!isgraph(ch))
@@ -341,9 +296,6 @@ std::wostream& operator<<(std::wostream& os, const CharClass<TCHAR>& cc)
     }
     return os;
 }
-template std::ostream& operator<<(std::ostream& os, const CharClass<char>& cc);
-template std::ostream& operator<<(std::ostream& os, const CharClass<unsigned char>& cc);
-template std::ostream& operator<<(std::ostream& os, const CharClass<wchar_t>& cc);
 template std::wostream& operator<<(std::wostream& os, const CharClass<char>& cc);
 template std::wostream& operator<<(std::wostream& os, const CharClass<unsigned char>& cc);
 template std::wostream& operator<<(std::wostream& os, const CharClass<wchar_t>& cc);

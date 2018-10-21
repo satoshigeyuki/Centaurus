@@ -25,7 +25,7 @@ template<typename TCHAR> class Range
 {
     TCHAR m_start, m_end;
 
-    template<typename T> friend std::ostream& operator<<(std::ostream& os, const Range<T>& r);
+    template<typename T> friend std::wostream& operator<<(std::wostream& os, const Range<T>& r);
 public:
     Range(TCHAR start, TCHAR end)
         : m_start(start), m_end(end)
@@ -97,13 +97,6 @@ public:
 };
 
 template<typename TCHAR>
-std::ostream& operator<<(std::ostream& os, const Range<TCHAR>& r)
-{
-    os << '[' << r.start() << ", " << r.end() - 1 << ')';
-    return os;
-}
-
-template<typename TCHAR>
 std::wostream& operator<<(std::wostream& os, const Range<TCHAR>& r)
 {
     os << L'[' << r.start() << L", " << r.end() - 1 << L')';
@@ -114,7 +107,6 @@ template<typename TCHAR> class CharClass
 {
     std::vector<Range<TCHAR> > m_ranges;
 
-    template<typename T> friend std::ostream& operator<<(std::ostream& os, const CharClass<T>& cc);
     template<typename T> friend std::wostream& operator<<(std::wostream& os, const CharClass<T>& cc);
 
     void parse(Stream& stream);

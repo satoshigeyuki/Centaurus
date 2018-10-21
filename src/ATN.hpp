@@ -118,17 +118,6 @@ public:
             m_transitions.emplace_back(dest);
         }
     }*/
-    std::pair<std::string, std::string> get_entry_exit(const std::string& prefix) const
-    {
-        if (m_type == ATNNodeType::RegularTerminal)
-        {
-            return std::pair<std::string, std::string>(m_nfa.get_entry(prefix), m_nfa.get_exit(prefix));
-        }
-        else
-        {
-            return std::pair<std::string, std::string>(prefix, prefix);
-        }
-    }
 	std::pair<std::wstring, std::wstring> get_entry_exit_wide(const std::wstring& prefix) const
 	{
 		if (m_type == ATNNodeType::RegularTerminal)
@@ -140,45 +129,24 @@ public:
 			return std::pair<std::wstring, std::wstring>(prefix, prefix);
 		}
 	}
-    /*void print(std::ostream& os, const std::string& prefix) const
-    {
-        switch (m_type)
-        {
-        case ATNNodeType::Blank:
-            os << prefix << " [ label=\"\" ];" << std::endl;
-            break;
-        case ATNNodeType::Nonterminal:
-            os << prefix << " [ label=\"" << m_invoke << "\" ];" << std::endl;
-            break;
-        case ATNNodeType::LiteralTerminal:
-            os << prefix << " [ label=\"" << m_literal << "\" ];" << std::endl;
-            break;
-        case ATNNodeType::RegularTerminal:
-            m_nfa.print_subgraph(os, prefix);
-            break;
-        case ATNNodeType::WhiteSpace:
-            os << prefix << " [ label=\"[ ]\" ];" << std::endl;
-            break;
-        }
-    }*/
-	void print(std::wostream& os, const std::wstring& prefix) const
+	void print(std::wostream& os, int index, const std::wstring& prefix) const
 	{
 		switch (m_type)
 		{
 		case ATNNodeType::Blank:
-			os << prefix << L" [ label=\"\" ];" << std::endl;
+			os << prefix << L" [ label=\"\", xlabel=\"[" << index << L"]\" ];" << std::endl;
 			break;
 		case ATNNodeType::Nonterminal:
-			os << prefix << L" [ label=\"" << m_invoke << "\" ];" << std::endl;
+			os << prefix << L" [ label=\"" << m_invoke << L"\", xlabel=\"[" << index << "]\" ];" << std::endl;
 			break;
 		case ATNNodeType::LiteralTerminal:
-			os << prefix << L" [ label=\"\\\"\\\"" << /*m_literal <<*/ L"\" ];" << std::endl;
+			os << prefix << L" [ label=\"\\\"\\\"" << /*m_literal <<*/ L"\", xlabel=\"[" << index << L"]\" ];" << std::endl;
 			break;
 		case ATNNodeType::RegularTerminal:
-			m_nfa.print_subgraph(os, prefix);
+			m_nfa.print_subgraph(os, index, prefix);
 			break;
 		case ATNNodeType::WhiteSpace:
-			os << prefix << L" [ label=\"[ ]\" ];" << std::endl;
+			os << prefix << L" [ label=\"[ ]\", xlabel=\"[" << index << L"]\" ];" << std::endl;
 			break;
 		}
 	}
@@ -295,64 +263,6 @@ class ATNPrinter
     std::vector<Identifier> m_stack;
     int m_counter, m_maxdepth;
 private:
-    std::pair<std::string, std::string> print_atn(std::ostream& os, const Identifier& key)
-    {
-        std::string prefix = key.narrow() + std::to_string(m_counter++);
-
-        os << "subgraph cluster_" << prefix << " {" << std::endl;
-
-        const ATNMachine<TCHAR>& atn = m_networks.at(key);
-
-        std::vector<std::pair<std::string, std::string> > entry_exit_nodes(atn.m_nodes.size());
-
-        for (unsigned int i = 0; i < atn.m_nodes.size(); i++)
-        {
-            const ATNNode<TCHAR>& node = atn.m_nodes[i];
-            std::string node_name = prefix + "_N" + std::to_string(i);
-
-            if (node.is_nonterminal())
-            {
-                if (m_stack.size() < (size_t)m_maxdepth && std::find(m_stack.begin(), m_stack.end(), node.m_invoke) == m_stack.end())
-                {
-                    m_stack.push_back(node.m_invoke);
-                    entry_exit_nodes[i] = print_atn(os, node.m_invoke);
-                    m_stack.pop_back();
-                }
-                else
-                {
-                    entry_exit_nodes[i] = node.get_entry_exit(node_name);
-                    node.print(os, node_name);
-                }
-            }
-            else
-            {
-                entry_exit_nodes[i] = node.get_entry_exit(node_name);
-                node.print(os, node_name);
-            }
-        }
-
-        for (unsigned int i = 0; i < atn.m_nodes.size(); i++)
-        {
-            const ATNNode<TCHAR>& node = atn.m_nodes[i];
-            const std::string& exit = entry_exit_nodes[i].second;
-            for (const auto& t : node.m_transitions)
-            {
-                const std::string& entry = entry_exit_nodes[t.dest()].first;
-
-                os << exit << " -> " << entry << " [ label=\"";
-                os << t;
-                os << "\" ];" << std::endl;
-            }
-        }
-
-        os << "label = \"" << key.narrow() << "\";" << std::endl;
-        os << "}" << std::endl;
-
-        std::string entry_node = prefix + "_N0";
-        std::string exit_node = prefix + "_N" + std::to_string(atn.m_nodes.size() - 1);
-
-        return std::pair<std::string, std::string>(entry_node, exit_node);
-    }
 	std::pair<std::wstring, std::wstring> print_atn(std::wostream& os, const Identifier& key)
 	{
 		std::wstring prefix = key + std::to_wstring(m_counter++);
@@ -379,13 +289,13 @@ private:
 				else
 				{
 					entry_exit_nodes[i] = node.get_entry_exit_wide(node_name);
-					node.print(os, node_name);
+					node.print(os, i, node_name);
 				}
 			}
 			else
 			{
 				entry_exit_nodes[i] = node.get_entry_exit_wide(node_name);
-				node.print(os, node_name);
+				node.print(os, i, node_name);
 			}
 		}
 
@@ -418,10 +328,6 @@ public:
     }
     virtual ~ATNPrinter()
     {
-    }
-    void print(std::ostream& os, const Identifier& key)
-    {
-        print_atn(os, key);
     }
 	void print(std::wostream& os, const Identifier& key)
 	{
