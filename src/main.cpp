@@ -26,7 +26,7 @@ std::locale::id std::codecvt<char32_t, char, std::mbstate_t>::id;
 
 using namespace Centaurus;
 
-static Grammar<char> LoadGrammar(const char *filename)
+static IGrammar *LoadGrammar(const char *filename)
 {
     std::wifstream grammar_file(filename, std::ios::in);
 
@@ -34,16 +34,9 @@ static Grammar<char> LoadGrammar(const char *filename)
 
     Stream stream(std::move(grammar_str));
 
-    Grammar<char> grammar;
+    Grammar<unsigned char> *grammar = new Grammar<unsigned char>();
 
-    try
-    {
-        grammar.parse(stream);
-    }
-    catch (const std::exception& ex)
-    {
-        //Assert::Fail(L"ATN construction failed.");
-    }
+    grammar->parse(stream);
 
     return grammar;
 }
@@ -63,6 +56,24 @@ static uint64_t get_us_clock()
 #endif
 }
 
+static void print_atn(const std::string& output_path, const std::string& grammar_path, int max_depth)
+{
+    IGrammar *grammar = LoadGrammar(grammar_path.c_str());
+
+    if (output_path.empty())
+    {
+        grammar->print(std::wcout, max_depth);
+    }
+    else
+    {
+        std::wofstream stream(output_path.c_str());
+
+        grammar->print(stream, max_depth);
+    }
+
+    delete grammar;
+}
+
 int main(int argc, char *argv[])
 {
 	enum
@@ -72,14 +83,18 @@ int main(int argc, char *argv[])
 		GenerateLDFA,
 		GenerateDFA
 	} mode;
+    std::string grammar_path;
+    int max_depth = 3;
 	bool help_flag = false;
+    std::string output_path;
 
 	auto cli = (
-		((clipp::command("generate-atn").set(mode, GenerateATN) & clipp::value("grammar file").required(true)) |
+		((clipp::command("generate-atn").set(mode, GenerateATN) & (clipp::value("grammar file", grammar_path).required(true), (clipp::option("-d", "--max-depth") & clipp::value("maxdepth", max_depth)))) |
 		(clipp::command("generate-nfa").set(mode, GenerateNFA)) |
 		(clipp::command("generate-ldfa").set(mode, GenerateLDFA)) |
 		(clipp::command("generate-dfa").set(mode, GenerateDFA))),
-		clipp::option("-h", "--help").doc("Display this help message").set(help_flag)
+		clipp::option("-h", "--help").doc("Display this help message").set(help_flag),
+        (clipp::option("-f", "--outfile") & clipp::value("outfile", output_path)).doc("Output filename (defaults to stdout")
 	);
 
 	if (clipp::parse(argc, argv, cli))
@@ -92,7 +107,7 @@ int main(int argc, char *argv[])
 		switch (mode)
 		{
 		case GenerateATN:
-
+            print_atn(output_path, grammar_path, max_depth);
 			return 0;
 		}
 	}
@@ -101,8 +116,9 @@ int main(int argc, char *argv[])
 		std::cerr << clipp::make_man_page(cli, argv[0]);
 		return -1;
 	}
+    return 0;
 
-    Grammar<char> grammar = LoadGrammar(argv[1]);
+    /*Grammar<char> grammar = LoadGrammar(argv[1]);
 
     asmjit::StringLogger logger;
 
@@ -132,18 +148,18 @@ int main(int argc, char *argv[])
     uint64_t start_clock = get_us_clock();
 
     runner1.start();
-    /*for (auto p : st2_runners)
+    for (auto p : st2_runners)
     {
         p->start();
     }
-    runner3.start();*/
+    runner3.start();
 
     runner1.wait();
-    /*for (auto p : st2_runners)
+    for (auto p : st2_runners)
     {
         p->wait();
     }
-    runner3.wait();*/
+    runner3.wait();
 
     uint64_t end_clock = get_us_clock();
 
@@ -151,5 +167,5 @@ int main(int argc, char *argv[])
 
     std::cout << "Elapsed time: " << elapsed_ms << "[ms]" << std::endl;
 
-    return 0;
+    return 0;*/
 }
