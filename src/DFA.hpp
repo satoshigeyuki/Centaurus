@@ -95,7 +95,7 @@ template<typename TCHAR> class DFA : public NFABase<DFAState<TCHAR> >
 		}
 	}
 public:
-	DFA(const NFA<TCHAR>& nfa)
+	DFA(const NFA<TCHAR>& nfa, bool optimize_flag = true)
 	{
 		//Start by collecting the epsilon closure of start state
 		std::set<int> ec0 = nfa.epsilon_closure(0);
@@ -117,6 +117,9 @@ public:
 
             state.sort();
 		}
+
+        if (optimize_flag)
+            minimize();
 	}
 	DFA()
 	{

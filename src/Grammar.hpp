@@ -221,12 +221,7 @@ public:
         {
             const NFA<TCHAR>& nfa = node.get_nfa();
 
-            DFA<TCHAR> dfa(nfa);
-
-            if (optimize_flag)
-            {
-                dfa.minimize();
-            }
+            DFA<TCHAR> dfa(nfa, optimize_flag);
 
             dfa.print(os, path.leaf_id().str());
         }
