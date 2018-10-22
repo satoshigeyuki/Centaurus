@@ -3,9 +3,11 @@
 #include <iostream>
 #include <string>
 #include <unordered_map>
+#include <assert.h>
 
 #include "Identifier.hpp"
 #include "ATN.hpp"
+#include "DFA.hpp"
 #include "Platform.hpp"
 
 namespace Centaurus
@@ -148,9 +150,9 @@ public:
             //m_networks.emplace(Identifier(stream), ATN<TCHAR>(stream));
         }
     }
-    const ATNNode<TCHAR>& resolve(const ATNPath& path)
+    const ATNNode<TCHAR>& resolve(const ATNPath& path) const
     {
-
+        return m_networks.at(path.leaf_id()).get_node(path.leaf_index());
     }
 public:
     Grammar(Stream& stream)
@@ -187,20 +189,40 @@ public:
 	}
     virtual void print_nfa(std::wostream& os, const ATNPath& path) const override
     {
+        const ATNNode<TCHAR>& node = resolve(path);
+
+        if (node.type() != ATNNodeType::RegularTerminal)
+        {
+            throw SimpleException("The specified node is not an NFA.");
+        }
+        else
+        {
+            const NFA<TCHAR>& nfa = node.get_nfa();
+
+            nfa.print(os, path.leaf_id().str());
+        }
     }
     virtual void print_dfa(std::wostream& os, const ATNPath& path) const override
     {
+        const ATNNode<TCHAR>& node = resolve(path);
+
+        if (node.type() != ATNNodeType::RegularTerminal)
+        {
+            throw SimpleException("The specified node is not an NFA.");
+        }
+        else
+        {
+            const NFA<TCHAR>& nfa = node.get_nfa();
+
+            DFA<TCHAR> dfa(nfa);
+
+            dfa.print(os, path.leaf_id().str());
+        }
     }
     virtual void print_ldfa(std::wostream& os, const ATNPath& path) const override
     {
     }
     virtual void print_catn(std::wostream& os, const Identifier& id) const override;
-    /*CompositeATN<TCHAR> build_catn() const
-    {
-        CompositeATN<TCHAR> catn(m_networks, m_root_id);
-
-        return catn;
-    }*/
     const ATNMachine<TCHAR>& operator[](const Identifier& id) const
     {
         return m_networks.at(id);

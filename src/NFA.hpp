@@ -173,7 +173,7 @@ public:
 	{
 		os << index;
 	}
-	void print(std::wostream& os, const std::wstring& graph_name)
+	void print(std::wostream& os, const std::wstring& graph_name) const
 	{
 		os << L"digraph " << graph_name << L" {" << std::endl;
 
