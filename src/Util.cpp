@@ -1,18 +1,19 @@
 #include "Util.hpp"
 
 #include <fstream>
+#include <wctype.h>
 
 namespace Centaurus
 {
 std::wostream& operator<<(std::wostream& os, const ATNPath& path)
 {
-	if (!path.m_path.empty())
+	if (!path.empty())
 	{
-		for (unsigned int i = 0; i < path.m_path.size() - 1; i++)
+		for (unsigned int i = 0; i < path.size() - 1; i++)
 		{
-			os << path.m_path[i].first << L'.' << path.m_path[i].second << L'/';
+			os << path[i].first << L'.' << path[i].second << L'/';
 		}
-		os << path.m_path.back().first << L'.' << path.m_path.back().second;
+		os << path.back().first << L'.' << path.back().second;
 	}
 	return os;
 }
@@ -39,5 +40,39 @@ std::wstring readwcsfromfile(const char *filename)
 	std::wifstream ifs(filename);
 
 	return std::wstring(std::istreambuf_iterator<wchar_t>(ifs), {});
+}
+void ATNPath::parse(Stream& stream)
+{
+    while (true)
+    {
+        Identifier id(stream);
+
+        wchar_t ch = stream.get();
+        if (ch != L'.')
+            throw stream.unexpected(ch);
+
+        std::wstring index_str;
+        ch = stream.get();
+        if (!iswdigit(ch))
+            throw stream.unexpected(ch);
+
+        index_str.push_back(ch);
+
+        for (ch = stream.peek(); iswdigit(ch); ch = stream.peek())
+        {
+            index_str.push_back(ch);
+            stream.discard();
+        }
+
+        int index = std::stoi(index_str);
+
+        ch = stream.get();
+        if (ch == L'\0')
+            break;
+        else if (ch != L'/')
+            throw stream.unexpected(ch);
+
+        emplace_back(id, index);
+    }
 }
 }

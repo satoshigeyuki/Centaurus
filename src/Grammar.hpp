@@ -82,8 +82,13 @@ public:
 	IGrammar() {}
 	virtual ~IGrammar() {}
 
-	virtual void enum_machines(EnumMachinesCallback callback) = 0;
-	virtual void print(std::wostream& ofs, int maxdepth) {}
+	virtual void enum_machines(EnumMachinesCallback callback) const = 0;
+	virtual void print(std::wostream& ofs, int maxdepth) const {}
+
+    virtual void print_nfa(std::wostream& ofs, const ATNPath& path) const {}
+    virtual void print_dfa(std::wostream& ofs, const ATNPath& path) const {}
+    virtual void print_ldfa(std::wostream& ofs, const ATNPath& path) const {}
+    virtual void print_catn(std::wostream& ofs, const Identifier& id) const {}
 };
 template<typename TCHAR> class Grammar : public IGrammar
 {
@@ -143,6 +148,10 @@ public:
             //m_networks.emplace(Identifier(stream), ATN<TCHAR>(stream));
         }
     }
+    const ATNNode<TCHAR>& resolve(const ATNPath& path)
+    {
+
+    }
 public:
     Grammar(Stream& stream)
     {
@@ -158,21 +167,7 @@ public:
     virtual ~Grammar()
     {
     }
-    void print(std::ostream& os, const Identifier& key, int maxdepth = 3)
-    {
-        os << "digraph " << key.narrow() << " {" << std::endl;
-        os << "rankdir=\"LR\";" << std::endl;
-        os << "graph [ charset=\"UTF-8\" ];" << std::endl;
-        os << "node [ style=\"solid,filled\" ];" << std::endl;
-        os << "edge [ style=\"solid\" ];" << std::endl;
-
-        ATNPrinter<TCHAR> printer(m_networks, maxdepth);
-
-        printer.print(os, key);
-
-        os << "}" << std::endl;
-    }
-	void print(std::wostream& os, const Identifier& key, int maxdepth = 3)
+	void print(std::wostream& os, const Identifier& key, int maxdepth = 3) const
 	{
 		os << L"digraph " << key << L" {" << std::endl;
 		os << L"rankdir=\"LR\";" << std::endl;
@@ -186,10 +181,20 @@ public:
 
 		os << L"}" << std::endl;
 	}
-	virtual void print(std::wostream& os, int maxdepth) override
+	virtual void print(std::wostream& os, int maxdepth) const override
 	{
 		print(os, get_root_id(), maxdepth);
 	}
+    virtual void print_nfa(std::wostream& os, const ATNPath& path) const override
+    {
+    }
+    virtual void print_dfa(std::wostream& os, const ATNPath& path) const override
+    {
+    }
+    virtual void print_ldfa(std::wostream& os, const ATNPath& path) const override
+    {
+    }
+    virtual void print_catn(std::wostream& os, const Identifier& id) const override;
     /*CompositeATN<TCHAR> build_catn() const
     {
         CompositeATN<TCHAR> catn(m_networks, m_root_id);
@@ -228,7 +233,7 @@ public:
     {
         return m_identifiers.at(index);
     }
-	virtual void enum_machines(EnumMachinesCallback callback) override
+	virtual void enum_machines(EnumMachinesCallback callback) const override
 	{
 		for (int i = 0; i < m_identifiers.size(); i++)
 		{

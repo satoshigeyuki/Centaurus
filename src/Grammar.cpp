@@ -1,22 +1,15 @@
-/*!
- * @file Grammar.cpp
- * @brief Public API for Grammar class
- */
-#include "Grammar.hpp"
+#include "CompositeATN.hpp"
 
-using namespace Centaurus;
-
-extern "C" void *GrammarCreate()
+namespace Centaurus
 {
-    return new Grammar();
+template<typename TCHAR>
+void Grammar<TCHAR>::print_catn(std::wostream& os, const Identifier& id) const
+{
+    CompositeATN<TCHAR> catn(*this);
+
+    catn[id].print(os, id.str());
 }
-
-extern "C" void GrammarDestroy(Grammar *grammar)
-{
-    delete grammar;
-}
-
-extern "C" void GrammarAddMachine(Grammar *grammar, const wchar_t *name, void *machine)
-{
-    
+template class Grammar<char>;
+template class Grammar<unsigned char>;
+template class Grammar<wchar_t>;
 }

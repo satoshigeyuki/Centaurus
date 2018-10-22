@@ -263,7 +263,7 @@ class ATNPrinter
     std::vector<Identifier> m_stack;
     int m_counter, m_maxdepth;
 private:
-	std::pair<std::wstring, std::wstring> print_atn(std::wostream& os, const Identifier& key)
+	std::pair<std::wstring, std::wstring> print_atn(std::wostream& os, int index, const Identifier& key)
 	{
 		std::wstring prefix = key + std::to_wstring(m_counter++);
 
@@ -283,7 +283,7 @@ private:
 				if (m_stack.size() < (size_t)m_maxdepth && std::find(m_stack.begin(), m_stack.end(), node.m_invoke) == m_stack.end())
 				{
 					m_stack.push_back(node.m_invoke);
-					entry_exit_nodes[i] = print_atn(os, node.m_invoke);
+					entry_exit_nodes[i] = print_atn(os, i, node.m_invoke);
 					m_stack.pop_back();
 				}
 				else
@@ -313,7 +313,7 @@ private:
 			}
 		}
 
-		os << L"label = \"" << key << L"\";" << std::endl;
+		os << L"label = [" << index << L"]\"" << key << L"\";" << std::endl;
 		os << L"}" << std::endl;
 
 		std::wstring entry_node = prefix + L"_N0";
@@ -331,7 +331,7 @@ public:
     }
 	void print(std::wostream& os, const Identifier& key)
 	{
-		print_atn(os, key);
+		print_atn(os, 0, key);
 	}
 };
 }

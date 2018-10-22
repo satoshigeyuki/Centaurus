@@ -6,6 +6,7 @@
 #include <utility>
 
 #include "Identifier.hpp"
+#include "Stream.hpp"
 
 namespace Centaurus
 {
@@ -24,41 +25,46 @@ template<typename TCHAR> int target_strlen(const TCHAR *str)
         ;
     return i;
 }
-class ATNPath
+class ATNPath : public std::vector<std::pair<Identifier, int> >
 {
 	friend std::wostream& operator<<(std::wostream& os, const ATNPath& path);
-
-    std::vector<std::pair<Identifier, int> > m_path;
 public:
     ATNPath()
     {
     }
     ATNPath(const Identifier& id, int index)
     {
-        m_path.emplace_back(id, index);
+        emplace_back(id, index);
     }
     ATNPath(const ATNPath& path)
-        : m_path(path.m_path)
+        : std::vector<std::pair<Identifier, int> >(path)
     {
     }
+    ATNPath(const std::wstring& str)
+    {
+        Stream stream(str);
+
+        parse(stream);
+    }
+    void parse(Stream& stream);
     virtual ~ATNPath()
     {
     }
     void push(const Identifier& id, int index)
     {
-        m_path.emplace_back(id, index);
+        emplace_back(id, index);
     }
     void push(const std::pair<Identifier, int>& p)
     {
-        m_path.push_back(p);
+        push_back(p);
     }
     void pop()
     {
-        m_path.pop_back();
+        pop_back();
     }
     int count(const Identifier& id, int index) const
     {
-        return std::count(m_path.cbegin(), m_path.cend(), std::pair<Identifier, int>(id, index));
+        return std::count(cbegin(), cend(), std::pair<Identifier, int>(id, index));
     }
     ATNPath add(const Identifier& id, int index) const
     {
@@ -78,13 +84,13 @@ public:
     }
     bool operator==(const ATNPath& path) const
     {
-        return std::equal(m_path.cbegin(), m_path.cend(), path.m_path.cbegin());
+        return std::equal(cbegin(), cend(), path.cbegin());
     }
     size_t hash() const
     {
         size_t ret = 0;
         std::hash<Identifier> hasher;
-        for (const auto& p : m_path)
+        for (const auto& p : *this)
         {
             ret += hasher(p.first) + static_cast<size_t>(p.second);
         }
@@ -92,25 +98,25 @@ public:
     }
     const std::pair<Identifier, int>& leaf() const
     {
-        return m_path.back();
+        return back();
     }
     int leaf_index() const
     {
-        return m_path.back().second;
+        return back().second;
     }
     const Identifier& leaf_id() const
     {
-        return m_path.back().first;
+        return back().first;
     }
     int depth() const
     {
-        return m_path.size();
+        return size();
     }
     ATNPath replace_index(int index) const
     {
         ATNPath path(*this);
 
-        path.m_path.back().second = index;
+        path.back().second = index;
 
         return path;
     }
@@ -128,13 +134,13 @@ public:
         {
             for (int i = 0; i < depth(); i++)
             {
-                int id_cmp = m_path[i].first.str().compare(p.m_path[i].first.str());
+                int id_cmp = (*this)[i].first.str().compare(p[i].first.str());
 
                 if (id_cmp != 0) return id_cmp;
 
-                if (m_path[i].second < p.m_path[i].second)
+                if ((*this)[i].second < p[i].second)
                     return -1;
-                else if (m_path[i].second > p.m_path[i].second)
+                else if ((*this)[i].second > p[i].second)
                     return +1;
             }
         }
@@ -142,10 +148,10 @@ public:
     }
     bool find(const Identifier& id, int index) const
     {
-        return std::find_if(m_path.cbegin(), m_path.cend(), [&](const std::pair<Identifier, int>& p) -> bool
+        return std::find_if(cbegin(), cend(), [&](const std::pair<Identifier, int>& p) -> bool
         {
             return p.first == id && p.second == index;
-        }) != m_path.cend();
+        }) != cend();
     }
 };
 class IndexVector : public std::vector<int>
