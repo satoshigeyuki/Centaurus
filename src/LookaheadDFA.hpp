@@ -37,8 +37,25 @@ class LDFAState : public NFABaseState<TCHAR, CATNClosure>
 {
 	using NFABaseState<TCHAR, CATNClosure>::m_label;
 	using NFABaseState<TCHAR, CATNClosure>::m_transitions;
-
 public:
+	virtual void print(std::wostream& os, int from) const override
+	{
+		for (const auto& t : m_transitions)
+		{
+			os << L"S" << from << L" -> ";
+            if (t.dest() < 0)
+            {
+                os << L"A" << -t.dest();
+            }
+            else
+            {
+                os << L"S" << t.dest();
+            }
+            os << L" [ label=\"";
+			os << t.label();
+			os << L"\" ];" << std::endl;
+		}
+	}
 	int get_color() const
 	{
 		int color = 0;
@@ -77,6 +94,7 @@ template<typename TCHAR>
 class LookaheadDFA : public NFABase<LDFAState<TCHAR> >
 {
 	using NFABase<LDFAState<TCHAR> >::m_states;
+    using NFABase<LDFAState<TCHAR> >::print_state;
 private:
 	static int get_closure_color(const CATNClosure& closure)
 	{
@@ -219,6 +237,37 @@ public:
 	const LDFAState<TCHAR>& operator[](int index) const
 	{
 		return m_states[index];
+	}
+	virtual void print(std::wostream& os, const std::wstring& graph_name) const override
+	{
+		os << L"digraph " << graph_name << L" {" << std::endl;
+		os << L"rankdir=\"LR\";" << std::endl;
+		os << L"graph [ charset=\"UTF-8\", style=\"filled\" ];" << std::endl;
+		os << L"node [ style=\"solid,filled\" ];" << std::endl;
+		os << L"edge [ style=\"solid\" ];" << std::endl;
+
+        int num_colors = get_color_num();
+
+        for (int i = 1; i <= num_colors; i++)
+        {
+            os << L"A" << i << L" [ label=\"";
+            os << i;
+            os << L"\", shape=doublecircle ];" << std::endl;
+        }
+
+		for (unsigned int i = 0; i < m_states.size(); i++)
+		{
+			os << L"S" << i << L" [ label=\"";
+			print_state(os, i);
+			os << L"\", shape=circle ];" << std::endl;
+		}
+
+		for (unsigned int i = 0; i < m_states.size(); i++)
+		{
+			m_states[i].print(os, i);
+		}
+
+		os << L"}" << std::endl;
 	}
 };
 }

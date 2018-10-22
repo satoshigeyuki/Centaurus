@@ -219,9 +219,7 @@ public:
             dfa.print(os, path.leaf_id().str());
         }
     }
-    virtual void print_ldfa(std::wostream& os, const ATNPath& path) const override
-    {
-    }
+    virtual void print_ldfa(std::wostream& os, const ATNPath& path) const override;
     virtual void print_catn(std::wostream& os, const Identifier& id) const override;
     const ATNMachine<TCHAR>& operator[](const Identifier& id) const
     {
