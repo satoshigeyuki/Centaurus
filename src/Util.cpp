@@ -66,13 +66,13 @@ void ATNPath::parse(Stream& stream)
 
         int index = std::stoi(index_str);
 
+        emplace_back(id, index);
+
         ch = stream.get();
         if (ch == L'\0')
             break;
         else if (ch != L'/')
             throw stream.unexpected(ch);
-
-        emplace_back(id, index);
     }
 }
 }

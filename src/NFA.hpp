@@ -133,7 +133,7 @@ public:
     {
         return m_transitions;
     }
-	void print(std::wostream& os, int from) const
+	virtual void print(std::wostream& os, int from) const
 	{
 		for (const auto& t : m_transitions)
 		{
@@ -173,14 +173,12 @@ public:
 	{
 		os << index;
 	}
-	void print(std::wostream& os, const std::wstring& graph_name) const
+	virtual void print(std::wostream& os, const std::wstring& graph_name) const
 	{
 		os << L"digraph " << graph_name << L" {" << std::endl;
-
+		os << L"rankdir=\"LR\";" << std::endl;
 		os << L"graph [ charset=\"UTF-8\", style=\"filled\" ];" << std::endl;
-
 		os << L"node [ style=\"solid,filled\" ];" << std::endl;
-
 		os << L"edge [ style=\"solid\" ];" << std::endl;
 
 		for (unsigned int i = 0; i < m_states.size(); i++)

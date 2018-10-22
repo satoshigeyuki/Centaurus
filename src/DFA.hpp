@@ -14,6 +14,7 @@ template<typename TCHAR> class DFAState : public NFABaseState<TCHAR, IndexVector
 {
 public:
 	using NFABaseState<TCHAR, IndexVector>::get_transitions;
+	using NFABaseState<TCHAR, IndexVector>::m_transitions;
 	DFAState(const IndexVector& label)
 		: NFABaseState<TCHAR, IndexVector>(label) {}
 	bool is_accept_state() const
@@ -23,6 +24,18 @@ public:
 			if (tr.dest() == -1) return true;
 		}
 		return false;
+	}
+	virtual void print(std::wostream& os, int from) const override
+	{
+		for (const auto& t : m_transitions)
+		{
+			if (t.dest() >= 0)
+			{
+				os << L"S" << from << L" -> " << L"S" << t.dest() << L" [ label=\"";
+				os << t.label();
+				os << L"\" ];" << std::endl;
+			}
+		}
 	}
 };
 
@@ -103,7 +116,36 @@ public:
 	virtual ~DFA()
 	{
 	}
-	virtual void print_state(std::wostream& os, int index)
+	virtual void print(std::wostream& os, const std::wstring& graph_name) const override
+	{
+		os << L"digraph " << graph_name << L" {" << std::endl;
+		os << L"rankdir=\"LR\";" << std::endl;
+		os << L"graph [ charset=\"UTF-8\", style=\"filled\" ];" << std::endl;
+		os << L"node [ style=\"solid,filled\" ];" << std::endl;
+		os << L"edge [ style=\"solid\" ];" << std::endl;
+
+		os << L"SS [ style=\"invisible\" ];" << std::endl;
+
+		for (unsigned int i = 0; i < m_states.size(); i++)
+		{
+			os << L"S" << i << L" [ label=\"";
+			print_state(os, i);
+			if (m_states[i].is_accept_state())
+				os << L"\", shape=doublecircle ];" << std::endl;
+			else
+				os << L"\", shape=circle ];" << std::endl;
+		}
+
+		os << L"SS -> S0;" << std::endl;
+
+		for (unsigned int i = 0; i < m_states.size(); i++)
+		{
+			m_states[i].print(os, i);
+		}
+
+		os << L"}" << std::endl;
+	}
+	virtual void print_state(std::wostream& os, int index) const override
 	{
 		os << m_states[index].label();
 	}

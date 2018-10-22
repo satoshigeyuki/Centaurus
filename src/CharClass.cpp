@@ -271,6 +271,7 @@ std::wostream& operator<<(std::wostream& os, const CharClass<TCHAR>& cc)
 {
     auto i = cc.m_ranges.cbegin();
 
+	os << L'[';
     for (; i != cc.m_ranges.cend();)
     {
         if (i->end() == i->start() + 1)
@@ -294,6 +295,7 @@ std::wostream& operator<<(std::wostream& os, const CharClass<TCHAR>& cc)
         }
         i++;
     }
+	os << L']';
     return os;
 }
 template std::wostream& operator<<(std::wostream& os, const CharClass<char>& cc);

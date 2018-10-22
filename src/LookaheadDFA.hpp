@@ -74,9 +74,9 @@ public:
 };
 
 template<typename TCHAR>
-class LookaheadDFA : public NFABase<TCHAR>
+class LookaheadDFA : public NFABase<LDFAState<TCHAR> >
 {
-	std::vector<LDFAState<TCHAR> > m_states;
+	using NFABase<LDFAState<TCHAR> >::m_states;
 private:
 	static int get_closure_color(const CATNClosure& closure)
 	{

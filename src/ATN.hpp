@@ -313,7 +313,7 @@ private:
 			}
 		}
 
-		os << L"label = [" << index << L"]\"" << key << L"\";" << std::endl;
+		os << L"label = \"[" << index << L"]" << key << L"\";" << std::endl;
 		os << L"}" << std::endl;
 
 		std::wstring entry_node = prefix + L"_N0";
