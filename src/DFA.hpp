@@ -17,6 +17,8 @@ public:
 	using NFABaseState<TCHAR, IndexVector>::m_transitions;
 	DFAState(const IndexVector& label)
 		: NFABaseState<TCHAR, IndexVector>(label) {}
+    DFAState(const DFAState<TCHAR>& state, std::vector<DFATransition<TCHAR> >&& transitions)
+        : NFABaseState<TCHAR, IndexVector>(state, transitions) {}
 	bool is_accept_state() const
 	{
 		for (const auto& tr : get_transitions())
@@ -113,6 +115,14 @@ public:
 	DFA()
 	{
 	}
+    DFA(DFA<TCHAR>&& dfa)
+        : NFABase<DFAState<TCHAR> >(dfa)
+    {
+    }
+    DFA(const DFA<TCHAR>& dfa)
+        : NFABase<DFAState<TCHAR> >(dfa)
+    {
+    }
 	virtual ~DFA()
 	{
 	}
@@ -196,5 +206,45 @@ public:
 	{
 		return m_states[index];
 	}
+    void filter_nodes(const std::vector<bool>& mask)
+    {
+        std::vector<DFAState<TCHAR> > nodes;
+        std::vector<int> index_map(m_states.size());
+
+        assert(m_states.size() == mask.size());
+
+        for (int src_index = 0, dest_index = 0; src_index < m_states.size(); src_index++)
+        {
+            if (mask[src_index])
+            {
+                std::vector<DFATransition<TCHAR> > filtered;
+                for (const auto& t : m_states.at(src_index).get_transitions())
+                {
+                    if (mask[t.dest()])
+                    {
+                        filtered.push_back(t);
+                    }
+                }
+                nodes.push_back(DFAState<TCHAR>(m_states.at(src_index), std::move(filtered)));
+                index_map[src_index] = dest_index;
+                dest_index++;
+            }
+            else
+            {
+                index_map[src_index] = -1;
+            }
+        }
+
+        for (auto& n : nodes)
+        {
+            for (auto& t : n.get_transitions())
+            {
+                assert(index_map[t.dest()] >= 0);
+
+                t.dest(index_map[t.dest()]);
+            }
+        }
+        m_states = std::move(nodes);
+    }
 };
 }

@@ -75,6 +75,10 @@ public:
         : m_transitions(state.m_transitions), m_label(state.m_label)
     {
     }
+    NFABaseState(const NFABaseState<TCHAR, TLABEL>& state, std::vector<NFATransition<TCHAR> >&& transitions)
+        : m_transitions(transitions), m_label(state.m_label)
+    {
+    }
     virtual ~NFABaseState()
     {
     }
@@ -164,6 +168,14 @@ protected:
     std::vector<TSTATE> m_states;
 public:
     NFABase()
+    {
+    }
+    NFABase(NFABase<TSTATE>&& old)
+        : m_states(std::move(old.m_states))
+    {
+    }
+    NFABase(const NFABase<TSTATE>& old)
+        : m_states(old.m_states)
     {
     }
     virtual ~NFABase()
@@ -460,6 +472,14 @@ public:
     {
         m_states.emplace_back();
         add_state(CharClass<TCHAR>());
+    }
+    NFA(NFA<TCHAR>&& old)
+        : NFABase<NFAState<TCHAR> >(old)
+    {
+    }
+    NFA(const NFA<TCHAR>& old)
+        : NFABase<NFAState<TCHAR> >(old)
+    {
     }
     virtual ~NFA()
     {

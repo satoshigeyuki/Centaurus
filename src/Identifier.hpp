@@ -47,6 +47,10 @@ public:
         : m_id (id.m_id)
     {
     }
+    Identifier(Identifier&& id)
+        : m_id(std::move(id.m_id))
+    {
+    }
     Identifier()
     {
     }
@@ -95,6 +99,16 @@ public:
 	{
 		return m_id + str;
 	}
+    Identifier& operator=(const Identifier& old)
+    {
+        m_id = old.m_id;
+        return *this;
+    }
+    Identifier& operator=(Identifier&& old)
+    {
+        m_id = std::move(old.m_id);
+        return *this;
+    }
 };
 static std::wostream& operator<<(std::wostream& os, const Identifier& id)
 {

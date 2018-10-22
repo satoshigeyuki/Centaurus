@@ -91,6 +91,8 @@ public:
     virtual void print_dfa(std::wostream& ofs, const ATNPath& path) const {}
     virtual void print_ldfa(std::wostream& ofs, const ATNPath& path) const {}
     virtual void print_catn(std::wostream& ofs, const Identifier& id) const {}
+
+    virtual void optimize() {}
 };
 template<typename TCHAR> class Grammar : public IGrammar
 {
@@ -260,5 +262,12 @@ public:
 			callback(m_identifiers[i].str().c_str(), i + 1);
 		}
 	}
+    virtual void optimize() override
+    {
+        for (auto& p : m_networks)
+        {
+            p.second.drop_passthrough_nodes();
+        }
+    }
 };
 }

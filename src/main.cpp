@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
 	} mode;
     std::string output_path, grammar_path, atn_path, machine_name;
     int max_depth = 3;
-	bool help_flag = false;
+	bool help_flag = false, optimize_flag = false;
 
 	clipp::group cli =
     (
@@ -93,7 +93,8 @@ int main(int argc, char *argv[])
                     (
                         clipp::option("-d", "--max-depth"),
                         clipp::value("maxdepth", max_depth)
-                    )
+                    ),
+                    clipp::option("--optimize").set(optimize_flag, true)
                 )
             ),
             clipp::in_sequence
@@ -129,7 +130,7 @@ int main(int argc, char *argv[])
                     (
                         clipp::option("-p", "--path").required(true),
                         clipp::value("ATN path", atn_path)
-                    ).doc("ATN Path to the decision point")
+                    )
                 )
             ),
 		    clipp::in_sequence
@@ -141,7 +142,7 @@ int main(int argc, char *argv[])
                     (
                         clipp::option("-p", "--path").required(true),
                         clipp::value("ATN path", atn_path)
-                    ).doc("ATN Path to the target object")
+                    )
                 )
             )
         ),
@@ -162,6 +163,11 @@ int main(int argc, char *argv[])
 		}
 
         std::unique_ptr<IGrammar> grammar(LoadGrammar(grammar_path.c_str()));
+
+        if (optimize_flag)
+        {
+            grammar->optimize();
+        }
 
         std::wofstream output_file;
         if (!output_path.empty())

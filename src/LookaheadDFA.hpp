@@ -183,6 +183,14 @@ public:
 
 		fork_closures(catn, 0);
 	}
+    LookaheadDFA(LookaheadDFA<TCHAR>&& old)
+        : NFABase<LDFAState<TCHAR> >(old)
+    {
+    }
+    LookaheadDFA(const LookaheadDFA<TCHAR>& old)
+        : NFABase<LDFAState<TCHAR> >(old)
+    {
+    }
 	virtual ~LookaheadDFA()
 	{
 	}

@@ -40,6 +40,10 @@ public:
     {
         return m_dest;
     }
+    void dest(int dest)
+    {
+        m_dest = dest;
+    }
 	int tag() const
 	{
 		return m_tag;
@@ -91,6 +95,18 @@ public:
     ATNNode(Stream& stream)
     {
         parse(stream);
+    }
+    ATNNode(ATNNode<TCHAR>&& old)
+        : m_transitions(std::move(old.m_transitions)), m_type(old.m_type), m_invoke(std::move(old.m_invoke)), m_nfa(std::move(old.m_nfa)), m_literal(std::move(old.m_literal)), m_localid(old.m_localid)
+    {
+    }
+    ATNNode(const ATNNode<TCHAR>& old)
+        : m_transitions(old.m_transitions), m_type(old.m_type), m_invoke(old.m_invoke), m_nfa(old.m_nfa), m_literal(old.m_literal), m_localid(old.m_localid)
+    {
+    }
+    ATNNode(const ATNNode<TCHAR>& old, std::vector<ATNTransition<TCHAR> >&& transitions)
+        : m_transitions(transitions), m_type(old.m_type), m_invoke(old.m_invoke), m_nfa(old.m_nfa), m_literal(old.m_literal), m_localid(old.m_localid)
+    {
     }
     virtual ~ATNNode()
     {
@@ -155,6 +171,10 @@ public:
         return m_type;
     }
     const std::vector<ATNTransition<TCHAR> >& get_transitions() const
+    {
+        return m_transitions;
+    }
+    std::vector<ATNTransition<TCHAR> >& get_transitions()
     {
         return m_transitions;
     }
@@ -253,6 +273,91 @@ public:
     int get_unique_id() const
     {
         return m_globalid;
+    }
+    int count_incoming_edges(int index, int& where) const
+    {
+        int count = 0;
+        for (int i = 0; i < m_nodes.size(); i++)
+        {
+            for (const auto& t : m_nodes.at(i).get_transitions())
+            {
+                if (t.dest() == index)
+                {
+                    where = i;
+                    count++;
+                    //break;  //Overlapping edges should be counted as one.
+                }
+            }
+        }
+        if (count != 1) where = -1;
+        return count;
+    }
+    void filter_nodes(const std::vector<bool>& mask)
+    {
+        std::vector<ATNNode<TCHAR> > nodes;
+        std::vector<int> index_map(m_nodes.size());
+
+        assert(m_nodes.size() == mask.size());
+
+        for (int src_index = 0, dest_index = 0; src_index < m_nodes.size(); src_index++)
+        {
+            if (mask[src_index])
+            {
+                std::vector<ATNTransition<TCHAR> > filtered;
+                for (const auto& t : m_nodes.at(src_index).get_transitions())
+                {
+                    if (mask[t.dest()])
+                    {
+                        filtered.push_back(t);
+                    }
+                }
+                nodes.push_back(ATNNode<TCHAR>(m_nodes.at(src_index), std::move(filtered)));
+                index_map[src_index] = dest_index;
+                dest_index++;
+            }
+            else
+            {
+                index_map[src_index] = -1;
+            }
+        }
+
+        for (auto& n : nodes)
+        {
+            for (auto& t : n.get_transitions())
+            {
+                assert(index_map[t.dest()] >= 0);
+
+                t.dest(index_map[t.dest()]);
+            }
+        }
+        m_nodes = std::move(nodes);
+    }
+    void drop_passthrough_nodes()
+    {
+        std::vector<bool> mask(m_nodes.size(), true);
+
+        for (int i = 1; i < m_nodes.size() - 1; i++)
+        {
+            const ATNNode<TCHAR>& node = m_nodes.at(i);
+            if (node.type() == ATNNodeType::Blank)
+            {
+                int where = -1;
+                int count = count_incoming_edges(i, where);
+
+                if (count == 1)
+                {
+                    assert(where >= 0);
+                    ATNNode<TCHAR>& origin = m_nodes.at(where);
+                    for (const auto& t : node.get_transitions())
+                    {
+                        origin.add_transition(t);
+                    }
+                    mask[i] = false;
+                }
+            }
+        }
+
+        filter_nodes(mask);
     }
 };
 
