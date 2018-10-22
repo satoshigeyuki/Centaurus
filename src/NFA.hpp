@@ -42,6 +42,10 @@ public:
     {
         return m_dest;
     }
+    void dest(int new_dest)
+    {
+        m_dest = new_dest;
+    }
     void add_class(const CharClass<TCHAR>& cc)
     {
         m_label |= cc;
@@ -53,6 +57,19 @@ public:
     bool is_epsilon() const
     {
         return m_label.is_epsilon();
+    }
+    bool operator<(const NFATransition<TCHAR>& t) const
+    {
+        return m_dest < t.m_dest;
+    }
+    bool operator==(const NFATransition<TCHAR>& t) const
+    {
+        return m_dest == t.m_dest && m_label == t.m_label;
+    }
+    size_t hash() const
+    {
+        std::hash<int> int_hasher;
+        return int_hasher(m_dest) ^ m_label.hash();
     }
 };
 
@@ -137,6 +154,10 @@ public:
     {
         return m_transitions;
     }
+    std::vector<NFATransition<TCHAR> >& get_transitions()
+    {
+        return m_transitions;
+    }
 	virtual void print(std::wostream& os, int from) const
 	{
 		for (const auto& t : m_transitions)
@@ -158,6 +179,23 @@ public:
     const TLABEL& label() const
     {
         return m_label;
+    }
+    bool operator==(const NFABaseState<TCHAR, TLABEL>& s) const
+    {
+        return std::equal(m_transitions.cbegin(), m_transitions.cend(), s.m_transitions.cbegin());
+    }
+    size_t hash() const
+    {
+        size_t value = 0;
+        for (const auto& t : m_transitions)
+        {
+            value ^= t.hash();
+        }
+        return value;
+    }
+    void sort()
+    {
+        std::sort(m_transitions.begin(), m_transitions.end());
     }
 };
 template<typename TCHAR> using NFAState = NFABaseState<TCHAR, int>;

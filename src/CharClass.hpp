@@ -475,6 +475,17 @@ public:
     {
         return m_ranges.size();
     }
+    size_t hash() const
+    {
+        std::hash<TCHAR> hasher;
+        size_t value = 0;
+        for (const auto& range : m_ranges)
+        {
+            value ^= hasher(range.start());
+            value ^= hasher(range.end());
+        }
+        return value;
+    }
 };
 }
 
@@ -488,4 +499,24 @@ namespace Microsoft
             std::wstring ToString(const Centaurus::CharClass<TCHAR>& cc);
         }
     }
+}
+
+namespace std
+{
+    template<> template<typename TCHAR>
+    struct hash<Centaurus::CharClass<TCHAR> >
+    {
+        size_t operator()(const Centaurus::CharClass<TCHAR>& cc) const noexcept
+        {
+            return cc.hash();
+        }
+    };
+    template<> template<typename TCHAR>
+    struct equal_to<Centaurus::CharClass<TCHAR> >
+    {
+        bool operator()(const Centaurus::CharClass<TCHAR>& x, const Centaurus::CharClass<TCHAR>& y) const noexcept
+        {
+            return x == y;
+        }
+    };
 }

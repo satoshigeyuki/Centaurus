@@ -4,6 +4,7 @@
 #include <set>
 #include <algorithm>
 #include <vector>
+#include <unordered_map>
 
 #include "NFA.hpp"
 
@@ -15,10 +16,13 @@ template<typename TCHAR> class DFAState : public NFABaseState<TCHAR, IndexVector
 public:
 	using NFABaseState<TCHAR, IndexVector>::get_transitions;
 	using NFABaseState<TCHAR, IndexVector>::m_transitions;
+    using NFABaseState<TCHAR, IndexVector>::hash;
+    using NFABaseState<TCHAR, IndexVector>::operator==;
+    using NFABaseState<TCHAR, IndexVector>::sort;
 	DFAState(const IndexVector& label)
 		: NFABaseState<TCHAR, IndexVector>(label) {}
     DFAState(const DFAState<TCHAR>& state, std::vector<DFATransition<TCHAR> >&& transitions)
-        : NFABaseState<TCHAR, IndexVector>(state, transitions) {}
+        : NFABaseState<TCHAR, IndexVector>(state, std::move(transitions)) {}
 	bool is_accept_state() const
 	{
 		for (const auto& tr : get_transitions())
@@ -110,6 +114,8 @@ public:
 			{
 				state.add_transition(CharClass<TCHAR>(), -1);
 			}
+
+            state.sort();
 		}
 	}
 	DFA()
@@ -220,12 +226,12 @@ public:
                 std::vector<DFATransition<TCHAR> > filtered;
                 for (const auto& t : m_states.at(src_index).get_transitions())
                 {
-                    if (mask[t.dest()])
+                    if (t.dest() < 0 || mask[t.dest()])
                     {
                         filtered.push_back(t);
                     }
                 }
-                nodes.push_back(DFAState<TCHAR>(m_states.at(src_index), std::move(filtered)));
+                nodes.emplace_back(m_states.at(src_index), std::move(filtered));
                 index_map[src_index] = dest_index;
                 dest_index++;
             }
@@ -239,12 +245,79 @@ public:
         {
             for (auto& t : n.get_transitions())
             {
-                assert(index_map[t.dest()] >= 0);
-
-                t.dest(index_map[t.dest()]);
+                if (t.dest() >= 0)
+                {
+                    t.dest(index_map[t.dest()]);
+                }
             }
         }
         m_states = std::move(nodes);
+    }
+    void redirect_transitions(int from, int to)
+    {
+        for (auto& s : m_states)
+        {
+            for (auto& t : s.get_transitions())
+            {
+                if (t.dest() == from)
+                {
+                    t.dest(to);
+                }
+            }
+        }
+    }
+    void minimize()
+    {
+        std::vector<bool> mask(m_states.size(), true);
+        std::vector<int> remap(m_states.size(), -1);
+
+        std::unordered_map<DFAState<TCHAR>, int> equiv_map;
+
+        for (int index = 0; index < m_states.size(); index++)
+        {
+            if (!m_states[index].get_transitions().empty() && !m_states[index].is_accept_state())
+            {
+                auto p = equiv_map.find(m_states[index]);
+                if (p != equiv_map.end())
+                {
+                    remap[index] = p->second;
+                    mask[index] = false;
+                }
+                else
+                {
+                    equiv_map.emplace(m_states[index], index);
+                }
+            }
+        }
+
+        for (int index = 0; index < m_states.size(); index++)
+        {
+            if (remap[index] >= 0)
+            {
+                redirect_transitions(index, remap[index]);
+            }
+        }
+        filter_nodes(mask);
+    }
+};
+}
+
+namespace std
+{
+template<> template<typename TCHAR>
+struct hash<Centaurus::DFAState<TCHAR> >
+{
+    size_t operator()(const Centaurus::DFAState<TCHAR>& s) const
+    {
+        return s.hash();
+    }
+};
+template<> template<typename TCHAR>
+struct equal_to<Centaurus::DFAState<TCHAR> >
+{
+    bool operator()(const Centaurus::DFAState<TCHAR>& x, const Centaurus::DFAState<TCHAR>& y) const
+    {
+        return x == y;
     }
 };
 }

@@ -23,6 +23,7 @@ class Grammar(object):
     #corelib.GrammarAddRule.argtypes = [ctypes.c_void_p, ctypes.c_wchar_p, ctypes.c_wchar_p]
     CoreLib.GrammarPrint.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.c_int]
     CoreLib.GrammarEnumMachines.argtypes = [ctypes.c_void_p, EnumMachinesCallback]
+    CoreLib.GrammarOptimize.argtypes = [ctypes.c_void_p]
 
     def __init__(self, filename):
         self.handle = CoreLib.GrammarCreate(filename.encode('utf-8'))
@@ -38,6 +39,8 @@ class Grammar(object):
         CoreLib.GrammarDestroy(self.handle)
     def print(self, filename):
         CoreLib.GrammarPrint(self.handle, filename.encode('utf-8'), 4)
+    def optimize(self):
+        CoreLib.GrammarOptimize(self.handle)
     def get_machine_id(self, name):
         return self.ids[name]
     def get_machine_name(self, id):

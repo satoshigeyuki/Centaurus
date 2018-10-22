@@ -38,13 +38,18 @@ namespace Centaurus __attribute__((visibility("default")))
 	{
 		std::wofstream ofs(filename);
 
-		grammar->print(ofs, maxdepth);
+		grammar->print_grammar(ofs, maxdepth);
 	}
 
 	CENTAURUS_EXPORT(void) GrammarEnumMachines(IGrammar *grammar, EnumMachinesCallback callback)
 	{
 		grammar->enum_machines(callback);
 	}
+
+    CENTAURUS_EXPORT(void) GrammarOptimize(IGrammar *grammar)
+    {
+        grammar->optimize();
+    }
 
 	CENTAURUS_EXPORT(IParser *) ParserCreate(IGrammar *grammar, bool dry)
 	{

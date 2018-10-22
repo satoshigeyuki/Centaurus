@@ -142,7 +142,8 @@ int main(int argc, char *argv[])
                     (
                         clipp::option("-p", "--path").required(true),
                         clipp::value("ATN path", atn_path)
-                    )
+                    ),
+                    clipp::option("--optimize").set(optimize_flag, true)
                 )
             )
         ),
@@ -164,11 +165,6 @@ int main(int argc, char *argv[])
 
         std::unique_ptr<IGrammar> grammar(LoadGrammar(grammar_path.c_str()));
 
-        if (optimize_flag)
-        {
-            grammar->optimize();
-        }
-
         std::wofstream output_file;
         if (!output_path.empty())
         {
@@ -179,7 +175,7 @@ int main(int argc, char *argv[])
 		switch (mode)
 		{
 		case GenerateATN:
-            grammar->print(output_stream, max_depth);
+            grammar->print_grammar(output_stream, max_depth, optimize_flag);
 			return 0;
         case GenerateCATN:
             grammar->print_catn(output_stream, Identifier(enc.mbstowcs(machine_name)));
@@ -191,7 +187,7 @@ int main(int argc, char *argv[])
             grammar->print_ldfa(output_stream, ATNPath(enc.mbstowcs(atn_path)));
             return 0;
         case GenerateDFA:
-            grammar->print_dfa(output_stream, ATNPath(enc.mbstowcs(atn_path)));
+            grammar->print_dfa(output_stream, ATNPath(enc.mbstowcs(atn_path)), optimize_flag);
             return 0;
 		}
 	}

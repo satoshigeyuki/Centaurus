@@ -85,10 +85,10 @@ public:
 	virtual ~IGrammar() {}
 
 	virtual void enum_machines(EnumMachinesCallback callback) const = 0;
-	virtual void print(std::wostream& ofs, int maxdepth) const {}
+	virtual void print_grammar(std::wostream& ofs, int maxdepth, bool optimize_flag = false) {}
 
     virtual void print_nfa(std::wostream& ofs, const ATNPath& path) const {}
-    virtual void print_dfa(std::wostream& ofs, const ATNPath& path) const {}
+    virtual void print_dfa(std::wostream& ofs, const ATNPath& path, bool optimize_flag = false) const {}
     virtual void print_ldfa(std::wostream& ofs, const ATNPath& path) const {}
     virtual void print_catn(std::wostream& ofs, const Identifier& id) const {}
 
@@ -185,8 +185,13 @@ public:
 
 		os << L"}" << std::endl;
 	}
-	virtual void print(std::wostream& os, int maxdepth) const override
+	virtual void print_grammar(std::wostream& os, int maxdepth, bool optimize_flag) override
 	{
+        if (optimize_flag)
+        {
+            optimize();
+        }
+
 		print(os, get_root_id(), maxdepth);
 	}
     virtual void print_nfa(std::wostream& os, const ATNPath& path) const override
@@ -204,7 +209,7 @@ public:
             nfa.print(os, path.leaf_id().str());
         }
     }
-    virtual void print_dfa(std::wostream& os, const ATNPath& path) const override
+    virtual void print_dfa(std::wostream& os, const ATNPath& path, bool optimize_flag) const override
     {
         const ATNNode<TCHAR>& node = resolve(path);
 
@@ -217,6 +222,11 @@ public:
             const NFA<TCHAR>& nfa = node.get_nfa();
 
             DFA<TCHAR> dfa(nfa);
+
+            if (optimize_flag)
+            {
+                dfa.minimize();
+            }
 
             dfa.print(os, path.leaf_id().str());
         }
