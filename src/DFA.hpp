@@ -13,7 +13,7 @@ namespace Centaurus
 template<typename TCHAR> using DFATransition = NFATransition<TCHAR>;
 template<typename TCHAR> class DFAState : public NFABaseState<TCHAR, IndexVector>
 {
-    bool m_long;
+    bool m_long, m_accept;
 public:
 	using NFABaseState<TCHAR, IndexVector>::get_transitions;
 	using NFABaseState<TCHAR, IndexVector>::m_transitions;
@@ -23,45 +23,21 @@ public:
 	DFAState(const IndexVector& label, bool long_flag = false)
 		: NFABaseState<TCHAR, IndexVector>(label), m_long(long_flag) {}
     DFAState(const DFAState<TCHAR>& state, std::vector<DFATransition<TCHAR> >&& transitions)
-        : NFABaseState<TCHAR, IndexVector>(state, std::move(transitions)), m_long(state.m_long) {}
+        : NFABaseState<TCHAR, IndexVector>(state, std::move(transitions)), m_long(state.m_long), m_accept(state.m_accept) {}
 	bool is_accept_state() const
 	{
-		for (const auto& tr : get_transitions())
-		{
-			if (tr.dest() == -1) return true;
-		}
-		return false;
+		return m_accept;
 	}
 	virtual void print(std::wostream& os, int from) const override
 	{
 		for (const auto& t : m_transitions)
 		{
-			if (t.dest() >= 0)
-			{
-				os << L"S" << from << L" -> " << L"S" << t.dest() << L" [ label=\"";
-				os << t.label();
-				if (!t.is_long())
-				{
-					os << L"\" ];" << std::endl;
-				}
-				else
-				{
-					os << L"\", penwidth=3, arrowsize=3 ];" << std::endl;
-				}
-				os << L"\" ];" << std::endl;
-			}
+			os << L"S" << from << L" -> " << L"S" << t.dest() << L" [ label=\"";
+			os << t.label();
+			os << L"\" ];" << std::endl;
 		}
 	}
-	int count_transitions() const
-	{
-		int count = 0;
-		for (const auto& tr : m_transitions)
-		{
-			if (tr.dest() >= 0) count++;
-		}
-		return count;
-	}
-    void set_long(bool long_flag)
+    void set_long(bool long_flag = true)
     {
         m_long |= long_flag;
     }
@@ -69,6 +45,14 @@ public:
     {
         return m_long;
     }
+	void set_accept(bool accept_flag = true)
+	{
+		m_accept |= accept_flag;
+	}
+	bool is_accept() const
+	{
+		return m_accept;
+	}
 };
 
 template<typename TCHAR> class DFA : public NFABase<DFAState<TCHAR> >
@@ -141,7 +125,8 @@ public:
 		{
 			if (state.label().includes(accept_state_index))
 			{
-				state.add_transition(CharClass<TCHAR>(), -1);
+				//state.add_transition(CharClass<TCHAR>(), -1);
+				state.set_accept();
 			}
 
             state.sort();
@@ -206,11 +191,7 @@ public:
 		const DFAState<TCHAR>& state = m_states[index];
 		if (input_pos == seq.size())
 		{
-			for (const auto& tr : state.get_transitions())
-			{
-				if (tr.dest() == -1) return true;
-			}
-			return false;
+			return state.is_accept();
 		}
 		else
 		{
@@ -230,11 +211,7 @@ public:
 	}
 	bool is_accept_state(int index) const
 	{
-		for (const auto& tr : get_transitions(index))
-		{
-			if (tr.dest() == -1) return true;
-		}
-		return false;
+		return m_states[index].is_accept();
 	}
 	typename std::vector<DFAState<TCHAR> >::const_iterator begin() const
 	{
@@ -262,7 +239,7 @@ public:
                 std::vector<DFATransition<TCHAR> > filtered;
                 for (const auto& t : m_states.at(src_index).get_transitions())
                 {
-                    if (t.dest() < 0 || mask[t.dest()])
+                    if (mask[t.dest()])
                     {
                         filtered.push_back(t);
                     }
@@ -281,10 +258,7 @@ public:
         {
             for (auto& t : n.get_transitions())
             {
-                if (t.dest() >= 0)
-                {
-                    t.dest(index_map[t.dest()]);
-                }
+                t.dest(index_map[t.dest()]);
             }
         }
         m_states = std::move(nodes);

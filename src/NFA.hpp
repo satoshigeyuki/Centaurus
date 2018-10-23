@@ -210,6 +210,7 @@ public:
     }
     bool operator==(const NFABaseState<TCHAR, TLABEL>& s) const
     {
+		if (m_transitions.size() != s.m_transitions.size()) return false;
         return std::equal(m_transitions.cbegin(), m_transitions.cend(), s.m_transitions.cbegin());
     }
     size_t hash() const
