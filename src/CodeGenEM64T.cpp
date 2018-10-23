@@ -581,7 +581,11 @@ void DFARoutineEM64T<TCHAR>::emit_state(asmjit::X86Assembler& as, asmjit::Label&
     else
         as.add(INPUT_REG, 2);
 
-    if (state.get_transitions().size() == 1 && state.get_transitions()[0].label().size() == 1)
+	if (state.count_transitions() == 1)
+	{
+
+	}
+    /*if (state.get_transitions().size() == 1 && state.get_transitions()[0].label().size() == 1)
     {
         const NFATransition<TCHAR>& tr = state.get_transitions()[0];
         const Range<TCHAR>& r = tr.label()[0];
@@ -599,28 +603,31 @@ void DFARoutineEM64T<TCHAR>::emit_state(asmjit::X86Assembler& as, asmjit::Label&
             }
         }
         as.jmp(labels[tr.dest()]);
-    }
+    }*/
     else
     {
         for (const auto& tr : state.get_transitions())
         {
-            for (const auto& r : tr.label())
-            {
-                if (r.start() + 1 == r.end())
-                {
-                    //The range consists of one character: test for equality and jump
-                    as.cmp(CHAR_REG, r.start());
-                    as.je(labels[tr.dest()]);
-                }
-                else
-                {
-                    //The range consists of multiple characters: range check and jump
-                    as.sub(CHAR_REG, r.start());
-                    as.cmp(CHAR_REG, r.end() - r.start());
-                    as.jb(labels[tr.dest()]);
-                    as.mov(CHAR_REG, CHAR2_REG);
-                }
-            }
+			if (tr.dest() >= 0)
+			{
+				for (const auto& r : tr.label())
+				{
+					if (r.start() + 1 == r.end())
+					{
+						//The range consists of one character: test for equality and jump
+						as.cmp(CHAR_REG, r.start());
+						as.je(labels[tr.dest()]);
+					}
+					else
+					{
+						//The range consists of multiple characters: range check and jump
+						as.sub(CHAR_REG, r.start());
+						as.cmp(CHAR_REG, r.end() - r.start());
+						as.jb(labels[tr.dest()]);
+						as.mov(CHAR_REG, CHAR2_REG);
+					}
+				}
+			}
         }
         //Jump to the "reject trampoline" and check if the input has ever been accepted
         as.jmp(rejectlabel);

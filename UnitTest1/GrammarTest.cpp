@@ -35,7 +35,7 @@ public:
 
 		std::wofstream ofs("atn.dot");
 
-		grammar.print(ofs, 3);
+		grammar.print_grammar(ofs, 3, true);
 	}
 };
 }

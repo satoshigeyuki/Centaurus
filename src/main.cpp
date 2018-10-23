@@ -46,21 +46,6 @@ static IGrammar *LoadGrammar(const char *filename)
     return grammar;
 }
 
-static uint64_t get_us_clock()
-{
-#if defined(CENTAURUS_BUILD_LINUX)
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    return tv.tv_sec * 1000000 + tv.tv_usec;
-#elif defined(CENTAURUS_BUILD_WINDOWS)
-	LARGE_INTEGER qpc;
-	QueryPerformanceCounter(&qpc);
-	LARGE_INTEGER qpf;
-	QueryPerformanceFrequency(&qpf);
-	return (uint64_t)qpc.QuadPart * 1000000 / (uint64_t)qpf.QuadPart;
-#endif
-}
-
 int main(int argc, char *argv[])
 {
     std::wcin.imbue(std::locale(""));

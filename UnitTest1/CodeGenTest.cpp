@@ -12,6 +12,21 @@
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
+static uint64_t get_us_clock()
+{
+#if defined(CENTAURUS_BUILD_LINUX)
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	return tv.tv_sec * 1000000 + tv.tv_usec;
+#elif defined(CENTAURUS_BUILD_WINDOWS)
+	LARGE_INTEGER qpc;
+	QueryPerformanceCounter(&qpc);
+	LARGE_INTEGER qpf;
+	QueryPerformanceFrequency(&qpf);
+	return (uint64_t)qpc.QuadPart * 1000000 / (uint64_t)qpf.QuadPart;
+#endif
+}
+
 namespace UnitTest1
 {
 class MyErrorHandler : public asmjit::ErrorHandler
@@ -106,6 +121,8 @@ public:
 
         Grammar<unsigned char> grammar = LoadGrammar<unsigned char>("grammar/json2.cgr");
 
+		grammar.optimize();
+
 		/*FILE *logFile;
 		fopen_s(&logFile, "parser.asm", "w");
         asmjit::FileLogger logger(logFile);*/
@@ -128,8 +145,16 @@ public:
 
         Stage1Runner runner{input_path, &parser, 8 * 1024 * 1024, 8};
 
+		uint64_t start_time = get_us_clock();
+
         runner.start();
         runner.wait();
+
+		uint64_t end_time = get_us_clock();
+
+		char msg[256];
+		sprintf_s(msg, "Elapsed time: %lu[ms]\r\n", (end_time - start_time) / 1000);
+		Logger::WriteMessage(msg);
 
         //Assert::AreEqual((const void *)(json + strlen(json)), context.result);
         Assert::IsTrue(runner.get_result() != NULL);

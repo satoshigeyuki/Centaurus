@@ -503,7 +503,7 @@ namespace Microsoft
 
 namespace std
 {
-    template<> template<typename TCHAR>
+    template<typename TCHAR>
     struct hash<Centaurus::CharClass<TCHAR> >
     {
         size_t operator()(const Centaurus::CharClass<TCHAR>& cc) const noexcept
@@ -511,7 +511,7 @@ namespace std
             return cc.hash();
         }
     };
-    template<> template<typename TCHAR>
+    template<typename TCHAR>
     struct equal_to<Centaurus::CharClass<TCHAR> >
     {
         bool operator()(const Centaurus::CharClass<TCHAR>& x, const Centaurus::CharClass<TCHAR>& y) const noexcept

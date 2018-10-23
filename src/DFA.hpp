@@ -43,6 +43,15 @@ public:
 			}
 		}
 	}
+	int count_transitions() const
+	{
+		int count = 0;
+		for (const auto& tr : m_transitions)
+		{
+			if (tr.dest() >= 0) count++;
+		}
+		return count;
+	}
 };
 
 template<typename TCHAR> class DFA : public NFABase<DFAState<TCHAR> >
@@ -307,7 +316,7 @@ public:
 
 namespace std
 {
-template<> template<typename TCHAR>
+template<typename TCHAR>
 struct hash<Centaurus::DFAState<TCHAR> >
 {
     size_t operator()(const Centaurus::DFAState<TCHAR>& s) const
@@ -315,7 +324,7 @@ struct hash<Centaurus::DFAState<TCHAR> >
         return s.hash();
     }
 };
-template<> template<typename TCHAR>
+template<typename TCHAR>
 struct equal_to<Centaurus::DFAState<TCHAR> >
 {
     bool operator()(const Centaurus::DFAState<TCHAR>& x, const Centaurus::DFAState<TCHAR>& y) const

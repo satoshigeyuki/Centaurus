@@ -218,5 +218,8 @@
     <ClCompile Include="..\src\Stage3Runner.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\Grammar.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

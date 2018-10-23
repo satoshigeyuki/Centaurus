@@ -242,6 +242,7 @@
     <ClCompile Include="..\src\CharClass.cpp" />
     <ClCompile Include="..\src\CodeGenEM64T.cpp" />
     <ClCompile Include="..\src\CompositeATN.cpp" />
+    <ClCompile Include="..\src\Grammar.cpp" />
     <ClCompile Include="..\src\main.cpp" />
     <ClCompile Include="..\src\Stage1Runner.cpp" />
     <ClCompile Include="..\src\Stage2Runner.cpp" />
