@@ -111,9 +111,9 @@ class DFARoutineEM64T
     asmjit::JitRuntime m_runtime;
     asmjit::CodeHolder m_code;
 private:
-    static void emit_state(asmjit::X86Assembler& as, asmjit::Label& rejectlabel, const DFAState<TCHAR>& state, int index, std::vector<asmjit::Label>& labels);
+    static void emit_state(asmjit::X86Assembler& as, asmjit::Label& rejectlabel, const DFAState<TCHAR>& state, int index, std::vector<asmjit::Label>& labels, MyConstPool& pool);
 public:
-    static void emit(asmjit::X86Assembler& as, asmjit::Label& rejectlabel, const DFA<TCHAR>& dfa);
+    static void emit(asmjit::X86Assembler& as, asmjit::Label& rejectlabel, const DFA<TCHAR>& dfa, MyConstPool& pool);
 	DFARoutineEM64T(const DFA<TCHAR>& dfa, asmjit::Logger *logger = NULL);
 	virtual ~DFARoutineEM64T() {}
     const void *operator()(const void *input)
