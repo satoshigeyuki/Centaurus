@@ -219,7 +219,7 @@ static std::wostream& printc(std::wostream& os, char ch)
 	if (!isgraph(ch))
 	{
 		wchar_t buf[16];
-		swprintf(buf, 16, L"\\x%0X", (int)ch);
+		swprintf(buf, 16, L"\\\\x%0X", (int)ch);
 		return os << buf;
 	}
 	else
@@ -269,6 +269,8 @@ static std::wostream& printc(std::wostream& os, char16_t ch)
 template<typename TCHAR>
 std::wostream& operator<<(std::wostream& os, const CharClass<TCHAR>& cc)
 {
+    if (cc.is_epsilon()) return os;
+
     auto i = cc.m_ranges.cbegin();
 
 	os << L'[';

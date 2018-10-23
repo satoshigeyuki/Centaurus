@@ -22,13 +22,14 @@ template<typename TCHAR> class NFATransition
 {
     CharClass<TCHAR> m_label;
     int m_dest;
+    bool m_long;
 public:
-    NFATransition(const CharClass<TCHAR>& label, int dest)
-        : m_label(label), m_dest(dest)
+    NFATransition(const CharClass<TCHAR>& label, int dest, bool long_flag = false)
+        : m_label(label), m_dest(dest), m_long(long_flag)
     {
     }
     NFATransition(const NFATransition<TCHAR>& transition)
-        : m_label(transition.m_label), m_dest(transition.m_dest)
+        : m_label(transition.m_label), m_dest(transition.m_dest), m_long(transition.m_long)
     {
     }
     virtual ~NFATransition()
@@ -52,7 +53,7 @@ public:
     }
     NFATransition<TCHAR> offset(int value) const
     {
-        return NFATransition<TCHAR>(m_label, m_dest + value);
+        return NFATransition<TCHAR>(m_label, m_dest + value, m_long);
     }
     bool is_epsilon() const
     {
@@ -70,6 +71,14 @@ public:
     {
         std::hash<int> int_hasher;
         return int_hasher(m_dest) ^ m_label.hash();
+    }
+    bool is_long() const
+    {
+        return m_long;
+    }
+    void set_long(bool long_flag = true)
+    {
+        m_long = long_flag;
     }
 };
 
@@ -103,7 +112,7 @@ public:
     {
         m_transitions.push_back(transition);
     }
-    void add_transition(const CharClass<TCHAR>& cc, int dest)
+    void add_transition(const CharClass<TCHAR>& cc, int dest, bool long_flag = false)
     {
         if (!cc.is_epsilon())
         {
@@ -112,11 +121,12 @@ public:
                 if (tr.dest() == dest && !tr.label().is_epsilon())
                 {
                     tr.add_class(cc);
+                    if (long_flag) tr.set_long();
                     return;
                 }
             }
         }
-        m_transitions.emplace_back(cc, dest);
+        m_transitions.emplace_back(cc, dest, long_flag);
     }
     NFABaseState<TCHAR, TLABEL> offset(int value) const
     {
@@ -136,7 +146,7 @@ public:
             add_transition(i.offset(offset_value));
         }
     }
-    IndexVector epsilon_transitions() const
+    IndexVector epsilon_transitions(bool& long_flag) const
     {
         IndexVector ret;
 
@@ -145,6 +155,10 @@ public:
             if (i.is_epsilon())
             {
                 ret.push_back(i.dest());
+            }
+            if (i.is_long())
+            {
+                long_flag = true;
             }
         }
 
@@ -164,7 +178,14 @@ public:
 		{
 			os << L"S" << from << L" -> " << L"S" << t.dest() << L" [ label=\"";
 			os << t.label();
-			os << L"\" ];" << std::endl;
+            if (!t.is_long())
+            {
+                os << L"\" ];" << std::endl;
+            }
+            else
+            {
+                os << L"\", penwidth=3, arrowsize=3 ];" << std::endl;
+            }
 		}
 	}
 	void print_subgraph(std::wostream& os, int from, const std::wstring& prefix) const
@@ -173,7 +194,14 @@ public:
 		{
 			os << prefix << L"_S" << from << L" -> " << prefix << L"_S" << t.dest() << L" [ label=\"";
 			os << t.label();
-			os << L"\" ];" << std::endl;
+            if (!t.is_long())
+            {
+                os << L"\" ];" << std::endl;
+            }
+            else
+            {
+                os << L"\", penwidth=3, arrowsize=3 ];" << std::endl;
+            }
 		}
 	}
     const TLABEL& label() const
@@ -460,22 +488,92 @@ public:
         {
         case L'+':
             stream.discard();
-            //Add an epsilon transition to the last state
-            add_transition_to(CharClass<TCHAR>(), 1);
+            ch = stream.peek();
+            switch (ch)
+            {
+            case L'+':
+                stream.discard();
+                //Add an epsilon transition to the last state
+                add_transition_to(CharClass<TCHAR>(), 1, true);
+                break;
+            case L'?':
+                stream.discard();
+                //Add an epsilon transition to the last state
+                add_transition_to(CharClass<TCHAR>(), 1);
+                break;
+            case L'*':
+                stream.discard();
+                //Add an epsilon transition to the last state
+                add_transition_to(CharClass<TCHAR>(), 1);
+                break;
+            default:
+                //Add an epsilon transition to the last state
+                add_transition_to(CharClass<TCHAR>(), 1);
+                break;
+            }
             break;
         case L'*':
             stream.discard();
-            //Add an epsilon transition to the last state
-            add_transition_to(CharClass<TCHAR>(), 1);
-            //Add a confluence
-            add_state(CharClass<TCHAR>());
-            //Add a skipping transition
-            add_transition_from(CharClass<TCHAR>(), 1);
+            ch = stream.peek();
+            switch (ch)
+            {
+            case L'+':
+                stream.discard();
+                //Add an epsilon transition to the last state
+                add_transition_to(CharClass<TCHAR>(), 1, true);
+                //Add a confluence
+                add_state(CharClass<TCHAR>());
+                //Add a skipping transition
+                add_transition_from(CharClass<TCHAR>(), 1);
+                break;
+            case L'?':
+                stream.discard();
+                //Add an epsilon transition to the last state
+                add_transition_to(CharClass<TCHAR>(), 1);
+                //Add a confluence
+                add_state(CharClass<TCHAR>());
+                //Add a skipping transition
+                add_transition_from(CharClass<TCHAR>(), 1);
+                break;
+            case L'*':
+                stream.discard();
+                //Add an epsilon transition to the last state
+                add_transition_to(CharClass<TCHAR>(), 1);
+                //Add a confluence
+                add_state(CharClass<TCHAR>());
+                //Add a skipping transition
+                add_transition_from(CharClass<TCHAR>(), 1);
+                break;
+            default:
+                //Add an epsilon transition to the last state
+                add_transition_to(CharClass<TCHAR>(), 1);
+                //Add a confluence
+                add_state(CharClass<TCHAR>());
+                //Add a skipping transition
+                add_transition_from(CharClass<TCHAR>(), 1);
+                break;
+            }
             break;
         case L'?':
             stream.discard();
-            //Add a skipping transition
-            add_transition_from(CharClass<TCHAR>(), 1);
+            ch = stream.peek();
+            switch (ch)
+            {
+            case L'?':
+                stream.discard();
+                //Add a skipping transition
+                add_transition_from(CharClass<TCHAR>(), 1);
+                break;
+            case L'*':
+                stream.discard();
+                //Add a skipping transition
+                add_transition_from(CharClass<TCHAR>(), 1);
+                break;
+            default:
+                //Add a skipping transition
+                add_transition_from(CharClass<TCHAR>(), 1);
+                break;
+            }
             break;
         }
     }
@@ -522,34 +620,38 @@ public:
     virtual ~NFA()
     {
     }
-    void epsilon_closure_sub(std::set<int>& closure, int index) const
+    bool epsilon_closure_sub(std::set<int>& closure, int index) const
     {
         //Always include myself
         closure.insert(index);
 
-        for (int dest : m_states[index].epsilon_transitions())
+        bool long_flag = false;
+        IndexVector et = m_states[index].epsilon_transitions(long_flag);
+
+        for (int dest : et)
         {
             epsilon_closure_sub(closure, dest);
         }
+        return long_flag;
     }
     /*!
      * @brief Collect the epsilon closure around the state
      */
-    std::set<int> epsilon_closure(int index) const
+    std::set<int> epsilon_closure(int index, bool& long_flag) const
     {
         std::set<int> ret;
 
-        epsilon_closure_sub(ret, index);
+        long_flag = epsilon_closure_sub(ret, index);
 
         return ret;
     }
-    std::set<int> epsilon_closure(const std::set<int>& indices) const
+    std::set<int> epsilon_closure(const std::set<int>& indices, bool& long_flag) const
     {
         std::set<int> ret;
 
         for (int index : indices)
         {
-            epsilon_closure_sub(ret, index);
+            long_flag |= epsilon_closure_sub(ret, index);
         }
 
         return ret;
@@ -592,9 +694,9 @@ public:
     /*!
     * @brief Add a transition from the final state to another state.
     */
-    void add_transition_to(const CharClass<TCHAR>& cc, int dest)
+    void add_transition_to(const CharClass<TCHAR>& cc, int dest, bool long_flag = false)
     {
-        m_states.back().add_transition(cc, dest);
+        m_states.back().add_transition(cc, dest, long_flag);
     }
     /*!
     * @brief Add a transition to the final state from another state.

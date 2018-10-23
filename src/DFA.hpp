@@ -13,16 +13,17 @@ namespace Centaurus
 template<typename TCHAR> using DFATransition = NFATransition<TCHAR>;
 template<typename TCHAR> class DFAState : public NFABaseState<TCHAR, IndexVector>
 {
+    bool m_long;
 public:
 	using NFABaseState<TCHAR, IndexVector>::get_transitions;
 	using NFABaseState<TCHAR, IndexVector>::m_transitions;
     using NFABaseState<TCHAR, IndexVector>::hash;
     using NFABaseState<TCHAR, IndexVector>::operator==;
     using NFABaseState<TCHAR, IndexVector>::sort;
-	DFAState(const IndexVector& label)
-		: NFABaseState<TCHAR, IndexVector>(label) {}
+	DFAState(const IndexVector& label, bool long_flag = false)
+		: NFABaseState<TCHAR, IndexVector>(label), m_long(long_flag) {}
     DFAState(const DFAState<TCHAR>& state, std::vector<DFATransition<TCHAR> >&& transitions)
-        : NFABaseState<TCHAR, IndexVector>(state, std::move(transitions)) {}
+        : NFABaseState<TCHAR, IndexVector>(state, std::move(transitions)), m_long(state.m_long) {}
 	bool is_accept_state() const
 	{
 		for (const auto& tr : get_transitions())
@@ -39,6 +40,14 @@ public:
 			{
 				os << L"S" << from << L" -> " << L"S" << t.dest() << L" [ label=\"";
 				os << t.label();
+				if (!t.is_long())
+				{
+					os << L"\" ];" << std::endl;
+				}
+				else
+				{
+					os << L"\", penwidth=3, arrowsize=3 ];" << std::endl;
+				}
 				os << L"\" ];" << std::endl;
 			}
 		}
@@ -52,6 +61,14 @@ public:
 		}
 		return count;
 	}
+    void set_long(bool long_flag)
+    {
+        m_long |= long_flag;
+    }
+    bool is_long() const
+    {
+        return m_long;
+    }
 };
 
 template<typename TCHAR> class DFA : public NFABase<DFAState<TCHAR> >
@@ -60,16 +77,17 @@ template<typename TCHAR> class DFA : public NFABase<DFAState<TCHAR> >
 	/*!
 	 * @brief Create a state with a label if it does not exist
 	 */
-	int add_state(const std::set<int>& label)
+	int add_state(const std::set<int>& label, bool long_flag = false)
 	{
 		for (unsigned int i = 0; i < m_states.size(); i++)
 		{
 			if (std::equal(label.cbegin(), label.cend(), m_states[i].label().cbegin()))
 			{
+                m_states[i].set_long(long_flag);
 				return i;
 			}
 		}
-		m_states.emplace_back(IndexVector(label.cbegin(), label.cend()));
+		m_states.emplace_back(IndexVector(label.cbegin(), label.cend()), long_flag);
 		return m_states.size() - 1;
 	}
 	void fork_states(int index, const NFA<TCHAR>& nfa)
@@ -89,9 +107,10 @@ template<typename TCHAR> class DFA : public NFABase<DFAState<TCHAR> >
 		int initial_index = m_states.size();
 		for (const auto& item : deptset)
 		{
-			std::set<int> ec = nfa.epsilon_closure(item.second);
+            bool long_flag = false;
+			std::set<int> ec = nfa.epsilon_closure(item.second, long_flag);
 
-			int new_index = add_state(ec);
+			int new_index = add_state(ec, long_flag);
 
 			//std::cout << "S" << index << "->" << new_index << std::endl;
 
@@ -107,10 +126,11 @@ public:
 	DFA(const NFA<TCHAR>& nfa, bool optimize_flag = true)
 	{
 		//Start by collecting the epsilon closure of start state
-		std::set<int> ec0 = nfa.epsilon_closure(0);
+        bool long_flag = false;
+		std::set<int> ec0 = nfa.epsilon_closure(0, long_flag);
 
 		//Create the start state
-		m_states.emplace_back(IndexVector(ec0.cbegin(), ec0.cend()));
+		m_states.emplace_back(IndexVector(ec0.cbegin(), ec0.cend()), long_flag);
 
 		//Recursively construct the DFA
 		fork_states(0, nfa);
@@ -159,9 +179,13 @@ public:
 			os << L"S" << i << L" [ label=\"";
 			print_state(os, i);
 			if (m_states[i].is_accept_state())
-				os << L"\", shape=doublecircle ];" << std::endl;
+				os << L"\", shape=doublecircle";
 			else
-				os << L"\", shape=circle ];" << std::endl;
+				os << L"\", shape=circle";
+            if (m_states[i].is_long())
+                os << L", penwidth=2 ];" << std::endl;
+            else
+                os << L" ];" << std::endl;
 		}
 
 		os << L"SS -> S0;" << std::endl;
@@ -287,18 +311,16 @@ public:
 
         for (int index = 0; index < m_states.size(); index++)
         {
-            if (!m_states[index].get_transitions().empty() && !m_states[index].is_accept_state())
+            auto p = equiv_map.find(m_states[index]);
+            if (p != equiv_map.end())
             {
-                auto p = equiv_map.find(m_states[index]);
-                if (p != equiv_map.end())
-                {
-                    remap[index] = p->second;
-                    mask[index] = false;
-                }
-                else
-                {
-                    equiv_map.emplace(m_states[index], index);
-                }
+                m_states[p->second].set_long(m_states[index].is_long());
+                remap[index] = p->second;
+                mask[index] = false;
+            }
+            else
+            {
+                equiv_map.emplace(m_states[index], index);
             }
         }
 
