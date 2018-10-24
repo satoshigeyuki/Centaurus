@@ -853,14 +853,37 @@ void SkipRoutineEM64T<TCHAR>::emit(asmjit::X86Assembler& as)
 
     as.bind(looplabel);
 
-    as.movdqu(LOAD_REG, asmjit::X86Mem(INPUT_REG, 0));
+    //Read the character from stream and advance the input position
+    if (sizeof(TCHAR) == 1)
+        as.movzx(CHAR_REG, asmjit::x86::byte_ptr(INPUT_REG, 0));
+    else
+        as.movzx(CHAR_REG, asmjit::x86::word_ptr(INPUT_REG, 0));
+    if (sizeof(TCHAR) == 1)
+        as.inc(INPUT_REG);
+    else
+        as.add(INPUT_REG, 2);
+
+    as.cmp(CHAR_REG, asmjit::Imm(' '));
+    as.je(looplabel);
+    as.cmp(CHAR_REG, asmjit::Imm('\t'));
+    as.je(looplabel);
+    as.cmp(CHAR_REG, asmjit::Imm('\n'));
+    as.je(looplabel);
+    as.cmp(CHAR_REG, asmjit::Imm('\r'));
+    as.je(looplabel);
+
+    if (sizeof(TCHAR) == 1)
+        as.dec(INPUT_REG);
+    else
+        as.sub(INPUT_REG, 2);
+
+    /*as.movdqu(LOAD_REG, asmjit::X86Mem(INPUT_REG, 0));
     as.pcmpistri(PATTERN_REG, LOAD_REG, asmjit::Imm(sizeof(TCHAR) == 1 ? 0x14 : 0x15));
     if (sizeof(TCHAR) == 2)
         as.sal(INDEX_REG, 1);
     as.add(INPUT_REG, INDEX_REG);
     as.cmp(INDEX_REG, 15);
-
-    as.jg(looplabel);
+    as.jg(looplabel);*/
 }
 
 template<typename TCHAR>
