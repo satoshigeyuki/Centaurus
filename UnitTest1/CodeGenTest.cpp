@@ -10,6 +10,10 @@
 
 #include <time.h>
 
+#if defined(CENTAURUS_BUILD_LINUX)
+#include <sys/time.h>
+#endif
+
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 static uint64_t get_us_clock()
@@ -78,7 +82,7 @@ public:
     {
         using namespace Centaurus;
 
-        CompositeATN<char> catn = LoadCATN("grammar\\json.cgr");
+        CompositeATN<char> catn = LoadCATN("grammar/json.cgr");
 
         LookaheadDFA<char> ldfa(catn, catn.convert_atn_path(ATNPath(L"Object", 0)));
 
@@ -153,7 +157,7 @@ public:
 		uint64_t end_time = get_us_clock();
 
 		char msg[256];
-		sprintf_s(msg, "Elapsed time: %lu[ms]\r\n", (end_time - start_time) / 1000);
+		sprintf(msg, "Elapsed time: %lu[ms]\r\n", (end_time - start_time) / 1000);
 		Logger::WriteMessage(msg);
 
         //Assert::AreEqual((const void *)(json + strlen(json)), context.result);

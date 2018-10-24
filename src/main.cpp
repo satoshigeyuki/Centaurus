@@ -53,6 +53,11 @@ int main(int argc, char *argv[])
 
     Encoder enc;
 
+    enum
+    {
+        GrammarFileSource,
+        PatternStringSource
+    } source;
 	enum
 	{
 		GenerateATN,
@@ -61,7 +66,7 @@ int main(int argc, char *argv[])
 		GenerateLDFA,
 		GenerateDFA
 	} mode;
-    std::string output_path, grammar_path, atn_path, machine_name;
+    std::string output_path, grammar_path, atn_path, machine_name, pattern_string;
     int max_depth = 3;
 	bool help_flag = false, optimize_flag = false;
 
@@ -69,67 +74,98 @@ int main(int argc, char *argv[])
     (
 		clipp::one_of
         (
-            clipp::in_sequence
             (
                 clipp::command("generate-atn").set(mode, GenerateATN),
                 (
-                    clipp::value("grammar file", grammar_path).required(true),
                     clipp::in_sequence
                     (
-                        clipp::option("-d", "--max-depth"),
+                        clipp::required("-g", "--grammar-file").set(source, GrammarFileSource),
+                        clipp::value("grammar file", grammar_path)
+                    ),
+                    clipp::in_sequence
+                    (
+                        clipp::required("-d", "--max-depth"),
                         clipp::value("maxdepth", max_depth)
                     ),
                     clipp::option("--optimize").set(optimize_flag, true)
                 )
             ),
-            clipp::in_sequence
             (
                 clipp::command("generate-catn").set(mode, GenerateCATN),
                 (
-                    clipp::value("grammar file", grammar_path).required(true),
                     clipp::in_sequence
                     (
-                        clipp::option("-m", "--machine").required(true),
+                        clipp::option("-g", "--grammar-file").set(source, GrammarFileSource),
+                        clipp::value("grammar file", grammar_path)
+                    ),
+                    clipp::in_sequence
+                    (
+                        clipp::option("-m", "--machine"),
                         clipp::value("machine name", machine_name)
                     )
                 )
             ),
-		    clipp::in_sequence
             (
                 clipp::command("generate-nfa").set(mode, GenerateNFA),
+                clipp::one_of
                 (
-                    clipp::value("grammar file", grammar_path).required(true),
+                    (
+                        clipp::in_sequence
+                        (
+                            clipp::required("-g", "--grammar-file").set(source, GrammarFileSource),
+                            clipp::value("grammar file", grammar_path)
+                        ),
+                        clipp::in_sequence
+                        (
+                            clipp::required("-p", "--path"),
+                            clipp::value("ATN path", atn_path)
+                        ).doc("ATN Path to the target object")
+                    ),
                     clipp::in_sequence
                     (
-                        clipp::option("-p", "--path").required(true),
-                        clipp::value("ATN path", atn_path)
-                    ).doc("ATN Path to the target object")
+                        clipp::required("-e").set(source, PatternStringSource),
+                        clipp::value("Pattern string", pattern_string)
+                    )
                 )
             ),
-		    clipp::in_sequence
             (
                 clipp::command("generate-ldfa").set(mode, GenerateLDFA),
                 (
-                    clipp::value("grammar file", grammar_path).required(true),
                     clipp::in_sequence
                     (
-                        clipp::option("-p", "--path").required(true),
+                        clipp::required("-g", "--grammar-file").set(source, GrammarFileSource),
+                        clipp::value("grammar file", grammar_path)
+                    ),
+                    clipp::in_sequence
+                    (
+                        clipp::required("-p", "--path"),
                         clipp::value("ATN path", atn_path)
                     )
                 )
             ),
-		    clipp::in_sequence
             (
                 clipp::command("generate-dfa").set(mode, GenerateDFA),
+                clipp::one_of
                 (
-                    clipp::value("grammar file", grammar_path).required(true),
+                    (
+                        clipp::in_sequence
+                        (
+                            clipp::required("-g", "--grammar-file").set(source, GrammarFileSource),
+                            clipp::value("grammar file", grammar_path)
+                        ),
+                        clipp::in_sequence
+                        (
+                            clipp::required("-p", "--path"),
+                            clipp::value("ATN path", atn_path)
+                        )
+                    ),
                     clipp::in_sequence
                     (
-                        clipp::option("-p", "--path").required(true),
-                        clipp::value("ATN path", atn_path)
-                    ),
-                    clipp::option("--optimize").set(optimize_flag, true)
-                )
+                        clipp::required("-e").set(source, PatternStringSource),
+                        clipp::value("Pattern string", pattern_string)
+                    )
+                ),
+                clipp::option("--optimize").set(optimize_flag, true)
             )
         ),
 		clipp::option("-h", "--help").doc("Display this help message").set(help_flag),
@@ -148,8 +184,6 @@ int main(int argc, char *argv[])
 			return 0;
 		}
 
-        std::unique_ptr<IGrammar> grammar(LoadGrammar(grammar_path.c_str()));
-
         std::wofstream output_file;
         if (!output_path.empty())
         {
@@ -157,24 +191,52 @@ int main(int argc, char *argv[])
         }
         std::wostream& output_stream = output_path.empty() ? std::wcout : output_file;
 
-		switch (mode)
-		{
-		case GenerateATN:
-            grammar->print_grammar(output_stream, max_depth, optimize_flag);
-			return 0;
-        case GenerateCATN:
-            grammar->print_catn(output_stream, Identifier(enc.mbstowcs(machine_name)));
-            return 0;
-        case GenerateNFA:
-            grammar->print_nfa(output_stream, ATNPath(enc.mbstowcs(atn_path)));
-            return 0;
-        case GenerateLDFA:
-            grammar->print_ldfa(output_stream, ATNPath(enc.mbstowcs(atn_path)));
-            return 0;
-        case GenerateDFA:
-            grammar->print_dfa(output_stream, ATNPath(enc.mbstowcs(atn_path)), optimize_flag);
-            return 0;
-		}
+        if (source == GrammarFileSource)
+        {
+            std::unique_ptr<IGrammar> grammar(LoadGrammar(grammar_path.c_str()));
+            
+            switch (mode)
+            {
+            case GenerateATN:
+                grammar->print_grammar(output_stream, max_depth, optimize_flag);
+                return 0;
+            case GenerateCATN:
+                grammar->print_catn(output_stream, Identifier(enc.mbstowcs(machine_name)));
+                return 0;
+            case GenerateNFA:
+                grammar->print_nfa(output_stream, ATNPath(enc.mbstowcs(atn_path)));
+                return 0;
+            case GenerateLDFA:
+                grammar->print_ldfa(output_stream, ATNPath(enc.mbstowcs(atn_path)));
+                return 0;
+            case GenerateDFA:
+                grammar->print_dfa(output_stream, ATNPath(enc.mbstowcs(atn_path)), optimize_flag);
+                return 0;
+            }
+        }
+        else
+        {
+            Stream stream(enc.mbstowcs(pattern_string));
+
+            switch (mode)
+            {
+                case GenerateNFA:
+                {
+                    NFA<char> nfa(stream);
+
+                    nfa.print(output_stream, L"NFA");
+                }
+                return 0;
+                case GenerateDFA:
+                {
+                    NFA<char> nfa(stream);
+                    DFA<char> dfa(nfa);
+
+                    dfa.print(output_stream, L"DFA");
+                }
+                return 0;
+            }
+        }
 	}
 	else
 	{

@@ -236,7 +236,7 @@ void ChaserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const Grammar<TC
             break;
 		case ATNNodeType::RegularTerminal:
             as.mov(CHECKPOINT_REG, INPUT_REG);
-			DFARoutineEM64T<TCHAR>::emit(as, rejectlabel, DFA<TCHAR>(node.get_nfa()));
+			DFARoutineEM64T<TCHAR>::emit(as, rejectlabel, DFA<TCHAR>(node.get_nfa()), pool);
             if (node.get_id() >= 0)
             {
                 as.push(INPUT_REG);
@@ -350,7 +350,7 @@ void ParserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const ATNMachine
             as.call(machine_map[node.get_invoke()]);
             break;
         case ATNNodeType::RegularTerminal:
-            DFARoutineEM64T<TCHAR>::emit(as, rejectlabel, DFA<TCHAR>(node.get_nfa()));
+            DFARoutineEM64T<TCHAR>::emit(as, rejectlabel, DFA<TCHAR>(node.get_nfa()), pool);
             break;
         case ATNNodeType::WhiteSpace:
             SkipRoutineEM64T<TCHAR>::emit(as);
@@ -486,7 +486,7 @@ void DryParserEM64T<TCHAR>::emit_machine(asmjit::X86Assembler& as, const ATNMach
             as.call(machine_map[node.get_invoke()]);
             break;
         case ATNNodeType::RegularTerminal:
-            DFARoutineEM64T<TCHAR>::emit(as, rejectlabel, DFA<TCHAR>(node.get_nfa()));
+            DFARoutineEM64T<TCHAR>::emit(as, rejectlabel, DFA<TCHAR>(node.get_nfa()), pool);
             break;
         case ATNNodeType::WhiteSpace:
             SkipRoutineEM64T<TCHAR>::emit(as);
@@ -533,11 +533,11 @@ DFARoutineEM64T<TCHAR>::DFARoutineEM64T(const DFA<TCHAR>& dfa, asmjit::Logger *l
 
     asmjit::Label rejectlabel = as.newLabel();
 
-    emit(as, rejectlabel, dfa);
+    emit(as, rejectlabel, dfa, pool);
 
     emit_parser_epilog(as, rejectlabel);
 
-	as.embed(pool);
+	pool.embed();
 
     as.finalize();
 }
@@ -572,93 +572,148 @@ void DFARoutineEM64T<TCHAR>::emit(asmjit::X86Assembler& as, asmjit::Label& rejec
 template<typename TCHAR>
 void DFARoutineEM64T<TCHAR>::emit_state(asmjit::X86Assembler& as, asmjit::Label& rejectlabel, const DFAState<TCHAR>& state, int index, std::vector<asmjit::Label>& labels, MyConstPool& pool)
 {
-	if (state.is_accept_state())
-		as.mov(BACKUP_REG, INPUT_REG);
+    bool loaded_flag = false;
+    std::vector<NFATransition<TCHAR> > transitions(state.get_transitions());
 
-	if (state.is_long())
-	{
-		for (const auto& tr : state.get_transitions())
-		{
-			if (tr.dest() == index)
-			{
-				pool.load_charclass_filter(PATTERN_REG, tr.label());
+    if (state.is_accept_state())
+        as.mov(BACKUP_REG, INPUT_REG);
 
-				asmjit::Label looplabel = asmjit::newLabel();
+    for (auto i = transitions.begin(); i != transitions.end(); i++)
+    {
+        if (i->dest() == index)
+        {
+            if (state.is_long())
+            {
+                pool.load_charclass_filter(PATTERN_REG, i->label());
 
-				as.bind(looplabel);
+                asmjit::Label looplabel = as.newLabel();
 
-				as.movdqu(LOAD_REG, asmjit::X86Mem(INPUT_REG, 0));
-				as.pcmpistri(PATTERN_REG, LOAD_REG, asmjit::Imm(sizeof(TCHAR) == 1 ? 0x14 : 0x15));
-				if (sizeof(TCHAR) == 2)
-					as.sal(INDEX_REG, 1);
-				as.add(INPUT_REG, INDEX_REG);
-				as.cmp(INDEX_REG, 15);
-				as.jg(looplabel);
+                as.bind(looplabel);
 
-				if (state.get_transitions().size() == 1)
-					as.jmp(rejectlabel);
+                as.movdqu(LOAD_REG, asmjit::X86Mem(INPUT_REG, 0));
+                as.pcmpistri(PATTERN_REG, LOAD_REG, asmjit::Imm(sizeof(TCHAR) == 1 ? 0x14 : 0x15));
+                if (sizeof(TCHAR) == 2)
+                    as.sal(INDEX_REG, 1);
+                as.add(INPUT_REG, INDEX_REG);
+                if (state.is_accept_state())
+                    as.mov(BACKUP_REG, INPUT_REG);
+                as.cmp(INDEX_REG, 15);
+                as.jg(looplabel);
+            }
+            else
+            {
+                asmjit::Label looplabel = as.newLabel();
 
-				break;
-			}
-		}
-	}
+                as.bind(looplabel);
 
-	//Read the character from stream and advance the input position
-	if (sizeof(TCHAR) == 1)
-		as.movzx(CHAR_REG, asmjit::x86::byte_ptr(INPUT_REG, 0));
-	else
-		as.movzx(CHAR_REG, asmjit::x86::word_ptr(INPUT_REG, 0));
-	as.mov(CHAR2_REG, CHAR_REG);
-		
-	if (sizeof(TCHAR) == 1)
-		as.inc(INPUT_REG);
-	else
-		as.add(INPUT_REG, 2);
+                //Read the character from stream and advance the input position
+                if (sizeof(TCHAR) == 1)
+                    as.movzx(CHAR_REG, asmjit::x86::byte_ptr(INPUT_REG, 0));
+                else
+                    as.movzx(CHAR_REG, asmjit::x86::word_ptr(INPUT_REG, 0));
+                as.mov(CHAR2_REG, CHAR_REG);
+                if (state.is_accept_state())
+                    as.mov(BACKUP_REG, INPUT_REG);
+                if (sizeof(TCHAR) == 1)
+                    as.inc(INPUT_REG);
+                else
+                    as.add(INPUT_REG, 2);
 
-	if (state.get_transitions().size() == 1 && state.get_transitions()[0].label().size() == 1)
-	{
-		const NFATransition<TCHAR>& tr = state.get_transitions()[0];
-		const Range<TCHAR>& r = tr.label()[0];
-		{
-			if (r.start() + 1 == r.end())
-			{
-				as.cmp(CHAR_REG, r.start());
-				as.jne(rejectlabel);
-			}
-			else
-			{
-				as.sub(CHAR_REG, r.start());
-				as.cmp(CHAR_REG, r.end() - r.start());
-				as.jnb(rejectlabel);
-			}
-		}
-		as.jmp(labels[tr.dest()]);
-	}
-	else
-	{
-		for (const auto& tr : state.get_transitions())
-		{
-			for (const auto& r : tr.label())
-			{
-				if (r.start() + 1 == r.end())
-				{
-					//The range consists of one character: test for equality and jump
-					as.cmp(CHAR_REG, r.start());
-					as.je(labels[tr.dest()]);
-				}
-				else
-				{
-					//The range consists of multiple characters: range check and jump
-					as.sub(CHAR_REG, r.start());
-					as.cmp(CHAR_REG, r.end() - r.start());
-					as.jb(labels[tr.dest()]);
-					as.mov(CHAR_REG, CHAR2_REG);
-				}
-			}
-		}
-		//Jump to the "reject trampoline" and check if the input has ever been accepted
-		as.jmp(rejectlabel);
-	}
+                loaded_flag = true;
+
+                for (const auto& r : i->label())
+                {
+                    if (r.start() + 1 == r.end())
+                    {
+                        //The range consists of one character: test for equality and jump
+                        as.cmp(CHAR_REG, r.start());
+                        as.je(looplabel);
+                    }
+                    else
+                    {
+                        //The range consists of multiple characters: range check and jump
+                        as.sub(CHAR_REG, r.start());
+                        as.cmp(CHAR_REG, r.end() - r.start());
+                        as.jb(looplabel);
+                        as.mov(CHAR_REG, CHAR2_REG);
+                    }
+                }
+            }
+            i = transitions.erase(i);
+        }
+    }
+
+    if (transitions.empty())
+    {
+        as.jmp(rejectlabel);
+        return;
+    }
+
+    if (!loaded_flag)
+    {
+        //Read the character from stream and advance the input position
+        if (sizeof(TCHAR) == 1)
+            as.movzx(CHAR_REG, asmjit::x86::byte_ptr(INPUT_REG, 0));
+        else
+            as.movzx(CHAR_REG, asmjit::x86::word_ptr(INPUT_REG, 0));
+        as.mov(CHAR2_REG, CHAR_REG);
+        if (state.is_accept_state())
+            as.mov(BACKUP_REG, INPUT_REG);
+        if (sizeof(TCHAR) == 1)
+            as.inc(INPUT_REG);
+        else
+            as.add(INPUT_REG, 2);
+
+        loaded_flag = true;
+    }
+
+    if (transitions.size() == 1)
+    {
+        const NFATransition<TCHAR>& tr = transitions[0];
+
+        if (tr.label().size() == 1)
+        {
+            const Range<TCHAR>& r = tr.label()[0];
+            {
+                if (r.start() + 1 == r.end())
+                {
+                    as.cmp(CHAR_REG, r.start());
+                    as.jne(rejectlabel);
+                }
+                else
+                {
+                    as.sub(CHAR_REG, r.start());
+                    as.cmp(CHAR_REG, r.end() - r.start());
+                    as.jnb(rejectlabel);
+                }
+            }
+            as.jmp(labels[tr.dest()]);
+
+            return;
+        }
+    }
+    for (const auto& tr : transitions)
+    {
+        for (const auto& r : tr.label())
+        {
+            if (r.start() + 1 == r.end())
+            {
+                //The range consists of one character: test for equality and jump
+                as.cmp(CHAR_REG, r.start());
+                as.je(labels[tr.dest()]);
+            }
+            else
+            {
+                //The range consists of multiple characters: range check and jump
+                as.sub(CHAR_REG, r.start());
+                as.cmp(CHAR_REG, r.end() - r.start());
+                as.jb(labels[tr.dest()]);
+                as.mov(CHAR_REG, CHAR2_REG);
+            }
+        }
+    }
+    //Jump to the "reject trampoline" and check if the input has ever been accepted
+    as.jmp(rejectlabel);
 }
 
 template<typename TCHAR>
