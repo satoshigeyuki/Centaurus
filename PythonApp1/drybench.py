@@ -14,6 +14,7 @@ if __name__ == "__main__":
     parser = Parser(grammar, True)
     input_path = r"/home/ihara/Downloads/sf-city-lots-json-master/citylots.json"
     st1_runner = Stage1Runner(input_path, parser, 8 * 1024 * 1024, 8);
+    """
     start_time = time.time()
     st1_runner.start()
     print("Runner started.", flush=True)
@@ -21,3 +22,4 @@ if __name__ == "__main__":
     print("Runner finished.", flush=True)
     end_time = time.time()
     print("Elapsed time = %lf" % ((end_time - start_time) * 1E+3,))
+    """

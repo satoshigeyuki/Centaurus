@@ -130,8 +130,12 @@ public:
 		/*FILE *logFile;
 		fopen_s(&logFile, "parser.asm", "w");
         asmjit::FileLogger logger(logFile);*/
+
+        asmjit::StringLogger logger;
 		
-        DryParserEM64T<unsigned char> parser(grammar, NULL);
+        DryParserEM64T<unsigned char> parser(grammar, &logger);
+
+        std::cout << logger.getString() << std::endl;
 
 		//fclose(logFile);
 

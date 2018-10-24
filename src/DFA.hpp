@@ -21,7 +21,7 @@ public:
     using NFABaseState<TCHAR, IndexVector>::operator==;
     using NFABaseState<TCHAR, IndexVector>::sort;
 	DFAState(const IndexVector& label, bool long_flag = false)
-		: NFABaseState<TCHAR, IndexVector>(label), m_long(long_flag) {}
+		: NFABaseState<TCHAR, IndexVector>(label), m_long(long_flag), m_accept(false) {}
     DFAState(const DFAState<TCHAR>& state, std::vector<DFATransition<TCHAR> >&& transitions)
         : NFABaseState<TCHAR, IndexVector>(state, std::move(transitions)), m_long(state.m_long), m_accept(state.m_accept) {}
 	bool is_accept_state() const

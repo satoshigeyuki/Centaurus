@@ -18,6 +18,9 @@
  *  BACKUP_REG      EBX/RBX
  *  CHAR_REG        EAX/RAX
  *  CHAR2_REG       ECX/RCX
+ *  INDEX_REG       ECX/RCX
+ *  LOAD_REG        XMM0
+ *  PATTERN2_REG    XMM2
  * LDFA Routine scope
  *  PEEK_REG        EBX/RBX
  *  CHAR_REG        EAX/RAX
@@ -51,6 +54,7 @@
 #define PEEK_REG asmjit::x86::rbx
 #define CHAR_REG asmjit::x86::rax
 #define CHAR2_REG asmjit::x86::rcx
+#define PATTERN2_REG asmjit::x86::xmm2
 
 //Match/Skip routine scope registers
 #define LOAD_REG asmjit::x86::xmm0

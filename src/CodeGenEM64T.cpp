@@ -572,76 +572,35 @@ void DFARoutineEM64T<TCHAR>::emit(asmjit::X86Assembler& as, asmjit::Label& rejec
 template<typename TCHAR>
 void DFARoutineEM64T<TCHAR>::emit_state(asmjit::X86Assembler& as, asmjit::Label& rejectlabel, const DFAState<TCHAR>& state, int index, std::vector<asmjit::Label>& labels, MyConstPool& pool)
 {
-    bool loaded_flag = false;
     std::vector<NFATransition<TCHAR> > transitions(state.get_transitions());
+
+    for (auto i = transitions.begin(); i != transitions.end();)
+    {
+        if (i->dest() == index && state.is_long())
+        {
+            pool.load_charclass_filter(PATTERN2_REG, i->label());
+
+            asmjit::Label looplabel = as.newLabel();
+
+            as.bind(looplabel);
+
+            as.movdqu(LOAD_REG, asmjit::X86Mem(INPUT_REG, 0));
+            as.pcmpistri(PATTERN2_REG, LOAD_REG, asmjit::Imm(sizeof(TCHAR) == 1 ? 0x14 : 0x15));
+            if (sizeof(TCHAR) == 2)
+                as.sal(INDEX_REG, 1);
+            as.add(INPUT_REG, INDEX_REG);
+            as.cmp(INDEX_REG, 15);
+            as.jg(looplabel);
+            i = transitions.erase(i);
+        }
+        else
+        {
+            i++;
+        }
+    }
 
     if (state.is_accept_state())
         as.mov(BACKUP_REG, INPUT_REG);
-
-    for (auto i = transitions.begin(); i != transitions.end(); i++)
-    {
-        if (i->dest() == index)
-        {
-            if (state.is_long())
-            {
-                pool.load_charclass_filter(PATTERN_REG, i->label());
-
-                asmjit::Label looplabel = as.newLabel();
-
-                as.bind(looplabel);
-
-                as.movdqu(LOAD_REG, asmjit::X86Mem(INPUT_REG, 0));
-                as.pcmpistri(PATTERN_REG, LOAD_REG, asmjit::Imm(sizeof(TCHAR) == 1 ? 0x14 : 0x15));
-                if (sizeof(TCHAR) == 2)
-                    as.sal(INDEX_REG, 1);
-                as.add(INPUT_REG, INDEX_REG);
-                if (state.is_accept_state())
-                    as.mov(BACKUP_REG, INPUT_REG);
-                as.cmp(INDEX_REG, 15);
-                as.jg(looplabel);
-            }
-            else
-            {
-                asmjit::Label looplabel = as.newLabel();
-
-                as.bind(looplabel);
-
-                //Read the character from stream and advance the input position
-                if (sizeof(TCHAR) == 1)
-                    as.movzx(CHAR_REG, asmjit::x86::byte_ptr(INPUT_REG, 0));
-                else
-                    as.movzx(CHAR_REG, asmjit::x86::word_ptr(INPUT_REG, 0));
-                as.mov(CHAR2_REG, CHAR_REG);
-                if (state.is_accept_state())
-                    as.mov(BACKUP_REG, INPUT_REG);
-                if (sizeof(TCHAR) == 1)
-                    as.inc(INPUT_REG);
-                else
-                    as.add(INPUT_REG, 2);
-
-                loaded_flag = true;
-
-                for (const auto& r : i->label())
-                {
-                    if (r.start() + 1 == r.end())
-                    {
-                        //The range consists of one character: test for equality and jump
-                        as.cmp(CHAR_REG, r.start());
-                        as.je(looplabel);
-                    }
-                    else
-                    {
-                        //The range consists of multiple characters: range check and jump
-                        as.sub(CHAR_REG, r.start());
-                        as.cmp(CHAR_REG, r.end() - r.start());
-                        as.jb(looplabel);
-                        as.mov(CHAR_REG, CHAR2_REG);
-                    }
-                }
-            }
-            i = transitions.erase(i);
-        }
-    }
 
     if (transitions.empty())
     {
@@ -649,23 +608,16 @@ void DFARoutineEM64T<TCHAR>::emit_state(asmjit::X86Assembler& as, asmjit::Label&
         return;
     }
 
-    if (!loaded_flag)
-    {
-        //Read the character from stream and advance the input position
-        if (sizeof(TCHAR) == 1)
-            as.movzx(CHAR_REG, asmjit::x86::byte_ptr(INPUT_REG, 0));
-        else
-            as.movzx(CHAR_REG, asmjit::x86::word_ptr(INPUT_REG, 0));
-        as.mov(CHAR2_REG, CHAR_REG);
-        if (state.is_accept_state())
-            as.mov(BACKUP_REG, INPUT_REG);
-        if (sizeof(TCHAR) == 1)
-            as.inc(INPUT_REG);
-        else
-            as.add(INPUT_REG, 2);
-
-        loaded_flag = true;
-    }
+    //Read the character from stream and advance the input position
+    if (sizeof(TCHAR) == 1)
+        as.movzx(CHAR_REG, asmjit::x86::byte_ptr(INPUT_REG, 0));
+    else
+        as.movzx(CHAR_REG, asmjit::x86::word_ptr(INPUT_REG, 0));
+    as.mov(CHAR2_REG, CHAR_REG);
+    if (sizeof(TCHAR) == 1)
+        as.inc(INPUT_REG);
+    else
+        as.add(INPUT_REG, 2);
 
     if (transitions.size() == 1)
     {

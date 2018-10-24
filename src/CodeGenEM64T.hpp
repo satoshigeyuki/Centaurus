@@ -27,7 +27,7 @@ public:
         size_t offset;
         m_pool.add(&data, 16, offset);
 
-        m_as.vmovdqa(dest, asmjit::X86Mem(m_label, offset));
+        m_as.movdqa(dest, asmjit::X86Mem(m_label, offset));
     }
     void embed()
     {
