@@ -101,57 +101,7 @@ template<typename TCHAR> class Grammar : public IGrammar
     Identifier m_root_id;
 	Identifier m_grammar_name;
 public:
-    void parse(Stream& stream)
-    {
-        int machine_id = 1;
-
-        while (1)
-        {
-            wchar_t ch = stream.skip_whitespace();
-
-            if (ch == L'\0')
-                break;
-
-            if (machine_id >= 65536)
-                throw stream.toomany(65535);
-
-            Identifier id(stream);
-
-			if (id == L"grammar")
-			{
-				stream.skip_whitespace();
-
-				m_grammar_name.parse(stream);
-
-				wchar_t ch = stream.skip_whitespace();
-
-				if (ch != L';')
-					throw stream.unexpected(ch);
-				stream.discard();
-			}
-			else if (id == L"options")
-			{
-
-			}
-			else if (id == L"fragment")
-			{
-
-			}
-			else
-			{
-				ATNMachine<TCHAR> atn(machine_id++, stream);
-
-				if (m_root_id.str().empty())
-					m_root_id = id;
-
-				m_networks.insert(std::pair<Identifier, ATNMachine<TCHAR> >(id, std::move(atn)));
-
-				m_identifiers.push_back(id);
-			}
-
-            //m_networks.emplace(Identifier(stream), ATN<TCHAR>(stream));
-        }
-    }
+    void parse(Stream& stream);
     const ATNNode<TCHAR>& resolve(const ATNPath& path) const
     {
         return m_networks.at(path.leaf_id()).get_node(path.leaf_index());
