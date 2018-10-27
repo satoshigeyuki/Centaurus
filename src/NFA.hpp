@@ -324,7 +324,7 @@ public:
     {
         for (auto& p : *this)
         {
-            if (std::equal(closure.cbegin(), closure.cend(), p.second.cbegin()))
+            if (closure.size() == p.second.size() && std::equal(closure.cbegin(), closure.cend(), p.second.cbegin()))
             {
                 p.first |= r;
                 return;

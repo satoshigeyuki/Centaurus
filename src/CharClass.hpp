@@ -222,7 +222,7 @@ public:
     }
     bool operator==(const CharClass<TCHAR>& cc) const
     {
-        return std::equal(m_ranges.cbegin(), m_ranges.cend(), cc.m_ranges.cbegin());
+        return m_ranges.size() == cc.size() && std::equal(m_ranges.cbegin(), m_ranges.cend(), cc.m_ranges.cbegin());
     }
     CharClass<TCHAR> operator&(const CharClass<TCHAR>& cc) const;
     /*!

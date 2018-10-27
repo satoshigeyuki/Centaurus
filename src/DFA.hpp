@@ -65,7 +65,7 @@ template<typename TCHAR> class DFA : public NFABase<DFAState<TCHAR> >
 	{
 		for (unsigned int i = 0; i < m_states.size(); i++)
 		{
-			if (std::equal(label.cbegin(), label.cend(), m_states[i].label().cbegin()))
+			if (label.size() == m_states[i].label().size() && std::equal(label.cbegin(), label.cend(), m_states[i].label().cbegin()))
 			{
                 m_states[i].set_long(long_flag);
 				return i;

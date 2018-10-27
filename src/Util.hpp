@@ -84,7 +84,7 @@ public:
     }
     bool operator==(const ATNPath& path) const
     {
-        return std::equal(cbegin(), cend(), path.cbegin());
+        return size() == path.size() && std::equal(cbegin(), cend(), path.cbegin());
     }
     size_t hash() const
     {
