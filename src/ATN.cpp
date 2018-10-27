@@ -93,10 +93,16 @@ void ATNMachine<TCHAR>::parse_atom(Stream& stream)
 	}
 	else
 	{
+        ATNNode<TCHAR> node(stream);
+
+        if (node.type() == ATNNodeType::LiteralTerminal || node.type() == ATNNodeType::RegularTerminal)
+        {
+            m_nodes.back().add_transition(m_nodes.size());
+            m_nodes.emplace_back(ATNNodeType::WhiteSpace);
+        }
+
 		m_nodes.back().add_transition(m_nodes.size());
-		m_nodes.emplace_back(ATNNodeType::WhiteSpace);
-		m_nodes.back().add_transition(m_nodes.size());
-		m_nodes.emplace_back(stream);
+		m_nodes.push_back(node);
 	}
 
 	ch = stream.skip_whitespace();

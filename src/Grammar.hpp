@@ -12,70 +12,6 @@
 
 namespace Centaurus
 {
-/*class AlienCode
-{
-protected:
-    std::u16string m_str;
-public:
-    AlienCode()
-    {
-    }
-    virtual ~AlienCode()
-    {
-    }
-};
-class CppAlienCode : public AlienCode
-{
-    using AlienCode::m_str;
-private:
-    void parse_literal_string(Stream& stream)
-    {
-        char16_t ch = stream.get();
-        for (; ch != u'\0'; ch = stream.get())
-        {
-            if (ch == u'"')
-                return;
-        }
-        throw stream.unexpected(EOF);
-    }
-    void parse_literal_character(Stream& stream)
-    {
-        char16_t ch = stream.get();
-        if (ch == '\\')
-            ch = stream.get();
-        ch = stream.get();
-        if (ch != '\'')
-            throw stream.unexpected(ch);
-    }
-    void parse(Stream& stream)
-    {
-        while (true)
-        {
-            char16_t ch = stream.after_whitespace();
-
-            switch (ch)
-            {
-            case u'"':
-                parse_literal_string(stream);
-                break;
-            case u'\'':
-                parse_literal_character(stream);
-                break;
-            }
-        }
-    }
-public:
-    CppAlienCode(Stream& stream)
-    {
-        Stream::Sentry begin = stream.sentry();
-
-        parse(stream);
-
-        m_str = stream.cut(begin);
-    }
-    virtual ~CppAlienCode() = default;
-};*/
-
 typedef void (CENTAURUS_CALLBACK * EnumMachinesCallback)(const wchar_t *name, int id);
 
 class IGrammar
@@ -94,12 +30,28 @@ public:
 
     virtual void optimize() {}
 };
+class GrammarOptions : public std::unordered_map<Identifier, std::wstring>
+{
+    void parse(Stream& stream);
+public:
+    GrammarOptions()
+    {
+    }
+    GrammarOptions(Stream& stream)
+    {
+        parse(stream);
+    }
+    virtual ~GrammarOptions()
+    {
+    }
+};
 template<typename TCHAR> class Grammar : public IGrammar
 {
     std::unordered_map<Identifier, ATNMachine<TCHAR> > m_networks;
     std::vector<Identifier> m_identifiers;
     Identifier m_root_id;
 	Identifier m_grammar_name;
+    GrammarOptions m_options;
 public:
     void parse(Stream& stream);
     const ATNNode<TCHAR>& resolve(const ATNPath& path) const

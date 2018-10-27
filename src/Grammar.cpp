@@ -19,6 +19,7 @@ void Grammar<TCHAR>::print_ldfa(std::wostream& os, const ATNPath& path) const
 
     ldfa.print(os, path.leaf_id().str());
 }
+template<typename TCHAR>
 void Grammar<TCHAR>::parse(Stream& stream)
 {
     int machine_id = 1;
@@ -49,11 +50,7 @@ void Grammar<TCHAR>::parse(Stream& stream)
         }
         else if (id == L"options")
         {
-
-        }
-        else if (id == L"fragment")
-        {
-
+            GrammarOptions options(stream);
         }
         else
         {
@@ -69,6 +66,37 @@ void Grammar<TCHAR>::parse(Stream& stream)
 
         //m_networks.emplace(Identifier(stream), ATN<TCHAR>(stream));
     }
+}
+void GrammarOptions::parse(Stream& stream)
+{
+    wchar_t ch = stream.skip_whitespace();
+    if (ch != L'{')
+        throw stream.unexpected(ch);
+    stream.discard();
+
+    while (true)
+    {
+        Identifier key(stream);
+
+        ch = stream.skip_whitespace();
+        if (ch != L'=')
+            throw stream.unexpected(ch);
+        stream.discard();
+
+        Identifier value(stream);
+
+        ch = stream.skip_whitespace();
+        if (ch != L';')
+            throw stream.unexpected(ch);
+        stream.discard();
+
+        emplace(key, value.str());
+    }
+
+    ch = stream.skip_whitespace();
+    if (ch != L'}')
+        throw stream.unexpected(ch);
+    stream.discard();
 }
 template class Grammar<char>;
 template class Grammar<unsigned char>;
