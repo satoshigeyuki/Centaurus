@@ -117,7 +117,7 @@ private:
 	{
 		for (unsigned int i = 0; i < m_states.size(); i++)
 		{
-			if (std::equal(label.cbegin(), label.cend(), m_states[i].label().cbegin()))
+			if (label == m_states[i].label())
 			{
 				return i;
 			}

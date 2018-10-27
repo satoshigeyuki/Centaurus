@@ -173,7 +173,7 @@ int main(int argc, char *argv[])
         (
             clipp::option("-f", "--outfile"),
             clipp::value("outfile", output_path)
-        ).doc("Output filename (defaults to stdout")
+        ).doc("Output filename (defaults to stdout)")
 	);
 
 	if (clipp::parse(argc, argv, cli))
