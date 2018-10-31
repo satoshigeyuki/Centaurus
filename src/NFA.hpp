@@ -631,7 +631,7 @@ public:
 
         for (int dest : et)
         {
-            epsilon_closure_sub(closure, dest);
+            long_flag |= epsilon_closure_sub(closure, dest);
         }
         return long_flag;
     }
