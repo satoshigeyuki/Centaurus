@@ -29,6 +29,10 @@ public:
 		: m_type(type), m_dest(dest), m_tag(tag)
 	{
 	}
+	ATNTransition<TCHAR> offset(int off) const
+	{
+		return ATNTransition<TCHAR>(m_type, m_dest + off, m_tag);
+	}
     virtual ~ATNTransition()
     {
     }
@@ -108,6 +112,17 @@ public:
         : m_transitions(transitions), m_type(old.m_type), m_invoke(old.m_invoke), m_nfa(old.m_nfa), m_literal(old.m_literal), m_localid(old.m_localid)
     {
     }
+	ATNNode<TCHAR> offset(int off) const
+	{
+		std::vector<ATNTransition<TCHAR> > new_transitions;
+
+		for (const auto& t : m_transitions)
+		{
+			new_transitions.push_back(t.offset());
+		}
+
+		return ATNNode<TCHAR>(*this, new_transitions);
+	}
     virtual ~ATNNode()
     {
     }
@@ -259,6 +274,10 @@ public:
         : m_nodes(std::move(atn.m_nodes)), m_globalid(atn.m_globalid)
     {
     }
+	ATNMachine(int id)
+		: m_globalid(id)
+	{
+	}
     virtual ~ATNMachine()
     {
     }
@@ -359,6 +378,55 @@ public:
 
         filter_nodes(mask);
     }
+private:
+	void expand(int& off, const ATNMachine<TCHAR>& src, const std::unordered_map<Identifier, ATNMachine<TCHAR> >& fragments)
+	{
+		for (const auto& node : src.m_nodes)
+		{
+			if (node.type() == ATNNodeType::Nonterminal)
+			{
+				auto f = fragments.find(node.get_invoke());
+				if (f == fragments.end())
+				{
+					m_nodes.push_back(node.offset(off++));
+				}
+				else
+				{
+					expand(off, f->second, fragments);
+
+					
+				}
+			}
+			else
+			{
+				m_nodes.push_back(node.offset(off++));
+			}
+		}
+	}
+public:
+	void expand(const std::unordered_map<Identifier, ATNMachine<TCHAR> >& fragments)
+	{
+		
+		std::vector<int> node_map(m_nodes.size());
+
+		for (int i = 0; i < m_nodes.size(); i++)
+		{
+			if (m_nodes[i].type() == ATNNodeType::Nonterminal)
+			{
+				auto f = fragments.find(m_nodes[i].get_invoke());
+
+				if (f != fragments.end())
+				{
+					if (f->second.)
+				}
+			}
+			else
+			{
+				new_nodes.push_back(m_nodes[i]);
+				node_map[i] = new_nodes.size() - 1;
+			}
+		}
+	}
 };
 
 template<typename TCHAR>

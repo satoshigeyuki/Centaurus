@@ -24,6 +24,8 @@ void Grammar<TCHAR>::parse(Stream& stream)
 {
     int machine_id = 1;
 
+	std::unordered_map<Identifier, ATNMachine<TCHAR> > fragments;
+
     while (1)
     {
         wchar_t ch = stream.skip_whitespace();
@@ -52,6 +54,14 @@ void Grammar<TCHAR>::parse(Stream& stream)
         {
             GrammarOptions options(stream);
         }
+		else if (id == L"fragment")
+		{
+			Identifier frag_id(stream);
+
+			ATNMachine<TCHAR> atn(-1, stream);
+
+			fragments.emplace(frag_id, std::move(atn));
+		}
         else
         {
             ATNMachine<TCHAR> atn(machine_id++, stream);
@@ -67,6 +77,7 @@ void Grammar<TCHAR>::parse(Stream& stream)
         //m_networks.emplace(Identifier(stream), ATN<TCHAR>(stream));
     }
 }
+
 void GrammarOptions::parse(Stream& stream)
 {
     wchar_t ch = stream.skip_whitespace();

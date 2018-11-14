@@ -95,7 +95,7 @@ void ATNMachine<TCHAR>::parse_atom(Stream& stream)
 	{
         ATNNode<TCHAR> node(stream);
 
-        if (node.type() == ATNNodeType::LiteralTerminal || node.type() == ATNNodeType::RegularTerminal)
+        if (m_globalid > 0 && node.type() == ATNNodeType::LiteralTerminal || node.type() == ATNNodeType::RegularTerminal)
         {
             m_nodes.back().add_transition(m_nodes.size());
             m_nodes.emplace_back(ATNNodeType::WhiteSpace);
