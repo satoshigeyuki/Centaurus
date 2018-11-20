@@ -66,6 +66,16 @@ public:
     Grammar()
     {
     }
+    Grammar(const char *path)
+    {
+        std::wifstream grammar_file(path);
+
+        std::wstring grammar_str(std::istreambuf_iterator<wchar_t>(grammar_file), {});
+
+        Stream stream(std::move(grammar_str));
+
+        parse(stream);
+    }
     Grammar(Grammar&& old)
         : m_networks(std::move(old.m_networks)), m_root_id(old.m_root_id)
     {

@@ -18,7 +18,8 @@ void CompositeATN<TCHAR>::build_wildcard_closure(CATNClosure& closure, const Ide
                 if (stack.find(p.first, i))
                 {
                     //std::cout << "Upward sentinel reached." << std::endl;
-                    continue;
+                    throw SimpleException("Upward sentinel reached.");
+                    //continue;
                 }
                 stack.push(p.first, i);
                 build_closure_exclusive(closure, ATNPath(p.first, i), color, stack);
@@ -103,7 +104,8 @@ void CompositeATN<TCHAR>::build_wildcard_departure_set(CATNDepartureSetFactory<T
                 if (stack.find(p.first, i))
                 {
                     //std::cout << "Upward sentinel reached." << std::endl;
-                    continue;
+                    throw SimpleException("Upward sentinel reached.");
+                    //continue;
                 }
                 stack.push(p.first, i);
                 build_departure_set_r(deptset_factory, ATNPath(p.first, i), color, stack);
