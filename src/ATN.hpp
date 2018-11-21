@@ -379,7 +379,7 @@ public:
         filter_nodes(mask);
     }
 private:
-	void expand(int& off, const ATNMachine<TCHAR>& src, const std::unordered_map<Identifier, ATNMachine<TCHAR> >& fragments)
+	/*void expand(int& off, const ATNMachine<TCHAR>& src, const std::unordered_map<Identifier, ATNMachine<TCHAR> >& fragments)
 	{
 		for (const auto& node : src.m_nodes)
 		{
@@ -426,7 +426,7 @@ public:
 				node_map[i] = new_nodes.size() - 1;
 			}
 		}
-	}
+	}*/
 };
 
 template<typename TCHAR>

@@ -153,6 +153,13 @@ public:
             return p.first == id && p.second == index;
         }) != cend();
     }
+    /*int count(const Identifier& id, int index) const
+    {
+        return std::count_if(cbegin(), cend(), [&](const std::pair<Identifier, int>& p) -> bool
+        {
+            return p.first == id && p.second == index;
+        });
+    }*/
 };
 class IndexVector : public std::vector<int>
 {

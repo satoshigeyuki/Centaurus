@@ -5,7 +5,7 @@ namespace Centaurus
 template<typename TCHAR>
 void CompositeATN<TCHAR>::build_wildcard_closure(CATNClosure& closure, const Identifier& id, int color, ATNStateStack& stack) const
 {
-    //std::cout << "Wildcard " << id.narrow() << ":" << color << std::endl;
+    //std::wcout << L"Wildcard " << id << L":" << color << std::endl;
 
     for (const auto& p : m_dict)
     {
@@ -15,7 +15,7 @@ void CompositeATN<TCHAR>::build_wildcard_closure(CATNClosure& closure, const Ide
 
             if (node.get_submachine() == id)
             {
-                if (stack.find(p.first, i))
+                if (stack.count(p.first, i) >= 2)
                 {
                     //std::cout << "Upward sentinel reached." << std::endl;
                     throw SimpleException("Upward sentinel reached.");
@@ -33,11 +33,11 @@ void CompositeATN<TCHAR>::build_closure_exclusive(CATNClosure& closure, const AT
 {
     const CATNNode<TCHAR>& node = get_node(path);
 
-    //std::cout << "Exclusive " << path << ":" << color << std::endl;
+    //std::wcout << L"Exclusive " << path << L":" << color << std::endl;
 
     if (node.is_stop_node())
     {
-        //std::cout << "Stop node " << path << std::endl;
+        //std::wcout << L"Stop node " << path << std::endl;
 
         ATNPath parent = path.parent_path();
 
@@ -52,7 +52,7 @@ void CompositeATN<TCHAR>::build_closure_exclusive(CATNClosure& closure, const AT
     }
     else
     {
-        //std::cout << "Intermediate node " << path << std::endl;
+        //std::wcout << L"Intermediate node " << path << std::endl;
 
         for (const auto& tr : node.get_transitions())
         {
@@ -70,6 +70,11 @@ void CompositeATN<TCHAR>::build_closure_exclusive(CATNClosure& closure, const AT
                 }
                 else
                 {
+                    if (dest_path.count(path.leaf_id(), tr.dest()) >= 2)
+                    {
+                        throw SimpleException("Downward sentinel reached.");
+                    }
+
                     build_closure_inclusive(closure, dest_path.add(dest_node.get_submachine(), 0), color, stack);
                 }
             }
@@ -89,6 +94,10 @@ void CompositeATN<TCHAR>::build_closure_inclusive(CATNClosure& closure, const AT
     }
     else
     {
+        if (path.count(path.leaf_id(), path.leaf_index()) >= 2)
+        {
+            throw SimpleException("Downward sentinel reached.");
+        }
         build_closure_inclusive(closure, path.add(node.get_submachine(), 0), color, stack);
     }
 }
@@ -101,7 +110,7 @@ void CompositeATN<TCHAR>::build_wildcard_departure_set(CATNDepartureSetFactory<T
         {
             if (p.second[i].get_submachine() == id)
             {
-                if (stack.find(p.first, i))
+                if (stack.count(p.first, i) >= 2)
                 {
                     //std::cout << "Upward sentinel reached." << std::endl;
                     throw SimpleException("Upward sentinel reached.");
