@@ -243,6 +243,7 @@ template<typename TCHAR> class ATNMachine
 	void parse_selection(Stream& stream);
 public:
     void parse(Stream& stream);
+	bool verify_invocations(const std::unordered_map<Identifier, ATNMachine<TCHAR> >& network) const;
     int add_node(int from)
     {
         m_nodes[from].add_transition(m_nodes.size());

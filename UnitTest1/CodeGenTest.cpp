@@ -204,6 +204,8 @@ public:
 
         Grammar<unsigned char> grammar = LoadGrammar<unsigned char>("grammar/json2.cgr");
 
+		grammar.optimize();
+
         asmjit::StringLogger logger;
 
         MyErrorHandler errhandler;

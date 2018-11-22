@@ -197,6 +197,23 @@ void ATNMachine<TCHAR>::parse(Stream& stream)
 	stream.discard();
 }
 
+template<typename TCHAR>
+bool ATNMachine<TCHAR>::verify_invocations(const std::unordered_map<Identifier, ATNMachine<TCHAR> >& network) const
+{
+	for (const auto& node : m_nodes)
+	{
+		if (node.type() == ATNNodeType::Nonterminal)
+		{
+			if (network.find(node.get_invoke()) == network.cend())
+			{
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
 template class ATNMachine<char>;
 template class ATNMachine<unsigned char>;
 template class ATNMachine<wchar_t>;

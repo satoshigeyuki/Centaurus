@@ -29,6 +29,7 @@ public:
     virtual void print_catn(std::wostream& ofs, const Identifier& id) const {}
 
     virtual void optimize() {}
+	virtual bool verify() const {}
 };
 class GrammarOptions : public std::unordered_map<Identifier, std::wstring>
 {
@@ -186,5 +187,14 @@ public:
             p.second.drop_passthrough_nodes();
         }
     }
+	virtual bool verify() const override
+	{
+		for (const auto& p : m_networks)
+		{
+			if (!p.second.verify_invocations(m_networks))
+				return false;
+		}
+		return true;
+	}
 };
 }

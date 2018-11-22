@@ -64,7 +64,8 @@ int main(int argc, char *argv[])
         GenerateCATN,
 		GenerateNFA,
 		GenerateLDFA,
-		GenerateDFA
+		GenerateDFA,
+		VerifyGrammar
 	} mode;
     std::string output_path, grammar_path, atn_path, machine_name, pattern_string;
     int max_depth = 3;
@@ -166,7 +167,15 @@ int main(int argc, char *argv[])
                     )
                 ),
                 clipp::option("--optimize").set(optimize_flag, true)
-            )
+            ),
+			(
+				clipp::command("verify-grammar").set(mode, VerifyGrammar),
+				clipp::in_sequence
+				(
+					clipp::required("-g", "--grammar-file").set(source, GrammarFileSource),
+					clipp::value("grammar file", grammar_path)
+				)
+			)
         ),
 		clipp::option("-h", "--help").doc("Display this help message").set(help_flag),
         clipp::in_sequence
@@ -212,6 +221,13 @@ int main(int argc, char *argv[])
             case GenerateDFA:
                 grammar->print_dfa(output_stream, ATNPath(enc.mbstowcs(atn_path)), optimize_flag);
                 return 0;
+			case VerifyGrammar:
+				if (!grammar->verify())
+				{
+					std::cerr << "Grammar verification failed." << std::endl;
+					return 1;
+				}
+				return 0;
             }
         }
         else
