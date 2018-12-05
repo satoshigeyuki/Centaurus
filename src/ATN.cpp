@@ -95,7 +95,7 @@ void ATNMachine<TCHAR>::parse_atom(Stream& stream)
 	{
         ATNNode<TCHAR> node(stream);
 
-        if (m_globalid > 0 && node.type() == ATNNodeType::LiteralTerminal || node.type() == ATNNodeType::RegularTerminal)
+        if (m_globalid > 0 && (node.type() == ATNNodeType::LiteralTerminal || node.type() == ATNNodeType::RegularTerminal))
         {
             m_nodes.back().add_transition(m_nodes.size());
             m_nodes.emplace_back(ATNNodeType::WhiteSpace);
@@ -131,12 +131,13 @@ void ATNMachine<TCHAR>::parse_atom(Stream& stream)
 template<typename TCHAR>
 void ATNMachine<TCHAR>::parse_selection(Stream& stream)
 {
+    int priority = 0;
 	int origin_state = m_nodes.size() - 1;
 	std::vector<int> terminal_states;
 	
 	for (;;)
 	{
-		terminal_states.push_back(add_node(origin_state));
+		terminal_states.push_back(add_node(origin_state, priority));
 
 		parse_sequence(stream);
 
@@ -150,6 +151,13 @@ void ATNMachine<TCHAR>::parse_selection(Stream& stream)
 		else if (ch == L'|')
 		{
 			stream.discard();
+            ch = stream.peek();
+            if (ch == L'>')
+            {
+                stream.discard();
+
+                priority++;
+            }
 			continue;
 		}
 		else

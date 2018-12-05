@@ -29,7 +29,7 @@ public:
     virtual void print_catn(std::wostream& ofs, const Identifier& id) const {}
 
     virtual void optimize() {}
-	virtual bool verify() const {}
+	virtual bool verify() const { return true; }
 };
 class GrammarOptions : public std::unordered_map<Identifier, std::wstring>
 {

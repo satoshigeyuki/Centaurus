@@ -63,11 +63,11 @@ public:
 		{
 			if (color == 0)
 			{
-				color = p.second;
+				color = p.color();
 			}
 			else
 			{
-				if (color != p.second && p.second != 0)
+				if (color != p.color() && p.color() != 0)
 					return -1;
 			}
 		}
@@ -103,11 +103,11 @@ private:
 		{
 			if (color == 0)
 			{
-				color = p.second;
+				color = p.color();
 			}
 			else
 			{
-				if (color != p.second && p.second != 0)
+				if (color != p.color() && p.color() != 0)
 					return -1;
 			}
 		}

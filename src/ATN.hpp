@@ -25,6 +25,10 @@ public:
         : m_type(ATNTransitionType::Epsilon), m_dest(dest)
     {
     }
+    ATNTransition(int dest, int tag = 0)
+        : m_type(ATNTransitionType::Epsilon), m_dest(dest), m_tag(tag)
+    {
+    }
 	ATNTransition(ATNTransitionType type, int dest, int tag = 0)
 		: m_type(type), m_dest(dest), m_tag(tag)
 	{
@@ -129,6 +133,10 @@ public:
     void add_transition(const ATNTransition<TCHAR>& transition)
     {
         m_transitions.push_back(transition);
+    }
+    void add_transition(int dest, int priority = 0)
+    {
+        m_transitions.emplace_back(dest, priority);
     }
     /*void add_transition(const CharClass<TCHAR>& cc, int dest)
     {
@@ -244,9 +252,9 @@ template<typename TCHAR> class ATNMachine
 public:
     void parse(Stream& stream);
 	bool verify_invocations(const std::unordered_map<Identifier, ATNMachine<TCHAR> >& network) const;
-    int add_node(int from)
+    int add_node(int from, int priority = 0)
     {
-        m_nodes[from].add_transition(m_nodes.size());
+        m_nodes[from].add_transition(m_nodes.size(), priority);
         m_nodes.emplace_back();
         return m_nodes.size() - 1;
     }

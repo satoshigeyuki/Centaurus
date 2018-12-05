@@ -88,7 +88,7 @@ if __name__ == "__main__":
     perf_log = open('perf.log', 'w')
 
     for n in worker_num:
-        context = Context(r"../grammar/json.cgr", n)
+        context = Context(r"../grammar/json2.cgr", n)
         input_path = r"/home/ihara/Downloads/sf-city-lots-json-master/citylots.json"
         listener = JsonListener()
         context.attach(listener)

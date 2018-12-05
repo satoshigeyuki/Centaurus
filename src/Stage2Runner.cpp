@@ -20,7 +20,7 @@ void *Stage2Runner::thread_runner(void *param)
 
 		if (data == NULL) break;
 
-		instance->reduce_bank(data);
+		//instance->reduce_bank(data);
 
 		instance->release_bank();
 	}
@@ -146,7 +146,8 @@ void Stage2Runner::release_bank()
 	if (m_xferlistener != nullptr)
 		m_xferlistener(m_current_bank, -1);
 
-	banks[m_current_bank].state.store(WindowBankState::Stage2_Unlocked);
+	//banks[m_current_bank].state.store(WindowBankState::Stage2_Unlocked);
+	banks[m_current_bank].state.store(WindowBankState::Free);
 
 	m_current_bank = -1;
 }

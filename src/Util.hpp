@@ -200,8 +200,99 @@ public:
 		return std::find(cbegin(), cend(), i) != cend();
 	}
 };
+class PriorityChainElement
+{
+    Identifier m_id;
+    int m_index;
+    int m_priority;
+public:
+    PriorityChainElement(const Identifier& id, int index, int priority)
+        : m_id(id), m_index(index), m_priority(priority)
+    {
+    }
+    const Identifier& id() const
+    {
+        return m_id;
+    }
+    int index() const
+    {
+        return m_index;
+    }
+    int priority() const
+    {
+        return m_priority;
+    }
+    bool operator<(const PriorityChainElement& e) const
+    {
+        if (m_id == e.m_id && m_index == e.m_index)
+            return m_priority < e.m_priority;
+        else
+            return false;
+    }
+    bool operator>(const PriorityChainElement& e) const
+    {
+        if (m_id == e.m_id && m_index == e.m_index)
+            return m_priority > e.m_priority;
+        else
+            return false;
+    }
+};
+class PriorityChain : private std::vector<PriorityChainElement>
+{
+    friend std::wostream& operator<<(std::wostream& os, const PriorityChain& chain);
+
+    /*!
+     * @brief Performs a truncated lexicographical comparison of two integer vectors
+     */
+    int compare(const PriorityChain& chain) const
+    {
+        for (int i = 0; i < std::min(size(), chain.size()); i++)
+        {
+            const PriorityChainElement& p = this->operator[](i);
+            const PriorityChainElement& q = chain[i];
+
+            if (p < q) return -1;
+            if (p > q) return +1;
+        }
+        return 0;
+    }
+public:
+    PriorityChain()
+    {
+    }
+    PriorityChain(const Identifier id, int index, int pr)
+    {
+        emplace_back(id, index, pr);
+    }
+    PriorityChain(const PriorityChain& chain)
+        : std::vector<PriorityChainElement>(chain)
+    {
+    }
+    PriorityChain add(const Identifier& id, int index, int pr) const
+    {
+        PriorityChain chain(*this);
+        
+        chain.emplace_back(id, index, pr);
+
+        return chain;
+    }
+    void push(const Identifier& id, int index, int pr)
+    {
+        emplace_back(id, index, pr);
+    }
+    bool is_superior_to(const PriorityChain& chain) const
+    {
+        return compare(chain) < 0;
+    }
+    bool is_inferior_to(const PriorityChain& chain) const
+    {
+        return compare(chain) > 0;
+    }
+};
 std::wostream& operator<<(std::wostream& os, const ATNPath& path);
 std::wostream& operator<<(std::wostream& os, const IndexVector& v);
+std::wostream& operator<<(std::wostream& os, const PriorityChainElement& e);
+std::wostream& operator<<(std::wostream& os, const PriorityChain& chain);
 
 using ATNStateStack = ATNPath;
 

@@ -3,7 +3,7 @@
 namespace Centaurus
 {
 template<typename TCHAR>
-void CompositeATN<TCHAR>::build_wildcard_closure(CATNClosure& closure, const Identifier& id, int color, ATNStateStack& stack) const
+void CompositeATN<TCHAR>::build_wildcard_closure(CATNClosure& closure, const Identifier& id, int color, ATNStateStack& stack, const PriorityChain& priority) const
 {
     //std::wcout << L"Wildcard " << id << L":" << color << std::endl;
 
@@ -22,14 +22,14 @@ void CompositeATN<TCHAR>::build_wildcard_closure(CATNClosure& closure, const Ide
                     //continue;
                 }
                 stack.push(p.first, i);
-                build_closure_exclusive(closure, ATNPath(p.first, i), color, stack);
+                build_closure_exclusive(closure, ATNPath(p.first, i), color, stack, priority);
                 stack.pop();
             }
         }
     }
 }
 template<typename TCHAR>
-void CompositeATN<TCHAR>::build_closure_exclusive(CATNClosure& closure, const ATNPath& path, int color, ATNStateStack& stack) const
+void CompositeATN<TCHAR>::build_closure_exclusive(CATNClosure& closure, const ATNPath& path, int color, ATNStateStack& stack, const PriorityChain& priority) const
 {
     const CATNNode<TCHAR>& node = get_node(path);
 
@@ -43,11 +43,11 @@ void CompositeATN<TCHAR>::build_closure_exclusive(CATNClosure& closure, const AT
 
         if (parent.depth() == 0)
         {
-            build_wildcard_closure(closure, path.leaf_id(), color, stack);
+            build_wildcard_closure(closure, path.leaf_id(), color, stack, priority);
         }
         else
         {
-            build_closure_exclusive(closure, parent, color, stack);
+            build_closure_exclusive(closure, parent, color, stack, priority);
         }
     }
     else
@@ -62,11 +62,13 @@ void CompositeATN<TCHAR>::build_closure_exclusive(CATNClosure& closure, const AT
 
                 const CATNNode<TCHAR>& dest_node = get_node(dest_path);
 
+                PriorityChain new_priority = priority.add(path.leaf_id(), path.leaf_index(), tr.tag());
+
                 if (dest_node.is_terminal())
                 {
-                    closure.emplace(dest_path, color);
+                    closure.emplace(dest_path, color, new_priority);
 
-                    build_closure_exclusive(closure, dest_path, color, stack);
+                    build_closure_exclusive(closure, dest_path, color, stack, new_priority);
                 }
                 else
                 {
@@ -75,22 +77,22 @@ void CompositeATN<TCHAR>::build_closure_exclusive(CATNClosure& closure, const AT
                         throw SimpleException("Downward sentinel reached.");
                     }
 
-                    build_closure_inclusive(closure, dest_path.add(dest_node.get_submachine(), 0), color, stack);
+                    build_closure_inclusive(closure, dest_path.add(dest_node.get_submachine(), 0), color, stack, new_priority);
                 }
             }
         }
     }
 }
 template<typename TCHAR>
-void CompositeATN<TCHAR>::build_closure_inclusive(CATNClosure& closure, const ATNPath& path, int color, ATNStateStack& stack) const
+void CompositeATN<TCHAR>::build_closure_inclusive(CATNClosure& closure, const ATNPath& path, int color, ATNStateStack& stack, const PriorityChain& priority) const
 {
     const CATNNode<TCHAR>& node = get_node(path);
 
     if (node.is_terminal())
     {
-        closure.emplace(path, color);
+        closure.emplace(path, color, priority);
 
-        build_closure_exclusive(closure, path, color, stack);
+        build_closure_exclusive(closure, path, color, stack, priority);
     }
     else
     {
@@ -98,7 +100,7 @@ void CompositeATN<TCHAR>::build_closure_inclusive(CATNClosure& closure, const AT
         {
             throw SimpleException("Downward sentinel reached.");
         }
-        build_closure_inclusive(closure, path.add(node.get_submachine(), 0), color, stack);
+        build_closure_inclusive(closure, path.add(node.get_submachine(), 0), color, stack, priority);
     }
 }
 template<typename TCHAR>

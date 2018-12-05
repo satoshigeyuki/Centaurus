@@ -9,19 +9,6 @@
 #include "ATN.hpp"
 #include "Grammar.hpp"
 
-namespace std
-{
-template<> struct less<std::pair<Centaurus::ATNPath, int> >
-{
-    bool operator()(const std::pair<Centaurus::ATNPath, int>& x, const std::pair<Centaurus::ATNPath, int>& y) const
-    {
-        int path_cmp = x.first.compare(y.first);
-
-        return path_cmp != 0 ? path_cmp < 0 : x.second < y.second;
-    }
-};
-}
-
 namespace Centaurus
 {
 template<typename TCHAR> using CATNTransition = NFATransition<TCHAR>;
@@ -43,9 +30,9 @@ public:
     virtual ~CATNNode()
     {
     }
-    void add_transition(const CharClass<TCHAR>& cc, int dest)
+    void add_transition(const CharClass<TCHAR>& cc, int dest, int tag = 0)
     {
-        m_transitions.emplace_back(cc, dest);
+        m_transitions.emplace_back(cc, dest, false, tag);
     }
     void import_transitions(const NFAState<TCHAR>& state, int offset)
     {
@@ -94,7 +81,7 @@ public:
 		for (const auto& t : m_transitions)
 		{
 			os << L"N" << from << L" -> N" << t.dest() << L" [ label=\"";
-			os << t.label();
+			os << t.tag() << L":[" << t.label() << L"]";
 			os << L"\" ];" << std::endl;
 		}
 	}
@@ -105,38 +92,39 @@ class CATNMachine
 {
     std::vector<CATNNode<TCHAR> > m_nodes;
 private:
-    int add_node(const CharClass<TCHAR>& cc, int origin)
+    int add_node(const CharClass<TCHAR>& cc, int origin, int tag)
     {
         if (!m_nodes.empty() && origin >= 0)
-            m_nodes[origin].add_transition(cc, m_nodes.size());
+            m_nodes[origin].add_transition(cc, m_nodes.size(), tag);
         m_nodes.emplace_back();
         return m_nodes.size() - 1;
     }
-    int add_node(const CATNNode<TCHAR>& node, int origin)
+    int add_node(const CATNNode<TCHAR>& node, int origin, int tag)
     {
         if (!m_nodes.empty() && origin >= 0)
-            m_nodes[origin].add_transition(CharClass<TCHAR>(), m_nodes.size());
+            m_nodes[origin].add_transition(CharClass<TCHAR>(), m_nodes.size(), tag);
         m_nodes.push_back(node);
         return m_nodes.size() - 1;
     }
-    int import_whitespace(const CharClass<TCHAR>& cc, int origin)
+    int import_whitespace(const CharClass<TCHAR>& cc, int origin, int tag)
     {
-        origin = add_node(CharClass<TCHAR>(), origin);
+        origin = add_node(CharClass<TCHAR>(), origin, tag);
         m_nodes[origin].add_transition(cc, origin);
         return origin;
     }
-    int import_literal_terminal(const std::basic_string<TCHAR>& literal, int origin)
+    int import_literal_terminal(const std::basic_string<TCHAR>& literal, int origin, int tag)
     {
         for (TCHAR ch : literal)
         {
-            origin = add_node(CharClass<TCHAR>(ch, ch + 1), origin);
+            origin = add_node(CharClass<TCHAR>(ch, ch + 1), origin, tag);
+            tag = 0;
         }
         return origin;
     }
-    int import_regular_terminal(const NFA<TCHAR>& nfa, int origin)
+    int import_regular_terminal(const NFA<TCHAR>& nfa, int origin, int tag)
     {
         int offset = m_nodes.size();
-        add_node(CharClass<TCHAR>(), origin);
+        add_node(CharClass<TCHAR>(), origin, tag);
         m_nodes.back().import_transitions(nfa.get_state(0), offset);
         for (int i = 1; i < nfa.get_state_num(); i++)
         {
@@ -145,11 +133,11 @@ private:
         }
         return m_nodes.size() - 1;
     }
-    int import_nonterminal(const Identifier& id, int origin)
+    int import_nonterminal(const Identifier& id, int origin, int tag)
     {
-        return add_node(CATNNode<TCHAR>(id), origin);
+        return add_node(CATNNode<TCHAR>(id), origin, tag);
     }
-    void import_atn_node(const ATNMachine<TCHAR>& atn, int index, int origin, std::vector<int>& node_map)
+    void import_atn_node(const ATNMachine<TCHAR>& atn, int index, int origin, std::vector<int>& node_map, int tag)
     {
         const ATNNode<TCHAR>& node = atn.get_node(index);
 
@@ -158,19 +146,19 @@ private:
         switch (node.type())
         {
         case ATNNodeType::Blank:
-            origin = add_node(CharClass<TCHAR>(), origin);
+            origin = add_node(CharClass<TCHAR>(), origin, tag);
             break;
         case ATNNodeType::LiteralTerminal:
-            origin = import_literal_terminal(node.get_literal(), origin);
+            origin = import_literal_terminal(node.get_literal(), origin, tag);
             break;
         case ATNNodeType::RegularTerminal:
-            origin = import_regular_terminal(node.get_nfa(), origin);
+            origin = import_regular_terminal(node.get_nfa(), origin, tag);
             break;
         case ATNNodeType::Nonterminal:
-            origin = import_nonterminal(node.get_submachine(), origin);
+            origin = import_nonterminal(node.get_submachine(), origin, tag);
             break;
         case ATNNodeType::WhiteSpace:
-            origin = import_whitespace(CharClass<TCHAR>({u' ', u'\t', u'\r', u'\n'}), origin);
+            origin = import_whitespace(CharClass<TCHAR>({u' ', u'\t', u'\r', u'\n'}), origin, tag);
             break;
         }
 
@@ -179,9 +167,9 @@ private:
         for (const auto& tr : node.get_transitions())
         {
             if (node_map[tr.dest()] < 0)
-                import_atn_node(atn, tr.dest(), origin, node_map);
+                import_atn_node(atn, tr.dest(), origin, node_map, tr.tag());
             else
-                m_nodes[origin].add_transition(CharClass<TCHAR>(), node_map[tr.dest()]);
+                m_nodes[origin].add_transition(CharClass<TCHAR>(), node_map[tr.dest()], tr.tag());
         }
     }
 public:
@@ -189,7 +177,7 @@ public:
     {
         std::vector<int> node_map(atn.get_node_num(), -1);
 
-        import_atn_node(atn, 0, -1, node_map);
+        import_atn_node(atn, 0, -1, node_map, 0);
     }
     virtual ~CATNMachine()
     {
@@ -227,13 +215,54 @@ public:
 	}
 };
 
-using CATNClosure = std::set<std::pair<ATNPath, int> >;
+class CATNClosureElement
+{
+    ATNPath m_path;
+    int m_color;
+    PriorityChain m_priority;
+public:
+    CATNClosureElement(const ATNPath& path, int color)
+        : m_path(path), m_color(color)
+    {
+    }
+    CATNClosureElement(const ATNPath& path, int color, const PriorityChain& priority)
+        : m_path(path), m_color(color), m_priority(priority)
+    {
+    }
+    const ATNPath& path() const
+    {
+        return m_path;
+    }
+    int color() const
+    {
+        return m_color;
+    }
+    const PriorityChain& priority() const
+    {
+        return m_priority;
+    }
+    bool operator<(const CATNClosureElement& e) const
+    {
+        int path_cmp = m_path.compare(e.m_path);
+
+        return path_cmp != 0 ? path_cmp < 0 : m_color < e.m_color;
+    }
+    bool operator==(const CATNClosureElement& e) const
+    {
+        int path_cmp = m_path.compare(e.m_path);
+
+        return path_cmp == 0 && m_color == e.m_color;
+    }
+};
+
+//using CATNClosure = std::set<std::pair<ATNPath, int> >;
+using CATNClosure = std::set<CATNClosureElement>;
 
 static std::wostream& operator<<(std::wostream& os, const CATNClosure& closure)
 {
     for (const auto& p : closure)
     {
-        os << p.first << L':' << p.second << std::endl;
+        os << p.path() << L':' << p.color() << std::endl;
     }
     return os;
 }
@@ -261,10 +290,10 @@ public:
 
             for (const auto& q : p.second)
             {
-                if (q.second != prev)
+                if (q.color() != prev)
                 {
                     if (prev > 0) return false;
-                    prev = q.second;
+                    prev = q.color();
                 }
             }
         }
@@ -280,7 +309,7 @@ std::wostream& operator<<(std::wostream& os, const CATNDepartureSet<TCHAR>& dept
 		os << p.first << L" -> ";
 		for (const auto& q : p.second)
 		{
-			os << q.first << L":" << q.second << L" ";
+			os << q.path() << L":" << q.color() << L" ";
 		}
 		os << std::endl;
 	}
@@ -288,9 +317,35 @@ std::wostream& operator<<(std::wostream& os, const CATNDepartureSet<TCHAR>& dept
 }
 
 template<typename TCHAR>
+class CATNDeparture
+{
+    CharClass<TCHAR> m_label;
+    ATNPath m_path;
+    int m_color;
+    PriorityChain m_priority;
+public:
+    CATNDeparture(const CharClass<TCHAR>& label, const ATNPath& path, int color)
+        : m_label(label), m_path(path), m_color(color)
+    {
+    }
+    const CharClass<TCHAR>& label() const
+    {
+        return m_label;
+    }
+    const ATNPath& path() const
+    {
+        return m_path;
+    }
+    int color() const
+    {
+        return m_color;
+    }
+};
+
+template<typename TCHAR>
 class CATNDepartureSetFactory
 {
-    std::vector<std::tuple<CharClass<TCHAR>, ATNPath, int> > m_departures;
+    std::vector<CATNDeparture<TCHAR> > m_departures;
 public:
     CATNDepartureSetFactory()
     {
@@ -310,7 +365,7 @@ public:
 
         for (const auto& t : m_departures)
         {
-            IndexVector borders_for_one_tr = std::get<0>(t).collect_borders();
+            IndexVector borders_for_one_tr = t.label().collect_borders();
 
             borders.insert(borders_for_one_tr.cbegin(), borders_for_one_tr.cend());
         }
@@ -329,9 +384,9 @@ public:
 
             for (const auto& t : m_departures)
             {
-                if (std::get<0>(t).includes(atomic_range))
+                if (t.label().includes(atomic_range))
                 {
-                    closure.emplace(std::get<1>(t), std::get<2>(t));
+                    closure.emplace(t.path(), t.color());
                 }
             }
 
@@ -352,12 +407,12 @@ private:
     /*!
      * @brief Add all the CATN nodes reachable from all the invocation sites of a machine
      */
-    void build_wildcard_closure(CATNClosure& closure, const Identifier& id, int color, ATNStateStack& stack) const;
+    void build_wildcard_closure(CATNClosure& closure, const Identifier& id, int color, ATNStateStack& stack, const PriorityChain& priority) const;
     /*!
      * @brief Add all the CATN nodes reachable from a path
      */
-    void build_closure_exclusive(CATNClosure& closure, const ATNPath& path, int color, ATNStateStack& stack) const;
-    void build_closure_inclusive(CATNClosure& closure, const ATNPath& path, int color, ATNStateStack& stack) const;
+    void build_closure_exclusive(CATNClosure& closure, const ATNPath& path, int color, ATNStateStack& stack, const PriorityChain& priority) const;
+    void build_closure_inclusive(CATNClosure& closure, const ATNPath& path, int color, ATNStateStack& stack, const PriorityChain& priority) const;
     void build_wildcard_departure_set(CATNDepartureSetFactory<TCHAR>& deptset_factory, const Identifier& id, int color, ATNStateStack& stack) const;
     void build_departure_set_r(CATNDepartureSetFactory<TCHAR>& deptset_factory, const ATNPath& path, int color, ATNStateStack& stack) const;
 public:
@@ -405,7 +460,7 @@ public:
 
         for (const auto& p : closure)
         {
-            build_closure_inclusive(ret, p.first, p.second, stack);
+            build_closure_inclusive(ret, p.path(), p.color(), stack, p.priority());
         }
 
         return ret;
@@ -416,7 +471,7 @@ public:
 
         ATNStateStack stack;
 
-        build_closure_inclusive(closure, path, color, stack);
+        build_closure_inclusive(closure, path, color, stack, PriorityChain());
 
         return closure;
     }
@@ -438,7 +493,7 @@ public:
             //All transitions originating from the root node must be epsilon transitions
             assert(transitions[i].is_epsilon());
 
-            build_closure_inclusive(closure, path.replace_index(transitions[i].dest()), i + 1, stack);
+            build_closure_inclusive(closure, path.replace_index(transitions[i].dest()), i + 1, stack, PriorityChain(path.leaf_id(), path.leaf_index(), transitions[i].tag()));
         }
 
         return closure;
@@ -454,7 +509,7 @@ public:
 
         for (const auto& p : closure)
         {
-            build_departure_set_r(deptset_factory, p.first, p.second, stack);
+            build_departure_set_r(deptset_factory, p.path(), p.color(), stack);
         }
 
         return deptset_factory.build_departure_set();

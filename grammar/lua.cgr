@@ -1,6 +1,6 @@
 parse : chunk ;
 chunk : stat* ret_stat? ;
-stat : assignment | var | do_block | while_stat | repeat_stat | local | goto_stat | if_stat | for_stat | function | label | 'break' | ';' ;
+stat : assignment |> var |> do_block | while_stat | repeat_stat | local | goto_stat | if_stat | for_stat | function | label | 'break' | ';' ;
 do_block : 'do' chunk 'end' ;
 while_stat : 'while' expr do_block ;
 repeat_stat : 'repeat' chunk 'until' expr ;

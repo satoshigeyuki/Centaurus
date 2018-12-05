@@ -29,6 +29,25 @@ std::wostream& operator<<(std::wostream& os, const IndexVector& v)
     os << L']';
     return os;
 }
+std::wostream& operator<<(std::wostream& os, const PriorityChainElement& e)
+{
+    os << e.id() << L':' << e.index();
+    return os;
+}
+std::wostream& operator<<(std::wostream& os, const PriorityChain& chain)
+{
+    os << L'{';
+    for (unsigned int i = 0; i < chain.size() - 1; i++)
+    {
+        os << chain[i] << L'>';
+    }
+    if (!chain.empty())
+    {
+        os << chain.back();
+    }
+    os << L'}';
+    return os;
+}
 std::string readmbsfromfile(const char *filename)
 {
 	std::ifstream ifs(filename);

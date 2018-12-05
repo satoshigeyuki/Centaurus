@@ -23,13 +23,14 @@ template<typename TCHAR> class NFATransition
     CharClass<TCHAR> m_label;
     int m_dest;
     bool m_long;
+    int m_tag;
 public:
-    NFATransition(const CharClass<TCHAR>& label, int dest, bool long_flag = false)
-        : m_label(label), m_dest(dest), m_long(long_flag)
+    NFATransition(const CharClass<TCHAR>& label, int dest, bool long_flag = false, int tag = 0)
+        : m_label(label), m_dest(dest), m_long(long_flag), m_tag(tag)
     {
     }
     NFATransition(const NFATransition<TCHAR>& transition)
-        : m_label(transition.m_label), m_dest(transition.m_dest), m_long(transition.m_long)
+        : m_label(transition.m_label), m_dest(transition.m_dest), m_long(transition.m_long), m_tag(transition.m_tag)
     {
     }
     virtual ~NFATransition()
@@ -46,6 +47,10 @@ public:
     void dest(int new_dest)
     {
         m_dest = new_dest;
+    }
+    int tag() const
+    {
+        return m_tag;
     }
     void add_class(const CharClass<TCHAR>& cc)
     {
