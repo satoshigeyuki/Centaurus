@@ -10,8 +10,8 @@ namespace Centaurus
 {
 class Stage2Runner : public BaseRunner
 {
-    size_t m_bank_size;
     IChaser *m_chaser;
+    size_t m_bank_size;
 	int m_current_bank;
     const uint64_t *m_sv_list;
 	std::vector<SymbolEntry> m_sym_stack;
