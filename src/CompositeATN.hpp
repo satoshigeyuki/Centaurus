@@ -1,7 +1,5 @@
 #pragma once
 
-#include <unordered_map>
-#include <vector>
 #include <array>
 
 #include "Identifier.hpp"
@@ -262,7 +260,7 @@ static std::wostream& operator<<(std::wostream& os, const CATNClosure& closure)
 {
     for (const auto& p : closure)
     {
-        os << p.path() << L':' << p.color() << std::endl;
+        os << p.path() << L':' << p.color() << L">>" << p.priority() << std::endl;
     }
     return os;
 }
@@ -324,8 +322,8 @@ class CATNDeparture
     int m_color;
     PriorityChain m_priority;
 public:
-    CATNDeparture(const CharClass<TCHAR>& label, const ATNPath& path, int color)
-        : m_label(label), m_path(path), m_color(color)
+    CATNDeparture(const CharClass<TCHAR>& label, const ATNPath& path, int color, const PriorityChain& priority)
+        : m_label(label), m_path(path), m_color(color), m_priority(priority)
     {
     }
     const CharClass<TCHAR>& label() const
@@ -339,6 +337,10 @@ public:
     int color() const
     {
         return m_color;
+    }
+    const PriorityChain& priority() const
+    {
+        return m_priority;
     }
 };
 
@@ -355,9 +357,44 @@ public:
     {
 
     }
-    void add(const CharClass<TCHAR>& cc, const ATNPath& path, int color)
+    void add(const CharClass<TCHAR>& cc, const ATNPath& path, int color, const PriorityChain& priority)
     {
-        m_departures.emplace_back(cc, path, color);
+        m_departures.emplace_back(cc, path, color, priority);
+    }
+    bool scan_closure(const CATNClosure& closure, const PriorityChain& priority) const
+    {
+        for (const auto& e : closure)
+        {
+            if (priority.is_inferior_to(e.priority()))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+    void closure_add(CATNClosure& closure, const CATNDeparture<TCHAR>& departure) const
+    {
+        for (auto i = closure.cbegin(); i != closure.cend(); i++)
+        {
+            if (departure.priority().is_inferior_to(i->priority()))
+            {
+                //std::wcerr << L"Departure " << departure.priority() << L" by " << i->priority() << std::endl;
+                return;
+            }
+        }
+        for (auto i = closure.begin(); i != closure.end();)
+        {
+            if (departure.priority().is_superior_to(i->priority()))
+            {
+                //std::wcerr << L"Departure " << i->priority() << L" expelled by " << departure.priority() << std::endl;
+                i = closure.erase(i);
+            }
+            else
+            {
+                i++;
+            }
+        }
+        closure.emplace(departure.path(), departure.color(), departure.priority());
     }
     CATNDepartureSet<TCHAR> build_departure_set()
     {
@@ -386,7 +423,23 @@ public:
             {
                 if (t.label().includes(atomic_range))
                 {
-                    closure.emplace(t.path(), t.color());
+                    /*if (!closure.empty())
+                    {
+                        std::wcerr << L"Closure not empty." << std::endl;
+                        std::wcerr << closure << std::endl;
+                        std::wcerr << t.priority() << std::endl;
+                    }
+                    if (scan_closure(closure, t.priority()))
+                    {
+                        closure.emplace(t.path(), t.color(), t.priority());
+                    }
+                    else
+                    {
+                        std::wcerr << L"Departure blocked." << std::endl;
+                        std::wcerr << closure << std::endl;
+                        std::wcerr << t.priority() << std::endl;
+                    }*/
+                    closure_add(closure, t);
                 }
             }
 
@@ -413,8 +466,8 @@ private:
      */
     void build_closure_exclusive(CATNClosure& closure, const ATNPath& path, int color, ATNStateStack& stack, const PriorityChain& priority) const;
     void build_closure_inclusive(CATNClosure& closure, const ATNPath& path, int color, ATNStateStack& stack, const PriorityChain& priority) const;
-    void build_wildcard_departure_set(CATNDepartureSetFactory<TCHAR>& deptset_factory, const Identifier& id, int color, ATNStateStack& stack) const;
-    void build_departure_set_r(CATNDepartureSetFactory<TCHAR>& deptset_factory, const ATNPath& path, int color, ATNStateStack& stack) const;
+    void build_wildcard_departure_set(CATNDepartureSetFactory<TCHAR>& deptset_factory, const Identifier& id, int color, const PriorityChain& priority, ATNStateStack& stack) const;
+    void build_departure_set_r(CATNDepartureSetFactory<TCHAR>& deptset_factory, const ATNPath& path, int color, const PriorityChain& priority, ATNStateStack& stack) const;
 public:
     CompositeATN(const Grammar<TCHAR>& grammar)
     {
@@ -509,7 +562,7 @@ public:
 
         for (const auto& p : closure)
         {
-            build_departure_set_r(deptset_factory, p.path(), p.color(), stack);
+            build_departure_set_r(deptset_factory, p.path(), p.color(), p.priority(), stack);
         }
 
         return deptset_factory.build_departure_set();

@@ -192,7 +192,11 @@ public:
 		for (const auto& p : m_networks)
 		{
 			if (!p.second.verify_invocations(m_networks))
+            {
 				return false;
+            }
+            if (!p.second.verify_decisions(m_networks))
+                return false;
 		}
 		return true;
 	}

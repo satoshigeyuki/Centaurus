@@ -104,7 +104,7 @@ void CompositeATN<TCHAR>::build_closure_inclusive(CATNClosure& closure, const AT
     }
 }
 template<typename TCHAR>
-void CompositeATN<TCHAR>::build_wildcard_departure_set(CATNDepartureSetFactory<TCHAR>& deptset_factory, const Identifier& id, int color, ATNStateStack& stack) const
+void CompositeATN<TCHAR>::build_wildcard_departure_set(CATNDepartureSetFactory<TCHAR>& deptset_factory, const Identifier& id, int color, const PriorityChain& priority, ATNStateStack& stack) const
 {
     for (const auto& p : m_dict)
     {
@@ -119,14 +119,14 @@ void CompositeATN<TCHAR>::build_wildcard_departure_set(CATNDepartureSetFactory<T
                     //continue;
                 }
                 stack.push(p.first, i);
-                build_departure_set_r(deptset_factory, ATNPath(p.first, i), color, stack);
+                build_departure_set_r(deptset_factory, ATNPath(p.first, i), color, priority, stack);
                 stack.pop();
             }
         }
     }
 }
 template<typename TCHAR>
-void CompositeATN<TCHAR>::build_departure_set_r(CATNDepartureSetFactory<TCHAR>& deptset_factory, const ATNPath& path, int color, ATNStateStack& stack) const
+void CompositeATN<TCHAR>::build_departure_set_r(CATNDepartureSetFactory<TCHAR>& deptset_factory, const ATNPath& path, int color, const PriorityChain& priority, ATNStateStack& stack) const
 {
     const CATNNode<TCHAR>& node = get_node(path);
 
@@ -136,11 +136,11 @@ void CompositeATN<TCHAR>::build_departure_set_r(CATNDepartureSetFactory<TCHAR>& 
 
         if (parent_path.depth() == 0)
         {
-            build_wildcard_departure_set(deptset_factory, path.leaf_id(), color, stack);
+            build_wildcard_departure_set(deptset_factory, path.leaf_id(), color, priority, stack);
         }
         else
         {
-            build_departure_set_r(deptset_factory, parent_path, color, stack);
+            build_departure_set_r(deptset_factory, parent_path, color, priority, stack);
         }
     }
     else
@@ -149,7 +149,7 @@ void CompositeATN<TCHAR>::build_departure_set_r(CATNDepartureSetFactory<TCHAR>& 
         {
             if (!tr.is_epsilon())
             {
-                deptset_factory.add(tr.label(), path.replace_index(tr.dest()), color);
+                deptset_factory.add(tr.label(), path.replace_index(tr.dest()), color, priority);
             }
         }
     }

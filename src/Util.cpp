@@ -31,19 +31,15 @@ std::wostream& operator<<(std::wostream& os, const IndexVector& v)
 }
 std::wostream& operator<<(std::wostream& os, const PriorityChainElement& e)
 {
-    os << e.id() << L':' << e.index();
+    os << e.id() << L':' << e.index() << L'=' << e.priority();
     return os;
 }
 std::wostream& operator<<(std::wostream& os, const PriorityChain& chain)
 {
     os << L'{';
-    for (unsigned int i = 0; i < chain.size() - 1; i++)
+    for (int i = 0; i + 1 < chain.size(); i++)
     {
         os << chain[i] << L'>';
-    }
-    if (!chain.empty())
-    {
-        os << chain.back();
     }
     os << L'}';
     return os;

@@ -185,79 +185,88 @@ int main(int argc, char *argv[])
         ).doc("Output filename (defaults to stdout)")
 	);
 
-	if (clipp::parse(argc, argv, cli))
-	{
-		if (help_flag)
-		{
-			std::cerr << clipp::make_man_page(cli, argv[0]);
-			return 0;
-		}
-
-        std::wofstream output_file;
-        if (!output_path.empty())
+    try
+    {
+        if (clipp::parse(argc, argv, cli))
         {
-            output_file.open(output_path.c_str());
-        }
-        std::wostream& output_stream = output_path.empty() ? std::wcout : output_file;
-
-        if (source == GrammarFileSource)
-        {
-            std::unique_ptr<IGrammar> grammar(LoadGrammar(grammar_path.c_str()));
-            
-            switch (mode)
+            if (help_flag)
             {
-            case GenerateATN:
-                grammar->print_grammar(output_stream, max_depth, optimize_flag);
+                std::cerr << clipp::make_man_page(cli, argv[0]);
                 return 0;
-            case GenerateCATN:
-                grammar->print_catn(output_stream, Identifier(enc.mbstowcs(machine_name)));
-                return 0;
-            case GenerateNFA:
-                grammar->print_nfa(output_stream, ATNPath(enc.mbstowcs(atn_path)));
-                return 0;
-            case GenerateLDFA:
-                grammar->print_ldfa(output_stream, ATNPath(enc.mbstowcs(atn_path)));
-                return 0;
-            case GenerateDFA:
-                grammar->print_dfa(output_stream, ATNPath(enc.mbstowcs(atn_path)), optimize_flag);
-                return 0;
-			case VerifyGrammar:
-				if (!grammar->verify())
-				{
-					std::cerr << "Grammar verification failed." << std::endl;
-					return 1;
-				}
-				return 0;
+            }
+
+            std::wofstream output_file;
+            if (!output_path.empty())
+            {
+                output_file.open(output_path.c_str());
+            }
+            std::wostream& output_stream = output_path.empty() ? std::wcout : output_file;
+
+            if (source == GrammarFileSource)
+            {
+                std::unique_ptr<IGrammar> grammar(LoadGrammar(grammar_path.c_str()));
+                
+                switch (mode)
+                {
+                case GenerateATN:
+                    grammar->print_grammar(output_stream, max_depth, optimize_flag);
+                    return 0;
+                case GenerateCATN:
+                    grammar->print_catn(output_stream, Identifier(enc.mbstowcs(machine_name)));
+                    return 0;
+                case GenerateNFA:
+                    grammar->print_nfa(output_stream, ATNPath(enc.mbstowcs(atn_path)));
+                    return 0;
+                case GenerateLDFA:
+                    grammar->print_ldfa(output_stream, ATNPath(enc.mbstowcs(atn_path)));
+                    return 0;
+                case GenerateDFA:
+                    grammar->print_dfa(output_stream, ATNPath(enc.mbstowcs(atn_path)), optimize_flag);
+                    return 0;
+                case VerifyGrammar:
+                    if (!grammar->verify())
+                    {
+                        std::cerr << "Grammar verification failed." << std::endl;
+                        return 1;
+                    }
+                    return 0;
+                }
+            }
+            else
+            {
+                Stream stream(enc.mbstowcs(pattern_string));
+
+                switch (mode)
+                {
+                    case GenerateNFA:
+                    {
+                        NFA<char> nfa(stream);
+
+                        nfa.print(output_stream, L"NFA");
+                    }
+                    return 0;
+                    case GenerateDFA:
+                    {
+                        NFA<char> nfa(stream);
+                        DFA<char> dfa(nfa);
+
+                        dfa.print(output_stream, L"DFA");
+                    }
+                    return 0;
+                }
             }
         }
         else
         {
-            Stream stream(enc.mbstowcs(pattern_string));
-
-            switch (mode)
-            {
-                case GenerateNFA:
-                {
-                    NFA<char> nfa(stream);
-
-                    nfa.print(output_stream, L"NFA");
-                }
-                return 0;
-                case GenerateDFA:
-                {
-                    NFA<char> nfa(stream);
-                    DFA<char> dfa(nfa);
-
-                    dfa.print(output_stream, L"DFA");
-                }
-                return 0;
-            }
+            std::cerr << clipp::make_man_page(cli, argv[0]);
+            return -1;
         }
-	}
-	else
-	{
-		std::cerr << clipp::make_man_page(cli, argv[0]);
-		return -1;
-	}
+    }
+    catch (const std::exception& ex)
+    {
+        std::cerr << ex.what() << std::endl;
+        std::cerr << "Program aborted due to exception." << std::endl;
+        return -1;
+    }
     return 0;
 }

@@ -35,9 +35,12 @@ template<typename TCHAR> using LDFATransition = NFATransition<TCHAR>;
 template<typename TCHAR>
 class LDFAState : public NFABaseState<TCHAR, CATNClosure>
 {
+public:
 	using NFABaseState<TCHAR, CATNClosure>::m_label;
 	using NFABaseState<TCHAR, CATNClosure>::m_transitions;
-public:
+    using NFABaseState<TCHAR, CATNClosure>::hash;
+    using NFABaseState<TCHAR, CATNClosure>::operator==;
+    using NFABaseState<TCHAR, CATNClosure>::sort;
 	virtual void print(std::wostream& os, int from) const override
 	{
 		for (const auto& t : m_transitions)
@@ -81,10 +84,18 @@ public:
 		: NFABaseState<TCHAR, CATNClosure>(label)
 	{
 	}
+    LDFAState(const LDFAState<TCHAR>& state, std::vector<LDFATransition<TCHAR> >&& transitions)
+        : NFABaseState<TCHAR, CATNClosure>(state, std::move(transitions))
+    {
+    }
 	virtual ~LDFAState()
 	{
 	}
 	const std::vector<LDFATransition<TCHAR> >& get_transitions() const
+	{
+		return m_transitions;
+	}
+	std::vector<LDFATransition<TCHAR> >& get_transitions()
 	{
 		return m_transitions;
 	}
@@ -177,11 +188,17 @@ private:
 		}
 	}
 public:
-	LookaheadDFA(const CompositeATN<TCHAR>& catn, const ATNPath& origin)
+	LookaheadDFA(const CompositeATN<TCHAR>& catn, const ATNPath& origin, bool optimize_flag = true)
 	{
 		m_states.emplace_back(catn.build_root_closure(origin));
 
 		fork_closures(catn, 0);
+
+        for (auto& state : m_states)
+            state.sort();
+
+        if (optimize_flag)
+            minimize();
 	}
     LookaheadDFA(LookaheadDFA<TCHAR>&& old)
         : NFABase<LDFAState<TCHAR> >(old)
@@ -277,5 +294,111 @@ public:
 
 		os << L"}" << std::endl;
 	}
+    void filter_nodes(const std::vector<bool>& mask)
+    {
+        std::vector<LDFAState<TCHAR> > nodes;
+        std::vector<int> index_map(m_states.size());
+
+        assert(m_states.size() == mask.size());
+
+        for (int src_index = 0, dest_index = 0; src_index < m_states.size(); src_index++)
+        {
+            if (mask[src_index])
+            {
+                std::vector<LDFATransition<TCHAR> > filtered;
+                for (const auto& t : m_states.at(src_index).get_transitions())
+                {
+                    if (t.dest() < 0)
+                    {
+                        filtered.push_back(t);
+                    }
+                    else if (mask[t.dest()])
+                    {
+                        filtered.push_back(t);
+                    }
+                }
+                nodes.emplace_back(m_states.at(src_index), std::move(filtered));
+                index_map[src_index] = dest_index;
+                dest_index++;
+            }
+            else
+            {
+                index_map[src_index] = -1;
+            }
+        }
+
+        for (auto& n : nodes)
+        {
+            for (auto& t : n.get_transitions())
+            {
+                if (t.dest() >= 0)
+                    t.dest(index_map[t.dest()]);
+            }
+        }
+        m_states = std::move(nodes);
+    }
+    void redirect_transitions(int from, int to)
+    {
+        for (auto& s : m_states)
+        {
+            for (auto& t : s.get_transitions())
+            {
+                if (t.dest() == from)
+                {
+                    t.dest(to);
+                }
+            }
+        }
+    }
+    void minimize()
+    {
+        std::vector<bool> mask(m_states.size(), true);
+        std::vector<int> remap(m_states.size(), -1);
+
+        std::unordered_map<LDFAState<TCHAR>, int> equiv_map;
+
+        for (int index = 0; index < m_states.size(); index++)
+        {
+            auto p = equiv_map.find(m_states[index]);
+            if (p != equiv_map.end())
+            {
+                remap[index] = p->second;
+                mask[index] = false;
+            }
+            else
+            {
+                equiv_map.emplace(m_states[index], index);
+            }
+        }
+
+        for (int index = 0; index < m_states.size(); index++)
+        {
+            if (remap[index] >= 0)
+            {
+                redirect_transitions(index, remap[index]);
+            }
+        }
+        filter_nodes(mask);
+    }
+};
+}
+
+namespace std
+{
+template<typename TCHAR>
+struct hash<Centaurus::LDFAState<TCHAR> >
+{
+    size_t operator()(const Centaurus::LDFAState<TCHAR>& s) const
+    {
+        return s.hash();
+    }
+};
+template<typename TCHAR>
+struct equal_to<Centaurus::LDFAState<TCHAR> >
+{
+    bool operator()(const Centaurus::LDFAState<TCHAR>& x, const Centaurus::LDFAState<TCHAR>& y) const
+    {
+        return x == y;
+    }
 };
 }
