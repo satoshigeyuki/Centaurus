@@ -75,9 +75,9 @@ SVCapsule Stage3Runner::reduce()
 				{
 					std::cerr << "Chaser aborted: " << std::hex << (uint64_t)chaser_result << "/" << (uint64_t)marker.offset_ptr(m_input_window) << std::dec << std::endl;
 				}
-				int tag = 0;
+				long tag = 0;
 				if (m_listener != nullptr)
-					tag = m_listener(m_sym_stack.data(), m_sym_stack.size());
+					tag = m_listener(m_sym_stack.data(), m_sym_stack.size(), m_listener_context);
 				return SVCapsule(m_input_window, marker.get_offset(), tag);
 			}
 		}
@@ -102,7 +102,7 @@ void *Stage3Runner::acquire_bank()
 					banks[i].state = WindowBankState::Stage3_Locked;
 
 					if (m_xferlistener != nullptr)
-						m_xferlistener(i, banks[i].number);
+						m_xferlistener(i, banks[i].number, m_listener_context);
 
 					//std::cout << "Bank " << banks[i].number << " reached Stage3" << std::endl;
 
@@ -129,8 +129,8 @@ void Stage3Runner::release_bank()
 		m_current_bank = -1;
 	}
 }
-Stage3Runner::Stage3Runner(const char *filename, IChaser *chaser, size_t bank_size, int bank_num, int master_pid)
-	: BaseRunner(filename, bank_size, bank_num, master_pid), m_chaser(chaser), m_bank_size(bank_size)
+Stage3Runner::Stage3Runner(const char *filename, IChaser *chaser, size_t bank_size, int bank_num, int master_pid, void *context)
+	: BaseRunner(filename, bank_size, bank_num, master_pid), m_chaser(chaser), m_bank_size(bank_size), m_listener_context(context)
 {
 #if defined(CENTAURUS_BUILD_WINDOWS)
 	m_mem_handle = OpenFileMappingA(FILE_MAP_ALL_ACCESS, FALSE, m_memory_name);

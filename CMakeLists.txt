@@ -49,6 +49,14 @@ add_executable(centaurus ${CENTAURUS_DRIVER_SRC})
 target_include_directories(centaurus PRIVATE asmjit/src vc)
 target_link_libraries(centaurus libcentaurus)
 
+add_executable(bench1 benchmarks/bench1.cpp)
+target_include_directories(bench1 PRIVATE asmjit/src vc src)
+target_link_libraries(bench1 libcentaurus)
+
+add_executable(bench2 benchmarks/bench2.cpp)
+target_include_directories(bench2 PRIVATE asmjit/src vc src)
+target_link_libraries(bench2 libcentaurus)
+
 if(NOT MSVC)
     add_subdirectory(UnitTest1)
 	add_subdirectory(MsTestEmulator)

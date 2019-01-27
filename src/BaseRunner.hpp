@@ -84,8 +84,8 @@ public:
 	}
 };
 
-typedef int (CENTAURUS_CALLBACK * ReductionListener)(const SymbolEntry *symbols, int symbol_num);
-typedef void (CENTAURUS_CALLBACK * TransferListener)(int index, int new_index);
+typedef long (CENTAURUS_CALLBACK * ReductionListener)(const SymbolEntry *symbols, int symbol_num, void *context);
+typedef void (CENTAURUS_CALLBACK * TransferListener)(int index, int new_index, void *context);
 
 class BaseRunner : public BaseListener
 {

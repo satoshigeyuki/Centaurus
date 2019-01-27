@@ -55,7 +55,9 @@ class ChaserEM64T : public IChaser
 	static void push_terminal(void *context, int id, const void *start, const void *end);
 	static const void *request_nonterminal(void *context, int id, const void *input);
 public:
+    ChaserEM64T() {}
 	ChaserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *logger = NULL, asmjit::ErrorHandler *errhandler = NULL);
+	void init(const Grammar<TCHAR>& grammar, asmjit::Logger *logger = NULL, asmjit::ErrorHandler *errhandler = NULL);
 	virtual ~ChaserEM64T() {}
 	ChaserFunc operator[](const Identifier& id) const
 	{
@@ -78,7 +80,9 @@ class ParserEM64T : public IParser
     void emit_machine(asmjit::X86Assembler& as, const ATNMachine<TCHAR>& machine, std::unordered_map<Identifier, asmjit::Label>& machine_map, const CompositeATN<TCHAR>& catn, const Identifier& id, asmjit::Label& rejectlabel, MyConstPool& pool);
     static void *request_page(void *context);
 public:
+    ParserEM64T() {}
     ParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *logger = NULL, asmjit::ErrorHandler *errhandler = NULL);
+    void init(const Grammar<TCHAR>& grammar, asmjit::Logger *logger = NULL, asmjit::ErrorHandler *errhandler = NULL);
     virtual ~ParserEM64T() {}
     const void *operator()(BaseListener *context, const void *input)
     {

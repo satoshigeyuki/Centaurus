@@ -1,0 +1,11 @@
+grammar XML;
+Document : Prolog DocType Element ;
+Prolog : '<?' Name Attribute* '?>' ;
+DocType : '<!' 'DOCTYPE' Name 'SYSTEM' Value '>' ;
+Comment : '<!--' /((-[^\-])|[^\-])*+/ '-->' ;
+Element : '<' Name Attribute* ElementBody ;
+ElementBody : '/>' | '>' Content (Element Content)* '</' Name '>' ;
+Content : /[^<]*+/ ;
+Attribute : Name '=' Value ;
+Name : /[a-zA-Z][a-zA-Z0-9_]*/ ;
+Value : /"[^"]*+"/ ;

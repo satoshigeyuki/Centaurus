@@ -1,4 +1,5 @@
 #include "CompositeATN.hpp"
+#include "LookaheadDFA.hpp"
 
 namespace Centaurus
 {
@@ -153,6 +154,31 @@ void CompositeATN<TCHAR>::build_departure_set_r(CATNDepartureSetFactory<TCHAR>& 
             }
         }
     }
+}
+template<typename TCHAR>
+bool CompositeATN<TCHAR>::verify_decisions(const std::unordered_map<Identifier, ATNMachine<TCHAR> >& network) const
+{
+    for (const auto& p : network)
+    {
+        for (int i = 0; i < p.second.get_node_num(); i++)
+        {
+            int outbound_num = p.second.get_node(i).get_transitions().size();
+
+            if (outbound_num > 1)
+            {
+                try
+                {
+                    LookaheadDFA<TCHAR>(*this, convert_atn_path(ATNPath(p.first, i)));
+                }
+                catch (...)
+                {
+                    std::wcerr << L"Decision check failed at " << ATNPath(p.first, i) << std::endl;
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
 }
 template class CompositeATN<wchar_t>;
 template class CompositeATN<unsigned char>;

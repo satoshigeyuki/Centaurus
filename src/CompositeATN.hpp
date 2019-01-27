@@ -378,7 +378,7 @@ public:
         {
             if (departure.priority().is_inferior_to(i->priority()))
             {
-                //std::wcerr << L"Departure " << departure.priority() << L" by " << i->priority() << std::endl;
+                //std::wcerr << L"Departure " << departure.label() << L":" << departure.priority() << L" by " << i->label() << L":" << i->priority() << std::endl;
                 return;
             }
         }
@@ -386,7 +386,7 @@ public:
         {
             if (departure.priority().is_superior_to(i->priority()))
             {
-                //std::wcerr << L"Departure " << i->priority() << L" expelled by " << departure.priority() << std::endl;
+                //std::wcerr << L"Departure " << i->label() << L":" << i->priority() << L" expelled by " << departure.label() << L":" << departure.priority() << std::endl;
                 i = closure.erase(i);
             }
             else
@@ -448,6 +448,7 @@ public:
                 deptset.emplace_back(atomic_range, closure);
             }
         }
+        //std::wcout << deptset << std::endl;
         return deptset;
     }
 };
@@ -479,6 +480,7 @@ public:
     virtual ~CompositeATN()
     {
     }
+    bool verify_decisions(const std::unordered_map<Identifier, ATNMachine<TCHAR> >& network) const;
     const CATNMachine<TCHAR>& operator[](const Identifier& id) const
     {
         return m_dict.at(id);

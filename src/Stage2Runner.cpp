@@ -89,9 +89,9 @@ int Stage2Runner::parse_subtree(uint64_t *ast, int position)
 				std::cerr << "Chaser aborted: " << std::hex << (uint64_t)chaser_result << "/" << (uint64_t)marker.offset_ptr(m_input_window) << std::dec << std::endl;
 			}
 
-			int tag = 0;
+			long tag = 0;
 			if (m_listener != nullptr)
-				tag = m_listener(m_sym_stack.data(), m_sym_stack.size());
+				tag = m_listener(m_sym_stack.data(), m_sym_stack.size(), m_listener_context);
 
 			//Zero-fill the SV list
 			for (int k = position + 1; k < j; k++)
@@ -125,7 +125,7 @@ void *Stage2Runner::acquire_bank()
 			if (banks[i].state.compare_exchange_weak(old_state, WindowBankState::Stage2_Locked))
 			{
 				if (m_xferlistener != nullptr)
-					m_xferlistener(-1, banks[i].number);
+					m_xferlistener(-1, banks[i].number, m_listener_context);
 				m_current_bank = i;
 				return (char *)m_main_window + m_bank_size * i;
 			}
@@ -144,14 +144,14 @@ void Stage2Runner::release_bank()
 	WindowBankEntry *banks = reinterpret_cast<WindowBankEntry *>(m_sub_window);
 
 	if (m_xferlistener != nullptr)
-		m_xferlistener(m_current_bank, -1);
+		m_xferlistener(m_current_bank, -1, m_listener_context);
 
 	banks[m_current_bank].state.store(WindowBankState::Stage2_Unlocked);
 
 	m_current_bank = -1;
 }
-Stage2Runner::Stage2Runner(const char *filename, IChaser *chaser, size_t bank_size, int bank_num, int master_pid)
-	: BaseRunner(filename, bank_size, bank_num, master_pid), m_chaser(chaser), m_bank_size(bank_size)
+Stage2Runner::Stage2Runner(const char *filename, IChaser *chaser, size_t bank_size, int bank_num, int master_pid, void *context)
+	: BaseRunner(filename, bank_size, bank_num, master_pid), m_chaser(chaser), m_bank_size(bank_size), m_listener_context(context)
 {
 #if defined(CENTAURUS_BUILD_WINDOWS)
 	m_mem_handle = OpenFileMappingA(FILE_MAP_ALL_ACCESS, FALSE, m_memory_name);

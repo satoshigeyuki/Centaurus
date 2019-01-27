@@ -63,6 +63,8 @@ public:
     Grammar(Stream& stream)
     {
         parse(stream);
+
+        optimize();
     }
     Grammar()
     {
@@ -76,6 +78,8 @@ public:
         Stream stream(std::move(grammar_str));
 
         parse(stream);
+
+        optimize();
     }
     Grammar(Grammar&& old)
         : m_networks(std::move(old.m_networks)), m_root_id(old.m_root_id)
@@ -187,18 +191,6 @@ public:
             p.second.drop_passthrough_nodes();
         }
     }
-	virtual bool verify() const override
-	{
-		for (const auto& p : m_networks)
-		{
-			if (!p.second.verify_invocations(m_networks))
-            {
-				return false;
-            }
-            if (!p.second.verify_decisions(m_networks))
-                return false;
-		}
-		return true;
-	}
+	virtual bool verify() const override;
 };
 }

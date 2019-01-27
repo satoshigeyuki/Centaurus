@@ -10,6 +10,11 @@ namespace Centaurus
 template<typename TCHAR>
 ChaserEM64T<TCHAR>::ChaserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *logger, asmjit::ErrorHandler *errhandler)
 {
+    init(grammar, logger, errhandler);
+}
+template<typename TCHAR>
+void ChaserEM64T<TCHAR>::init(const Grammar<TCHAR>& grammar, asmjit::Logger *logger, asmjit::ErrorHandler *errhandler)
+{
 	m_code.init(m_runtime.getCodeInfo());
 	if (logger != NULL)
 		m_code.setLogger(logger);
@@ -71,6 +76,12 @@ ChaserEM64T<TCHAR>::ChaserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *l
 
 template<typename TCHAR>
 ParserEM64T<TCHAR>::ParserEM64T(const Grammar<TCHAR>& grammar, asmjit::Logger *logger, asmjit::ErrorHandler *errhandler)
+{
+    init(grammar, logger, errhandler);
+}
+
+template<typename TCHAR>
+void ParserEM64T<TCHAR>::init(const Grammar<TCHAR>& grammar, asmjit::Logger *logger, asmjit::ErrorHandler *errhandler)
 {
     m_code.init(m_runtime.getCodeInfo());
     if (logger != NULL)

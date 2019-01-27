@@ -123,7 +123,8 @@ public:
     {
         using namespace Centaurus;
 
-        Grammar<unsigned char> grammar = LoadGrammar<unsigned char>("grammar/json2.cgr");
+        //Grammar<unsigned char> grammar = LoadGrammar<unsigned char>("grammar/json2.cgr");
+        Grammar<unsigned char> grammar = LoadGrammar<unsigned char>("grammar/xml.cgr");
 
 		grammar.optimize();
 
@@ -135,7 +136,7 @@ public:
 		
         DryParserEM64T<unsigned char> parser(grammar, &logger);
 
-        std::cout << logger.getString() << std::endl;
+        //std::cout << logger.getString() << std::endl;
 
 		//fclose(logFile);
 
@@ -148,7 +149,8 @@ public:
 		//const char *input_path = "test2.json";
 #elif defined(CENTAURUS_BUILD_LINUX)
 		//const char *input_path = "/mnt/c/Users/ihara/Downloads/sf-city-lots-json-master/sf-city-lots-json-master/citylots.json";
-        const char *input_path = "/home/ihara/Downloads/sf-city-lots-json-master/citylots.json";
+        //const char *input_path = "/home/ihara/Downloads/sf-city-lots-json-master/citylots.json";
+        const char *input_path = "/home/ihara/test3.xml";
 #endif
 
         Stage1Runner runner{input_path, &parser, 8 * 1024 * 1024, 8};
@@ -202,7 +204,8 @@ public:
     {
         using namespace Centaurus;
 
-        Grammar<unsigned char> grammar = LoadGrammar<unsigned char>("grammar/json2.cgr");
+        //Grammar<unsigned char> grammar = LoadGrammar<unsigned char>("grammar/json.cgr");
+        Grammar<unsigned char> grammar = LoadGrammar<unsigned char>("grammar/xml.cgr");
 
 		grammar.optimize();
 
@@ -218,7 +221,8 @@ public:
 		const char *input_path = "C:\\Users\\ihara\\Downloads\\sf-city-lots-json-master\\sf-city-lots-json-master\\citylots.json";
 #elif defined(CENTAURUS_BUILD_LINUX)
         //const char *input_path = "/mnt/c/Users/ihara/Downloads/sf-city-lots-json-master/sf-city-lots-json-master/citylots.json";
-        const char *input_path = "/home/ihara/Downloads/sf-city-lots-json-master/citylots.json";
+        //const char *input_path = "/home/ihara/Downloads/sf-city-lots-json-master/citylots.json";
+        const char *input_path = "/home/ihara/test1.xml";
 #endif
 
         Stage1Runner runner1{ input_path, &parser, 8 * 1024 * 1024, 4 };

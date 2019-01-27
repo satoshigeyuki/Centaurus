@@ -13,7 +13,7 @@ public:
 };
 struct SymbolEntry
 {
-	int id, key;
+	long id, key;
 	long start, end;
 	SymbolEntry(int id, long start, long end, long key = 0)
 		: id(id), key(key), start(start), end(end)

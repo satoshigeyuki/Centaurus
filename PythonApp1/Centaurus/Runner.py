@@ -6,7 +6,7 @@ import ctypes
 
 class SymbolEntry(ctypes.Structure):
     _fields_ = [('id', ctypes.c_int),
-                ('key', ctypes.c_int),
+                ('key', ctypes.c_long),
                 ('start', ctypes.c_long),
                 ('end', ctypes.c_long)]
 

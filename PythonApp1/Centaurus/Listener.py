@@ -81,6 +81,8 @@ class Stage3ListenerAdapter(BaseListenerAdapter):
         self.page_values = []
         self.values = collections.deque()
         runner.attach(self.reduction_callback, self.transfer_callback)
+        self.start_time = time.time()
+        self.run_time = 0.0
         self.logger = logging.getLogger("Centaurus.Stage3Listener")
         self.logger.setLevel(logging.DEBUG)
         self.handlers = [None] * grammar.get_machine_num()
@@ -105,6 +107,11 @@ class Stage3ListenerAdapter(BaseListenerAdapter):
     def transfer_callback(self, index, new_index):
         values = self.channels[index].get()
         self.page_values.append(values)
+        end_time = time.time()
+        self.run_time += end_time - self.start_time
+        self.start_time = end_time
+        logger.debug("Stage3 cumulative runtime = %f[s]" % (self.run_time,))
+        logger.debug("Accepted %d values" % len(values))
 
     def value(self, index):
         key = self.symbols[index].key & ((1 << 20) - 1)

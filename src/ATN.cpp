@@ -9,7 +9,7 @@ void ATNNode<TCHAR>::parse_literal(Stream& stream)
 
     wchar_t ch = stream.get();
 
-    for (; ch != L'\0' && ch != L'\'' && ch != L'"'; ch = stream.get())
+    for (; ch != L'\0' && ch != leader; ch = stream.get())
     {
         m_literal.push_back(wide_to_target<TCHAR>(ch));
     }
@@ -131,6 +131,8 @@ void ATNMachine<TCHAR>::parse_atom(Stream& stream)
 template<typename TCHAR>
 void ATNMachine<TCHAR>::parse_selection(Stream& stream)
 {
+    add_node(m_nodes.size() - 1);
+
     int priority = 0;
 	int origin_state = m_nodes.size() - 1;
 	std::vector<int> terminal_states;

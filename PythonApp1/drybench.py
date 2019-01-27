@@ -9,10 +9,12 @@ os.environ['CENTAURUS_DL_PATH'] = os.path.join(os.path.dirname(os.path.abspath(_
 from Centaurus import *
 
 if __name__ == "__main__":
-    grammar = Grammar(r"../grammar/json2.cgr")
+    #grammar = Grammar(r"../grammar/json2.cgr")
+    grammar = Grammar(r"../grammar/xml.cgr")
     grammar.optimize()
     parser = Parser(grammar, True)
-    input_path = r"/home/ihara/Downloads/sf-city-lots-json-master/citylots.json"
+    #input_path = r"/home/ihara/Downloads/sf-city-lots-json-master/citylots.json"
+    input_path = r"/home/ihara/test2.xml"
     st1_runner = Stage1Runner(input_path, parser, 8 * 1024 * 1024, 8);
     start_time = time.time()
     st1_runner.start()

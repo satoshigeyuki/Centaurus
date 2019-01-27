@@ -10,6 +10,7 @@ namespace Centaurus
 {
 class Stage2Runner : public BaseRunner
 {
+    void *m_listener_context;
     IChaser *m_chaser;
     size_t m_bank_size;
 	int m_current_bank;
@@ -26,7 +27,7 @@ private:
 	void *acquire_bank();
 	void release_bank();
 public:
-	Stage2Runner(const char *filename, IChaser *chaser, size_t bank_size, int bank_num, int master_pid);
+	Stage2Runner(const char *filename, IChaser *chaser, size_t bank_size, int bank_num, int master_pid, void *context = nullptr);
 	virtual ~Stage2Runner();
 	virtual void start() override
 	{

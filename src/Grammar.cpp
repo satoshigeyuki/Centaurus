@@ -78,6 +78,26 @@ void Grammar<TCHAR>::parse(Stream& stream)
     }
 }
 
+template<typename TCHAR>
+bool Grammar<TCHAR>::verify() const
+{
+    for (const auto& p : m_networks)
+    {
+        if (!p.second.verify_invocations(m_networks))
+        {
+            std::wcerr << L"Nonterminal invocation check failed at " << p.first << std::endl;
+            return false;
+        }
+    }
+
+    if (!CompositeATN<TCHAR>(*this).verify_decisions(m_networks))
+    {
+        return false;
+    }
+
+    return true;
+}
+
 void GrammarOptions::parse(Stream& stream)
 {
     wchar_t ch = stream.skip_whitespace();
