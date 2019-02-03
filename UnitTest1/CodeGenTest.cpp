@@ -12,6 +12,7 @@
 
 #if defined(CENTAURUS_BUILD_LINUX)
 #include <sys/time.h>
+#include <sys/stat.h>
 #endif
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -152,6 +153,8 @@ public:
         const char *input_path = "/home/ihara/Downloads/sf-city-lots-json-master/citylots.json";
         //const char *input_path = "/home/ihara/test3.xml";
 #endif
+        struct stat st;
+        stat(input_path, &st);
 
         Stage1Runner runner{input_path, &parser, 8 * 1024 * 1024, 8};
 
@@ -165,6 +168,9 @@ public:
 		char msg[256];
 		sprintf(msg, "Elapsed time: %lu[ms]\r\n", (end_time - start_time) / 1000);
 		Logger::WriteMessage(msg);
+
+        sprintf(msg, "Throughput: %lu[MB/s]\r\n", st.st_size / (end_time - start_time));
+        Logger::WriteMessage(msg);
 
         //Assert::AreEqual((const void *)(json + strlen(json)), context.result);
         Assert::IsTrue(runner.get_result() != NULL);
