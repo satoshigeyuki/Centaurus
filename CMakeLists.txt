@@ -11,7 +11,7 @@ set(ASMJIT_BUILD_ARM FALSE)
 set(ASMJIT_BUILD_X86 TRUE)
 set(ASMJIT_BUILD_TEST FALSE)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -march=native -ftree-vectorize")
 
 add_subdirectory(asmjit)
 

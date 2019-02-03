@@ -123,8 +123,8 @@ public:
     {
         using namespace Centaurus;
 
-        //Grammar<unsigned char> grammar = LoadGrammar<unsigned char>("grammar/json2.cgr");
-        Grammar<unsigned char> grammar = LoadGrammar<unsigned char>("grammar/xml.cgr");
+        Grammar<unsigned char> grammar = LoadGrammar<unsigned char>("grammar/json2.cgr");
+        //Grammar<unsigned char> grammar = LoadGrammar<unsigned char>("grammar/xml.cgr");
 
 		grammar.optimize();
 
@@ -149,8 +149,8 @@ public:
 		//const char *input_path = "test2.json";
 #elif defined(CENTAURUS_BUILD_LINUX)
 		//const char *input_path = "/mnt/c/Users/ihara/Downloads/sf-city-lots-json-master/sf-city-lots-json-master/citylots.json";
-        //const char *input_path = "/home/ihara/Downloads/sf-city-lots-json-master/citylots.json";
-        const char *input_path = "/home/ihara/test3.xml";
+        const char *input_path = "/home/ihara/Downloads/sf-city-lots-json-master/citylots.json";
+        //const char *input_path = "/home/ihara/test3.xml";
 #endif
 
         Stage1Runner runner{input_path, &parser, 8 * 1024 * 1024, 8};
@@ -204,8 +204,8 @@ public:
     {
         using namespace Centaurus;
 
-        //Grammar<unsigned char> grammar = LoadGrammar<unsigned char>("grammar/json.cgr");
-        Grammar<unsigned char> grammar = LoadGrammar<unsigned char>("grammar/xml.cgr");
+        Grammar<unsigned char> grammar = LoadGrammar<unsigned char>("grammar/json2.cgr");
+        //Grammar<unsigned char> grammar = LoadGrammar<unsigned char>("grammar/xml.cgr");
 
 		grammar.optimize();
 
@@ -221,22 +221,25 @@ public:
 		const char *input_path = "C:\\Users\\ihara\\Downloads\\sf-city-lots-json-master\\sf-city-lots-json-master\\citylots.json";
 #elif defined(CENTAURUS_BUILD_LINUX)
         //const char *input_path = "/mnt/c/Users/ihara/Downloads/sf-city-lots-json-master/sf-city-lots-json-master/citylots.json";
-        //const char *input_path = "/home/ihara/Downloads/sf-city-lots-json-master/citylots.json";
-        const char *input_path = "/home/ihara/test1.xml";
+        const char *input_path = "/home/ihara/Downloads/sf-city-lots-json-master/citylots.json";
+        //const char *input_path = "/home/ihara/test1.xml";
 #endif
+        int worker_num = 34;
 
-        Stage1Runner runner1{ input_path, &parser, 8 * 1024 * 1024, 4 };
+        Stage1Runner runner1{ input_path, &parser, 8 * 1024 * 1024, worker_num };
 #if defined(CENTAURUS_BUILD_WINDOWS)
         int pid = GetCurrentProcessId();
 #elif defined(CENTAURUS_BUILD_LINUX)
         int pid = getpid();
 #endif
         std::vector<Stage2Runner *> st2_runners;
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < worker_num; i++)
         {
-            st2_runners.push_back(new Stage2Runner{input_path, &chaser, 8 * 1024 * 1024, 4, pid});
+            st2_runners.push_back(new Stage2Runner{input_path, &chaser, 8 * 1024 * 1024, worker_num, pid});
         }
-        Stage3Runner runner3{ input_path, &chaser, 8 * 1024 * 1024, 4, pid };
+        Stage3Runner runner3{ input_path, &chaser, 8 * 1024 * 1024, worker_num, pid };
+
+		uint64_t start_time = get_us_clock();
 
         runner1.start();
         for (auto p : st2_runners)
@@ -251,6 +254,12 @@ public:
             p->wait();
         }
         runner3.wait();
+
+		uint64_t end_time = get_us_clock();
+
+		char msg[256];
+		sprintf(msg, "Elapsed time: %lu[ms]\r\n", (end_time - start_time) / 1000);
+		Logger::WriteMessage(msg);
 
         //Assert::AreEqual((const void *)(json + strlen(json)), context.result);
         //Assert::IsTrue(runner.get_result() != NULL);

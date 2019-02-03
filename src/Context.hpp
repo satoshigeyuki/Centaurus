@@ -41,6 +41,34 @@ public:
         }
         return std::basic_string<TCHAR>();
     }
+    const TCHAR *start(int index = 0) const
+    {
+        if (index < m_symbol_num)
+        {
+            long start = m_symbols[index].start;
+            return (const TCHAR *)m_window + start;
+        }
+        return NULL;
+    }
+    const TCHAR *end(int index = 0) const
+    {
+        if (index < m_symbol_num)
+        {
+            long end = m_symbols[index].end;
+            return (const TCHAR *)m_window + end;
+        }
+        return NULL;
+    }
+    const int len(int index = 0) const
+    {
+        if (index < m_symbol_num)
+        {
+            long start = m_symbols[index].start;
+            long end = m_symbols[index].end;
+            return end - start;
+        }
+        return 0;
+    }
     int count() const
     {
         return m_symbol_num - 1;

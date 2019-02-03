@@ -53,7 +53,7 @@ class XMLListener(object):
         e = XMLElement(ctx)
         if e.name == "article":
             if e.get_child_content("year").strip() == "1990":
-                logger.info("1990 article")
+                #logger.info("1990 article")
                 return e
             else:
                 return None
@@ -74,7 +74,9 @@ if __name__ == "__main__":
     log_sink.start()
 
     #worker_num = [2, 6, 10, 14, 18, 22, 26, 30, 34, 38, 42, 46]
-    worker_num = [34]
+    #worker_num = [34]
+    #worker_num = [2, 6, 10, 14, 18, 22, 26, 30, 34]
+    worker_num = [1, 2, 4, 6, 8, 10, 12, 14, 16]
 
     perf_log = open('perf.log', 'w')
 

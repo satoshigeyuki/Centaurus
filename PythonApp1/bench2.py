@@ -15,6 +15,8 @@ logger = getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 class JsonListener(object):
+    def __init__(self):
+        self.count = 0
     def parseNumber(self, ctx):
         try:
             return float(ctx.read().strip())
@@ -59,8 +61,9 @@ if __name__ == "__main__":
     log_sink = LoggerManifold("")
     log_sink.start()
 
-    #worker_num = [2, 6, 10, 14, 18, 22, 26, 30, 34, 38, 42, 46]
-    worker_num = [34]
+    worker_num = [1, 2, 4, 6, 8, 10, 12, 14, 16]
+    #worker_num = [2, 6, 10, 14, 18, 22, 26, 30, 34]
+    #worker_num = [34]
 
     perf_log = open('perf.log', 'w')
 
