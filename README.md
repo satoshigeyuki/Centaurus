@@ -58,5 +58,6 @@ VS2017 has to have the following components installed:
 ### Python
 
 As for the interpreter, currently only Python 2 is supported. The software depends on ```ctypes``` to interface the Python script with the shared libraries compiled from C++.
+The Python library searches for the shared libraries within the directory specified in the environment variable ```CENTAURUS_DL_PATH```
 
 A Python program has to know where 
