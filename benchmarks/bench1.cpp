@@ -227,7 +227,7 @@ void *parseElement(const SymbolContext<char>& ctx)
 {
     XMLElement *elem = new XMLElement(ctx);
 
-    /*std::string n = elem->get_name();
+    std::string n = elem->get_name();
     if (n == "article")
     {
         const XMLElement *year = elem->get_element("year");
@@ -245,7 +245,7 @@ void *parseElement(const SymbolContext<char>& ctx)
     {
         delete elem;
         return new XMLElement(n);
-    }*/
+    }
     return elem;
 }
 
@@ -257,12 +257,12 @@ int main(int argc, const char *argv[])
 
     Context<char> context{grammar_path};
 
-    context.attach(L"ElementBody", parseElementBody);
+    /*context.attach(L"ElementBody", parseElementBody);
     context.attach(L"Name", parseName);
     context.attach(L"Value", parseValue);
     context.attach(L"Attribute", parseAttribute);
     context.attach(L"Content", parseContent);
-    context.attach(L"Element", parseElement);
+    context.attach(L"Element", parseElement);*/
 
     const char *input_path = "/home/ihara/dblp.xml";
 

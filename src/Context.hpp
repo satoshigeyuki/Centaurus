@@ -146,6 +146,10 @@ public:
         {
             p->wait();
         }
+
+        std::cout << Stage2Runner::get_token_count() << " tokens" << std::endl;
+        std::cout << Stage2Runner::get_nonterminal_count() << " nonterminals" << std::endl;
+
         for (auto p : runners)
         {
             delete p;

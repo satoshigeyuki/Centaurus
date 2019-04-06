@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <atomic>
 #include <stdint.h>
 #include <time.h>
 #include "BaseRunner.hpp"
@@ -16,6 +17,9 @@ class Stage2Runner : public BaseRunner
 	int m_current_bank;
     const uint64_t *m_sv_list;
 	std::vector<SymbolEntry> m_sym_stack;
+
+    static std::atomic<int> s_token_count, s_nonterminal_count;
+
 private:
 #if defined(CENTAURUS_BUILD_WINDOWS)
 	static DWORD WINAPI thread_runner(LPVOID param);
@@ -38,6 +42,7 @@ public:
 		long start_offset = (const char *)start - (const char *)m_input_window;
 		long end_offset = (const char *)end - (const char *)m_input_window;
 		//m_sym_stack.emplace_back(-id, start_offset, end_offset);
+        s_token_count++;
     }
     virtual const void *nonterminal_callback(int id, const void *input) override
     {
@@ -46,6 +51,14 @@ public:
 		m_sym_stack.emplace_back(id, start_offset, end_offset, m_sv_list[1]);
 		m_sv_list += 2;
         return (const char *)m_input_window + end_offset;
+    }
+    static int get_token_count()
+    {
+        return s_token_count.load();
+    }
+    static int get_nonterminal_count()
+    {
+        return s_nonterminal_count.load();
     }
 };
 }

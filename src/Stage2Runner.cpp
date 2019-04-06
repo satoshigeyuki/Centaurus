@@ -2,6 +2,9 @@
 
 namespace Centaurus
 {
+std::atomic<int> Stage2Runner::s_token_count;
+std::atomic<int> Stage2Runner::s_nonterminal_count;
+
 #if defined(CENTAURUS_BUILD_WINDOWS)
 DWORD WINAPI Stage2Runner::thread_runner(LPVOID param)
 #elif defined(CENTAURUS_BUILD_LINUX)
@@ -31,16 +34,16 @@ void *Stage2Runner::thread_runner(void *param)
 	return NULL;
 #endif
 }
-void Stage2Runner::reduce_bank(uint64_t *ast)
+void Stage2Runner::reduce_bank(uint64_t *src)
 {
 	for (int i = 0; i < m_bank_size / 8; i++)
 	{
-		CSTMarker marker(ast[i]);
+		CSTMarker marker(src[i]);
 		if (marker.is_start_marker())
 		{
-			i = parse_subtree(ast, i);
+			i = parse_subtree(src, i);
 		}
-		else if (ast[i] == 0)
+		else if (src[i] == 0)
 		{
 			break;
 		}
@@ -88,6 +91,11 @@ int Stage2Runner::parse_subtree(uint64_t *ast, int position)
 			{
 				std::cerr << "Chaser aborted: " << std::hex << (uint64_t)chaser_result << "/" << (uint64_t)marker.offset_ptr(m_input_window) << std::dec << std::endl;
 			}
+            /*for (int l = position + 1; l < j; l += 2)
+            {
+                CSTMarker sv_marker(ast[l]);
+                m_sym_stack.emplace_back(sv_marker.get_machine_id(), 0, 0, ast[l + 1]);
+            }*/
 
 			long tag = 0;
 			if (m_listener != nullptr)
@@ -149,6 +157,8 @@ void Stage2Runner::release_bank()
 	banks[m_current_bank].state.store(WindowBankState::Stage2_Unlocked);
 
 	m_current_bank = -1;
+
+    s_nonterminal_count += m_bank_size / 16;
 }
 Stage2Runner::Stage2Runner(const char *filename, IChaser *chaser, size_t bank_size, int bank_num, int master_pid, void *context)
 	: BaseRunner(filename, bank_size, bank_num, master_pid), m_chaser(chaser), m_bank_size(bank_size), m_listener_context(context)

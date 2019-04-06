@@ -61,16 +61,20 @@ public:
 };
 class SVCapsule
 {
+    int m_mid;
     const void *m_next_ptr;
     uint64_t m_tag;
 public:
     SVCapsule(const void *window, uint64_t v0, uint64_t v1)
-        : m_next_ptr(reinterpret_cast<const char *>(window) + (v0 & 0xFFFFFFFFFFFFul)), m_tag(v1)
     {
-        
+        CSTMarker marker(v0);
+
+        m_mid = marker.get_machine_id();
+        m_next_ptr = marker.offset_ptr(window);
+        m_tag = v1;
     }
     SVCapsule()
-        : m_next_ptr(NULL), m_tag(0)
+        : m_mid(0), m_next_ptr(NULL), m_tag(0)
     {
 
     }
@@ -82,6 +86,10 @@ public:
 	{
 		return m_tag;
 	}
+    int get_machine_id() const
+    {
+        return m_mid;
+    }
 };
 
 typedef long (CENTAURUS_CALLBACK * ReductionListener)(const SymbolEntry *symbols, int symbol_num, void *context);

@@ -269,7 +269,7 @@ void *parseObject(const SymbolContext<char>& ctx)
         }
     }*/
 
-    /*if (v->is_object() && v->has_item("type"))
+    if (v->is_object() && v->has_item("type"))
     {
         if (v->operator[]("type").str() == "Feature")
         {
@@ -301,7 +301,7 @@ void *parseObject(const SymbolContext<char>& ctx)
                 }
             }
         }
-    }*/
+    }
     return v;
 }
 
@@ -320,14 +320,14 @@ int main(int argc, const char *argv[])
     context.attach(L"Content", parseContent);
     context.attach(L"Element", parseElement);*/
 
-    context.attach(L"None", parseNone);
+    /*context.attach(L"None", parseNone);
     context.attach(L"String", parseString);
     context.attach(L"Dictionary", parseDictionary);
     context.attach(L"List", parseList);
     context.attach(L"DictionaryEntry", parseDictionaryEntry);
     context.attach(L"Number", parseNumber);
     context.attach(L"Boolean", parseBoolean);
-    context.attach(L"Object", parseObject);
+    context.attach(L"Object", parseObject);*/
 
     const char *input_path = "/home/ihara/Downloads/sf-city-lots-json-master/citylots.json";
     //const char *input_path = "test1.json";

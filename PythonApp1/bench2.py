@@ -35,7 +35,9 @@ class JsonListener(object):
     def parseList(self, ctx):
         ret = []
         for i in range(1, ctx.count() + 1):
-            ret.append(ctx.value(i))
+            v = ctx.value(i)
+            #if v is not None:
+                #ret.append(ctx.value(i))
         return ret
     def parseDictionary(self, ctx):
         ret = dict(ctx.all())
@@ -48,7 +50,7 @@ class JsonListener(object):
                     properties = ret['properties']
                     if 'STREET' in properties:
                         if properties['STREET'] != "JEFFERSON":
-                            return {}
+                            return None
         return ret
         """obj = ctx.value(1)
         return obj"""
