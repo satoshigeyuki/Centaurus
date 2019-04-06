@@ -57,4 +57,6 @@ VS2017 has to have the following components installed:
 
 ### Python
 
-Currently only Python 2 is supported.
+As for the interpreter, currently only Python 2 is supported. The software depends on ```ctypes``` to interface the Python script with the shared libraries compiled from C++.
+
+A Python program has to know where 
