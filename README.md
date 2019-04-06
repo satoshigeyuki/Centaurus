@@ -56,3 +56,5 @@ VS2017 has to have the following components installed:
 
 
 ### Python
+
+Currently only Python 2 is supported.
