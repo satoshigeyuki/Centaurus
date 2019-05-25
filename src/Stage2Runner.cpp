@@ -82,6 +82,7 @@ int Stage2Runner::parse_subtree(uint64_t *ast, int position)
 			m_sym_stack.clear();
 			m_sym_stack.emplace_back(marker.get_machine_id(), start_marker.get_offset(), marker.get_offset());
 			m_sv_list = &ast[position + 1];
+#ifdef CHASER_ENABLED
 			const void *chaser_result = (*m_chaser)[marker.get_machine_id()](this, start_marker.offset_ptr(m_input_window));
 			if (m_sv_list - &ast[position + 1] < j - position - 1)
 			{
@@ -91,12 +92,13 @@ int Stage2Runner::parse_subtree(uint64_t *ast, int position)
 			{
 				std::cerr << "Chaser aborted: " << std::hex << (uint64_t)chaser_result << "/" << (uint64_t)marker.offset_ptr(m_input_window) << std::dec << std::endl;
 			}
-            /*for (int l = position + 1; l < j; l += 2)
-            {
-                CSTMarker sv_marker(ast[l]);
-                m_sym_stack.emplace_back(sv_marker.get_machine_id(), 0, 0, ast[l + 1]);
-            }*/
-
+#else
+			for (int l = position + 1; l < j; l += 2)
+			{
+				CSTMarker sv_marker(ast[l]);
+				m_sym_stack.emplace_back(sv_marker.get_machine_id(), 0, 0, ast[l + 1]);
+			}
+#endif
 			long tag = 0;
 			if (m_listener != nullptr)
 				tag = m_listener(m_sym_stack.data(), m_sym_stack.size(), m_listener_context);

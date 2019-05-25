@@ -66,6 +66,7 @@ SVCapsule Stage3Runner::reduce()
 				m_sym_stack.emplace_back(start_marker.get_machine_id(), start_marker.get_offset(), marker.get_offset());
 				m_sv_index = 0;
 				m_sv_list = &values;
+#ifdef CHASER_ENABLED
 				const void *chaser_result = (*m_chaser)[start_marker.get_machine_id()](this, start_marker.offset_ptr(m_input_window));
 				if (m_sv_index != values.size())
 				{
@@ -75,10 +76,12 @@ SVCapsule Stage3Runner::reduce()
 				{
 					std::cerr << "Chaser aborted: " << std::hex << (uint64_t)chaser_result << "/" << (uint64_t)marker.offset_ptr(m_input_window) << std::dec << std::endl;
 				}
-                /*for (int l = 0; l < values.size(); l++)
-                {
-                    m_sym_stack.emplace_back(values[l].get_machine_id(), 0, 0, values[l].get_tag());
-                }*/
+#else
+				for (int l = 0; l < values.size(); l++)
+				{
+					m_sym_stack.emplace_back(values[l].get_machine_id(), 0, 0, values[l].get_tag());
+				}
+#endif
 				long tag = 0;
 				if (m_listener != nullptr)
 					tag = m_listener(m_sym_stack.data(), m_sym_stack.size(), m_listener_context);
