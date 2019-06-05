@@ -36,6 +36,7 @@ Yacc (LALR) is taken from yak, Bison (LALR/GLR) and Elkhound (GLR) from the anim
 ```
  $ git clone https://gitlab.eidos.ic.i.u-tokyo.ac.jp/ihara/Centaurus.git
  $ cd Centaurus
+ $ git submodule update --init
  $ mkdir build && cd build
  $ cmake .. -DCMAKE_BUILD_TYPE=Release
 ```
