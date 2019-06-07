@@ -82,7 +82,7 @@ if __name__ == "__main__":
 
     for n in worker_num:
         context = Context(r"../grammar/xml.cgr", n)
-        input_path = r"/home/ihara/dblp.xml"
+        input_path = r"../datasets/dblp.xml"
         listener = XMLListener()
         context.attach(listener)
         context.start()

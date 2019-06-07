@@ -71,7 +71,7 @@ if __name__ == "__main__":
 
     for n in worker_num:
         context = Context(r"../grammar/json2.cgr", n)
-        input_path = r"/home/ihara/Downloads/sf-city-lots-json-master/citylots.json"
+        input_path = r"../datasets/citylots.json"
         listener = JsonListener()
         context.attach(listener)
         context.start()

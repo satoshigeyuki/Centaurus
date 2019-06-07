@@ -13,8 +13,8 @@ if __name__ == "__main__":
     grammar = Grammar(r"../grammar/xml.cgr")
     grammar.optimize()
     parser = Parser(grammar, True)
-    #input_path = r"/home/ihara/Downloads/sf-city-lots-json-master/citylots.json"
-    input_path = r"/home/ihara/test2.xml"
+    #input_path = r"../datasets/citylots.json"
+    input_path = r"../datasets/dblp.xml"
     st1_runner = Stage1Runner(input_path, parser, 8 * 1024 * 1024, 8);
     start_time = time.time()
     st1_runner.start()

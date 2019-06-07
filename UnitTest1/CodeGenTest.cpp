@@ -83,7 +83,7 @@ public:
     {
         using namespace Centaurus;
 
-        CompositeATN<char> catn = LoadCATN("grammar/json.cgr");
+        CompositeATN<char> catn = LoadCATN("../../grammar/json.cgr");
 
         LookaheadDFA<char> ldfa(catn, catn.convert_atn_path(ATNPath(L"Object", 0)));
 
@@ -124,7 +124,7 @@ public:
     {
         using namespace Centaurus;
 
-        Grammar<unsigned char> grammar = LoadGrammar<unsigned char>("grammar/json2.cgr");
+        Grammar<unsigned char> grammar = LoadGrammar<unsigned char>("../../grammar/json2.cgr");
         //Grammar<unsigned char> grammar = LoadGrammar<unsigned char>("grammar/xml.cgr");
 
 		grammar.optimize();
@@ -146,12 +146,10 @@ public:
         //MappedFileInput json("/home/ihara/Downloads/sf-city-lots-json-master/citylots.json");
 
 #if defined(CENTAURUS_BUILD_WINDOWS)
-		const char *input_path = "C:\\Users\\ihara\\Downloads\\sf-city-lots-json-master\\sf-city-lots-json-master\\citylots.json";
+		const char *input_path = "..\\..\\datasets\\citylots.json";
 		//const char *input_path = "test2.json";
 #elif defined(CENTAURUS_BUILD_LINUX)
-		//const char *input_path = "/mnt/c/Users/ihara/Downloads/sf-city-lots-json-master/sf-city-lots-json-master/citylots.json";
-        const char *input_path = "/home/ihara/Downloads/sf-city-lots-json-master/citylots.json";
-        //const char *input_path = "/home/ihara/test3.xml";
+        const char *input_path = "../../datasets/citylots.json";
 #endif
         struct stat st;
         stat(input_path, &st);
@@ -181,7 +179,7 @@ public:
     {
         using namespace Centaurus;
 
-        Grammar<unsigned char> grammar = LoadGrammar<unsigned char>("grammar/json2.cgr");
+        Grammar<unsigned char> grammar = LoadGrammar<unsigned char>("../../grammar/json2.cgr");
 
         asmjit::StringLogger logger;
 
@@ -190,10 +188,9 @@ public:
         ParserEM64T<unsigned char> parser(grammar, &logger, &errhandler);
 
 #if defined(CENTAURUS_BUILD_WINDOWS)
-		const char *input_path = "C:\\Users\\ihara\\Downloads\\sf-city-lots-json-master\\sf-city-lots-json-master\\citylots.json";
+		const char *input_path = "..\\..\\datasets\\citylots.json";
 #elif defined(CENTAURUS_BUILD_LINUX)
-		//const char *input_path = "/mnt/c/Users/ihara/Downloads/sf-city-lots-json-master/sf-city-lots-json-master/citylots.json";
-        const char *input_path = "/home/ihara/Downloads/sf-city-lots-json-master/citylots.json";
+        const char *input_path = "../../datasets/citylots.json";
 #endif
 
         Stage1Runner runner{input_path, &parser, 8 * 1024 * 1024, 8};
@@ -210,7 +207,7 @@ public:
     {
         using namespace Centaurus;
 
-        Grammar<unsigned char> grammar = LoadGrammar<unsigned char>("grammar/json2.cgr");
+        Grammar<unsigned char> grammar = LoadGrammar<unsigned char>("../../grammar/json2.cgr");
         //Grammar<unsigned char> grammar = LoadGrammar<unsigned char>("grammar/xml.cgr");
 
 		grammar.optimize();
@@ -224,11 +221,9 @@ public:
 
 #if defined(CENTAURUS_BUILD_WINDOWS)
 		//const char *input_path = "test2.json";
-		const char *input_path = "C:\\Users\\ihara\\Downloads\\sf-city-lots-json-master\\sf-city-lots-json-master\\citylots.json";
+		const char *input_path = "..\\..\\datasets\\citylots.json";
 #elif defined(CENTAURUS_BUILD_LINUX)
-        //const char *input_path = "/mnt/c/Users/ihara/Downloads/sf-city-lots-json-master/sf-city-lots-json-master/citylots.json";
-        const char *input_path = "/home/ihara/Downloads/sf-city-lots-json-master/citylots.json";
-        //const char *input_path = "/home/ihara/test1.xml";
+        const char *input_path = "../../datasets/citylots.json";
 #endif
         int worker_num = 34;
 

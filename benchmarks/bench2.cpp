@@ -307,8 +307,10 @@ void *parseObject(const SymbolContext<char>& ctx)
 
 int main(int argc, const char *argv[])
 {
+    if (argc < 1) return 1;
     int worker_num = atoi(argv[1]);
 
+    const char *input_path = "datasets/citylots.json";
     const char *grammar_path = "grammar/json2.cgr";
 
     Context<char> context{grammar_path};
@@ -328,9 +330,6 @@ int main(int argc, const char *argv[])
     context.attach(L"Number", parseNumber);
     context.attach(L"Boolean", parseBoolean);
     context.attach(L"Object", parseObject);*/
-
-    const char *input_path = "/home/ihara/Downloads/sf-city-lots-json-master/citylots.json";
-    //const char *input_path = "test1.json";
 
     count.store(0);
 

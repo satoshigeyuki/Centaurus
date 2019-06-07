@@ -89,8 +89,7 @@ class Test_unittest1(unittest.TestCase):
     def test_dry_parser(self):
         grammar = Grammar(r"../grammar/json.cgr")
         parser = Parser(grammar, True)
-        #input_path = r"C:\Users\ihara\Downloads\sf-city-lots-json-master\sf-city-lots-json-master\citylots.json"
-        input_path = r"/home/ihara/Downloads/sf-city-lots-json-master/citylots.json"
+        input_path = r"../datasets/citylots.json"
         st1_runner = Stage1Runner(input_path, parser, 8 * 1024 * 1024, 8)
         st1_runner.start()
         print("Runner started.", flush=True)
@@ -99,8 +98,7 @@ class Test_unittest1(unittest.TestCase):
         grammar = Grammar(r"../grammar/json.cgr")
         parser = Parser(grammar)
         chaser = Chaser(grammar)
-        #input_path = r"C:\Users\ihara\Downloads\sf-city-lots-json-master\sf-city-lots-json-master\citylots.json"
-        input_path = r"/home/ihara/Downloads/sf-city-lots-json-master/citylots.json"
+        input_path = r"../datasets/citylots.json"
         pid = os.getpid()
         runners = []
         runners.append(Stage1Runner(input_path, parser, 8 * 1024 * 1024, 8))
@@ -113,7 +111,7 @@ class Test_unittest1(unittest.TestCase):
             runner.wait()
     def test_wet_parser_mp(self):
         context = Context(r"../grammar/json.cgr", 34)
-        input_path = r"/home/ihara/Downloads/sf-city-lots-json-master/citylots.json"
+        input_path = r"../datasets/citylots.json"
         listener = JsonListener()
         context.attach(listener)
         context.start()
@@ -126,7 +124,7 @@ class Test_unittest1(unittest.TestCase):
         context.stop()
     def measure_performance(self):
         worker_num = [36, 40, 44, 46]
-        input_path = r"/home/ihara/Downloads/sf-city-lots-json-master/citylots.json"
+        input_path = r"../datasets/citylots.json"
         listener = JsonListener()
         for num in worker_num:
             context = Context(r"../grammar/json.cgr", num)

@@ -30,7 +30,7 @@ public:
 	{
         Logger::WriteMessage("Starting test.\n");
 
-		Centaurus::CompositeATN<char> catn = LoadCATN("grammar/json.cgr");
+		Centaurus::CompositeATN<char> catn = LoadCATN("../../grammar/json.cgr");
 
         Logger::WriteMessage("CATN loaded.\n");
 

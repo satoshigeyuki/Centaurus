@@ -251,8 +251,10 @@ void *parseElement(const SymbolContext<char>& ctx)
 
 int main(int argc, const char *argv[])
 {
+    if (argc < 1) return 1;
     int worker_num = atoi(argv[1]);
 
+    const char *input_path = "datasets/dblp.xml";
     const char *grammar_path = "grammar/xml.cgr";
 
     Context<char> context{grammar_path};
@@ -263,8 +265,6 @@ int main(int argc, const char *argv[])
     context.attach(L"Attribute", parseAttribute);
     context.attach(L"Content", parseContent);
     context.attach(L"Element", parseElement);*/
-
-    const char *input_path = "/home/ihara/dblp.xml";
 
     uint64_t start_time = get_us_clock();
 
