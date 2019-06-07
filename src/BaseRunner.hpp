@@ -198,13 +198,13 @@ public:
         return m_input_window;
     }
 	virtual void start() = 0;
-    template<typename F>
-    void _start(F runner, void *context)
+    template<typename RunnerImpl>
+    void _start()
     {
         clock_t start_time = clock();
 
 #if defined(CENTAURUS_BUILD_WINDOWS)
-        m_thread = CreateThread(NULL, STACK_SIZE, runner, context, STACK_SIZE_PARAM_IS_A_RESERVATION, NULL);
+        m_thread = CreateThread(NULL, STACK_SIZE, BaseRunner::thread_runner<RunnerImpl>, this, STACK_SIZE_PARAM_IS_A_RESERVATION, NULL);
 #elif defined(CENTAURUS_BUILD_LINUX)
         pthread_t thread;
         pthread_attr_t attr;
@@ -213,7 +213,7 @@ public:
 
         pthread_attr_setstacksize(&attr, STACK_SIZE);
 
-        pthread_create(&m_thread, &attr, runner, context);
+        pthread_create(&m_thread, &attr, BaseRunner::thread_runner<RunnerImpl>, this);
 #endif
 
         clock_t end_time = clock();
@@ -232,5 +232,22 @@ public:
 	}
 
   virtual void register_python_listener(ReductionListener listener, TransferListener xferlistener) {}
+
+private:
+  template <typename RunnerImpl>
+#if defined(CENTAURUS_BUILD_WINDOWS)
+  static DWORD WINAPI thread_runner(LPVOID param)
+#elif defined(CENTAURUS_BUILD_LINUX)
+  static void *thread_runner(void *param)
+#endif
+  {
+    reinterpret_cast<RunnerImpl*>(param)->thread_runner_impl();
+#if defined(CENTAURUS_BUILD_WINDOWS)
+    ExitThread(0);
+#elif defined(CENTAURUS_BUILD_LINUX)
+    return nullptr;
+#endif
+  }
+
 };
 }

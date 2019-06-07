@@ -2,29 +2,17 @@
 
 namespace Centaurus
 {
-#if defined(CENTAURUS_BUILD_WINDOWS)
-DWORD WINAPI Stage3Runner::thread_runner(LPVOID param)
-#elif defined(CENTAURUS_BUILD_LINUX)
-void *Stage3Runner::thread_runner(void *param)
-#endif
+void Stage3Runner::thread_runner_impl()
 {
-	Stage3Runner *instance = reinterpret_cast<Stage3Runner *>(param);
+	m_current_bank = -1;
+	m_counter = 0;
+	m_current_window = NULL;
+	m_window_position = 0;
+	m_sym_stack.clear();
 
-	instance->m_current_bank = -1;
-	instance->m_counter = 0;
-	instance->m_current_window = NULL;
-	instance->m_window_position = 0;
-	instance->m_sym_stack.clear();
+	reduce();
 
-	instance->reduce();
-
-	instance->release_bank();
-
-#if defined(CENTAURUS_BUILD_WINDOWS)
-	ExitThread(0);
-#elif defined(CENTAURUS_BUILD_LINUX)
-	return NULL;
-#endif
+	release_bank();
 }
 SVCapsule Stage3Runner::reduce()
 {

@@ -5,34 +5,22 @@ namespace Centaurus
 std::atomic<int> Stage2Runner::s_token_count;
 std::atomic<int> Stage2Runner::s_nonterminal_count;
 
-#if defined(CENTAURUS_BUILD_WINDOWS)
-DWORD WINAPI Stage2Runner::thread_runner(LPVOID param)
-#elif defined(CENTAURUS_BUILD_LINUX)
-void *Stage2Runner::thread_runner(void *param)
-#endif
+void Stage2Runner::thread_runner_impl()
 {
-	Stage2Runner *instance = reinterpret_cast<Stage2Runner *>(param);
-
-	instance->m_sv_list = NULL;
-	instance->m_current_bank = -1;
-	instance->m_sym_stack.clear();
+	m_sv_list = NULL;
+	m_current_bank = -1;
+	m_sym_stack.clear();
 
 	while (true)
 	{
-		uint64_t *data = reinterpret_cast<uint64_t *>(instance->acquire_bank());
+		uint64_t *data = reinterpret_cast<uint64_t*>(acquire_bank());
 
 		if (data == NULL) break;
 
-		instance->reduce_bank(data);
+		reduce_bank(data);
 
-		instance->release_bank();
+		release_bank();
 	}
-
-#if defined(CENTAURUS_BUILD_WINDOWS)
-	ExitThread(0);
-#elif defined(CENTAURUS_BUILD_LINUX)
-	return NULL;
-#endif
 }
 void Stage2Runner::reduce_bank(uint64_t *src)
 {

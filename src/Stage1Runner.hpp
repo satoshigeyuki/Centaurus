@@ -7,15 +7,11 @@ namespace Centaurus
 {
 class Stage1Runner : public BaseRunner
 {
+  friend BaseRunner;
     IParser *m_parser;
     int m_current_bank, m_counter;
 	const void *m_result;
 private:
-#if defined(CENTAURUS_BUILD_WINDOWS)
-	static DWORD WINAPI thread_runner(LPVOID param);
-#elif defined(CENTAURUS_BUILD_LINUX)
-	static void *thread_runner(void *param);
-#endif
 	void *acquire_bank();
 	void release_bank();
 	void reset_banks();
@@ -25,7 +21,7 @@ public:
 	virtual ~Stage1Runner();
     virtual void start() override
     {
-        _start(Stage1Runner::thread_runner, static_cast<void *>(this));
+      _start<Stage1Runner>();
     }
     virtual void *feed_callback() override
     {
@@ -36,5 +32,8 @@ public:
 	{
 		return m_result;
 	}
+
+private:
+  void thread_runner_impl();
 };
 }

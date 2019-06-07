@@ -2,29 +2,17 @@
 
 namespace Centaurus
 {
-#if defined(CENTAURUS_BUILD_WINDOWS)
-DWORD WINAPI Stage1Runner::thread_runner(LPVOID param)
-#elif defined(CENTAURUS_BUILD_LINUX)
-void *Stage1Runner::thread_runner(void *param)
-#endif
+void Stage1Runner::thread_runner_impl()
 {
-	Stage1Runner *instance = reinterpret_cast<Stage1Runner *>(param);
+	m_current_bank = -1;
+	m_counter = 0;
+	reset_banks();
 
-	instance->m_current_bank = -1;
-	instance->m_counter = 0;
-	instance->reset_banks();
+	m_result = (*m_parser)(static_cast<BaseListener*>(this), m_input_window);
 
-	instance->m_result = (*instance->m_parser)(static_cast<BaseListener *>(instance), instance->m_input_window);
+	release_bank();
 
-	instance->release_bank();
-
-	instance->signal_exit();
-
-#if defined(CENTAURUS_BUILD_WINDOWS)
-	ExitThread(0);
-#elif defined(CENTAURUS_BUILD_LINUX)
-	return NULL;
-#endif
+	signal_exit();
 }
 void *Stage1Runner::acquire_bank()
 {

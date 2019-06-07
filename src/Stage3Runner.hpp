@@ -8,6 +8,7 @@ namespace Centaurus
 {
 class Stage3Runner : public BaseRunner
 {
+  friend BaseRunner;
   ReductionListener m_listener;
   TransferListener m_xferlistener;
     void *m_listener_context;
@@ -20,11 +21,6 @@ class Stage3Runner : public BaseRunner
     const std::vector<SVCapsule> *m_sv_list;
 	std::vector<SymbolEntry> m_sym_stack;
 private:
-#if defined(CENTAURUS_BUILD_WINDOWS)
-	static DWORD WINAPI thread_runner(LPVOID param);
-#elif defined(CENTAURUS_BUILD_LINUX)
-	static void *thread_runner(void *param);
-#endif
 	SVCapsule reduce();
 	void *acquire_bank();
 	void release_bank();
@@ -33,7 +29,7 @@ public:
 	virtual ~Stage3Runner();
 	virtual void start() override
 	{
-        _start(Stage3Runner::thread_runner, this);
+          _start<Stage3Runner>();
 	}
     virtual void terminal_callback(int id, const void *start, const void *end) override
     {
@@ -66,5 +62,8 @@ public:
     m_listener = listener;
     m_xferlistener = nullptr;
   }
+
+private:
+  void thread_runner_impl();
 };
 }

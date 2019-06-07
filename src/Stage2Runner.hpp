@@ -11,6 +11,7 @@ namespace Centaurus
 {
 class Stage2Runner : public BaseRunner
 {
+  friend BaseRunner;
   ReductionListener m_listener;
   TransferListener m_xferlistener;
     void *m_listener_context;
@@ -22,11 +23,6 @@ class Stage2Runner : public BaseRunner
     static std::atomic<int> s_token_count, s_nonterminal_count;
 
 private:
-#if defined(CENTAURUS_BUILD_WINDOWS)
-	static DWORD WINAPI thread_runner(LPVOID param);
-#elif defined(CENTAURUS_BUILD_LINUX)
-	static void *thread_runner(void *param);
-#endif
 	void reduce_bank(uint64_t *ast);
 	int parse_subtree(uint64_t *ast, int position);
 	void *acquire_bank();
@@ -36,7 +32,7 @@ public:
 	virtual ~Stage2Runner();
 	virtual void start() override
 	{
-        _start(Stage2Runner::thread_runner, this);
+          _start<Stage2Runner>();
     }
     virtual void terminal_callback(int id, const void *start, const void *end) override
     {
@@ -73,5 +69,8 @@ public:
     m_listener = listener;
     m_xferlistener = nullptr;
   }
+
+private:
+  void thread_runner_impl();
 };
 }
