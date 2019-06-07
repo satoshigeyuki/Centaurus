@@ -107,11 +107,7 @@ int Stage2Runner::parse_subtree(uint64_t *ast, int position)
 }
 void *Stage2Runner::acquire_bank()
 {
-#if defined(CENTAURUS_BUILD_WINDOWS)
-	WaitForSingleObject(m_slave_lock, INFINITE);
-#elif defined(CENTAURUS_BUILD_LINUX)
-	sem_wait(m_slave_lock);
-#endif
+  wait_on_semaphore();
 	WindowBankEntry *banks = reinterpret_cast<WindowBankEntry *>(m_sub_window);
 
 	while (true)
@@ -153,44 +149,12 @@ void Stage2Runner::release_bank()
 Stage2Runner::Stage2Runner(const char *filename, IChaser *chaser, size_t bank_size, int bank_num, int master_pid, void *context)
 	: BaseRunner(filename, bank_size, bank_num, master_pid), m_chaser(chaser), m_listener_context(context)
 {
-#if defined(CENTAURUS_BUILD_WINDOWS)
-	m_mem_handle = OpenFileMappingA(FILE_MAP_ALL_ACCESS, FALSE, m_memory_name);
-
-	m_sub_window = MapViewOfFile(m_mem_handle, FILE_MAP_ALL_ACCESS, 0, 0, get_sub_window_size());
-
-	m_main_window = MapViewOfFile(m_mem_handle, FILE_MAP_ALL_ACCESS, 0, get_sub_window_size(), get_main_window_size());
-
-	m_slave_lock = OpenSemaphoreA(SYNCHRONIZE, FALSE, m_slave_lock_name);
-#elif defined(CENTAURUS_BUILD_LINUX)
-	int fd = shm_open(m_memory_name, O_RDWR, 0666);
-
-	ftruncate(fd, get_window_size());
-
-	m_sub_window = mmap(NULL, get_sub_window_size(), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-
-	m_main_window = mmap(NULL, get_main_window_size(), PROT_READ | PROT_WRITE, MAP_SHARED, fd, get_sub_window_size());
-
-	m_slave_lock = sem_open(m_slave_lock_name, 0);
-#endif
+  acquire_memory(false);
+  open_semaphore();
 }
 Stage2Runner::~Stage2Runner()
 {
-#if defined(CENTAURUS_BUILD_WINDOWS)
-	if (m_slave_lock != NULL)
-		CloseHandle(m_slave_lock);
-	if (m_main_window != NULL)
-		UnmapViewOfFile(m_main_window);
-	if (m_sub_window != NULL)
-		UnmapViewOfFile(m_sub_window);
-	if (m_mem_handle != NULL)
-		CloseHandle(m_mem_handle);
-#elif defined(CENTAURUS_BUILD_LINUX)
-	if (m_main_window != MAP_FAILED)
-		munmap(m_main_window, get_main_window_size());
-	if (m_sub_window != MAP_FAILED)
-		munmap(m_sub_window, get_sub_window_size());
-	if (m_slave_lock != SEM_FAILED)
-		sem_close(m_slave_lock);
-#endif
+  close_semaphore(false);
+  release_memory(false);
 }
 }

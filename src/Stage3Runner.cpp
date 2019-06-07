@@ -127,36 +127,10 @@ void Stage3Runner::release_bank()
 Stage3Runner::Stage3Runner(const char *filename, IChaser *chaser, size_t bank_size, int bank_num, int master_pid, void *context)
 	: BaseRunner(filename, bank_size, bank_num, master_pid), m_chaser(chaser), m_listener_context(context)
 {
-#if defined(CENTAURUS_BUILD_WINDOWS)
-	m_mem_handle = OpenFileMappingA(FILE_MAP_ALL_ACCESS, FALSE, m_memory_name);
-
-	m_sub_window = MapViewOfFile(m_mem_handle, FILE_MAP_ALL_ACCESS, 0, 0, get_sub_window_size());
-
-	m_main_window = MapViewOfFile(m_mem_handle, FILE_MAP_ALL_ACCESS, 0, get_sub_window_size(), get_main_window_size());
-#elif defined(CENTAURUS_BUILD_LINUX)
-	int fd = shm_open(m_memory_name, O_RDWR, 0666);
-
-	ftruncate(fd, get_window_size());
-
-	m_sub_window = mmap(NULL, get_sub_window_size(), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-
-	m_main_window = mmap(NULL, get_main_window_size(), PROT_READ | PROT_WRITE, MAP_SHARED, fd, get_sub_window_size());
-#endif
+  acquire_memory(false);
 }
 Stage3Runner::~Stage3Runner()
 {
-#if defined(CENTAURUS_BUILD_WINDOWS)
-	if (m_main_window != NULL)
-		UnmapViewOfFile(m_main_window);
-	if (m_sub_window != NULL)
-		UnmapViewOfFile(m_sub_window);
-	if (m_mem_handle != NULL)
-		CloseHandle(m_mem_handle);
-#elif defined(CENTAURUS_BUILD_LINUX)
-	if (m_main_window != MAP_FAILED)
-		munmap(m_main_window, get_main_window_size());
-	if (m_sub_window != MAP_FAILED)
-		munmap(m_sub_window, get_sub_window_size());
-#endif
+  release_memory(false);
 }
 }

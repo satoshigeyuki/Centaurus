@@ -113,11 +113,8 @@ public:
     }
     void parse(const char *input_path, int worker_num)
     {
-#if defined(CENTAURUS_BUILD_WINDOWS)
-        int pid = GetCurrentProcessId();
-#elif defined(CENTAURUS_BUILD_LINUX)
-        int pid = getpid();
-#endif
+        int pid = get_current_pid();
+
         ParseContext<TCHAR> context{m_callbacks, nullptr};
 
         std::vector<BaseRunner *> runners;
