@@ -19,7 +19,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-switch -Wno-sign-comp
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 
-set(CENTAURUS_LIB_SRC src/ATN.cpp src/CharClass.cpp src/CodeGenEM64T.cpp src/CompositeATN.cpp src/Util.cpp src/Stage1Runner.cpp src/Stage2Runner.cpp src/Stage3Runner.cpp src/Grammar.cpp)
+set(CENTAURUS_LIB_SRC src/ATN.cpp src/CharClass.cpp src/CodeGenEM64T.cpp src/CompositeATN.cpp src/Util.cpp src/Stage2Runner.cpp src/Stage3Runner.cpp src/Grammar.cpp)
 set(CENTAURUS_DRIVER_SRC src/main.cpp)
 set(CENTAURUS_LIB_HDR src/ATN.hpp src/CharClass.hpp src/CodeGenEM64T.hpp src/CompositeATN.hpp src/DFA.hpp src/Exception.hpp src/Grammar.hpp src/Identifier.hpp src/LookaheadDFA.hpp src/NFA.hpp src/Stream.hpp src/Util.hpp)
 set(CENTAURUS_PYLIB_SRC vc/PyCentaurus/PyCentaurus.cpp)
