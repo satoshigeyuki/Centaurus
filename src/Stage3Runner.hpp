@@ -21,6 +21,8 @@ class Stage3Runner : public BaseRunner
   const std::vector<SVCapsule> *m_sv_list;
   std::vector<SymbolEntry> m_sym_stack;
 
+  std::atomic<int>* reduction_counter;
+
 private:
   void thread_runner_impl()
   {
@@ -76,6 +78,9 @@ private:
           long tag = 0;
           if (m_listener != nullptr)
             tag = m_listener(m_sym_stack.data(), m_sym_stack.size(), m_listener_context);
+          if (reduction_counter != nullptr) {
+            (*reduction_counter)++;
+          }
           return SVCapsule(m_input_window, marker.get_offset(), tag);
         }
       }
@@ -120,8 +125,8 @@ private:
   }
 
 public:
-  Stage3Runner(const char *filename, IChaser *chaser, size_t bank_size, int bank_num, int master_pid, void *context = nullptr)
-    : BaseRunner(filename, bank_size, bank_num, master_pid), m_chaser(chaser), m_listener_context(context)
+  Stage3Runner(const char *filename, IChaser *chaser, size_t bank_size, int bank_num, int master_pid, void *context = nullptr, std::atomic<int> *counter = nullptr)
+    : BaseRunner(filename, bank_size, bank_num, master_pid), m_chaser(chaser), m_listener_context(context), reduction_counter(counter)
   {
     acquire_memory(false);
   }

@@ -20,7 +20,7 @@ class Stage2Runner : public BaseRunner
   const uint64_t *m_sv_list;
   std::vector<SymbolEntry> m_sym_stack;
 
-  static std::atomic<int> s_token_count, s_nonterminal_count;
+  std::atomic<int>* reduction_counter;
 
 private:
   void thread_runner_impl()
@@ -90,7 +90,9 @@ private:
         long tag = 0;
         if (m_listener != nullptr)
           tag = m_listener(m_sym_stack.data(), m_sym_stack.size(), m_listener_context);
-
+        if (reduction_counter != nullptr) {
+          (*reduction_counter)++;
+        }
         //Zero-fill the SV list
         for (int k = position + 1; k < j; k++) {
           ast[k] = 0;
@@ -132,12 +134,11 @@ private:
       m_xferlistener(m_current_bank, -1, m_listener_context);
     banks[m_current_bank].state.store(WindowBankState::Stage2_Unlocked);
     m_current_bank = -1;
-    s_nonterminal_count += m_bank_size / 16;
   }
 
 public:
-  Stage2Runner(const char *filename, IChaser *chaser, size_t bank_size, int bank_num, int master_pid, void *context = nullptr)
-    : BaseRunner(filename, bank_size, bank_num, master_pid), m_chaser(chaser), m_listener_context(context)
+  Stage2Runner(const char *filename, IChaser *chaser, size_t bank_size, int bank_num, int master_pid, void *context, std::atomic<int> *counter = nullptr)
+    : BaseRunner(filename, bank_size, bank_num, master_pid), m_chaser(chaser), m_listener_context(context), reduction_counter(counter)
   {
     acquire_memory(false);
     open_semaphore();
@@ -157,7 +158,6 @@ public:
     long start_offset = (const char *)start - (const char *)m_input_window;
     long end_offset = (const char *)end - (const char *)m_input_window;
     //m_sym_stack.emplace_back(-id, start_offset, end_offset);
-    s_token_count++;
   }
   virtual const void *nonterminal_callback(int id, const void *input) override
   {
@@ -166,15 +166,6 @@ public:
     m_sym_stack.emplace_back(id, start_offset, end_offset, m_sv_list[1]);
     m_sv_list += 2;
     return (const char *)m_input_window + end_offset;
-  }
-
-  static int get_token_count()
-  {
-    return s_token_count.load();
-  }
-  static int get_nonterminal_count()
-  {
-    return s_nonterminal_count.load();
   }
 
   virtual void register_python_listener(ReductionListener listener, TransferListener xferlistener) override
@@ -188,6 +179,4 @@ public:
     m_xferlistener = nullptr;
   }
 };
-std::atomic<int> Stage2Runner::s_token_count;
-std::atomic<int> Stage2Runner::s_nonterminal_count;
 }
