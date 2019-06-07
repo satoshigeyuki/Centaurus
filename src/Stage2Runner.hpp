@@ -3,9 +3,7 @@
 #include <vector>
 #include <atomic>
 #include <stdint.h>
-#include <time.h>
 #include "BaseRunner.hpp"
-#include "CodeGenEM64T.hpp"
 
 namespace Centaurus
 {
@@ -15,9 +13,7 @@ class Stage2Runner : public BaseRunner
   ReductionListener m_listener;
   TransferListener m_xferlistener;
   void *m_listener_context;
-  IChaser *m_chaser;
   int m_current_bank;
-  const uint64_t *m_sv_list;
   std::vector<SymbolEntry> m_sym_stack;
 
   std::atomic<int>* reduction_counter;
@@ -25,7 +21,6 @@ class Stage2Runner : public BaseRunner
 private:
   void thread_runner_impl()
   {
-    m_sv_list = NULL;
     m_current_bank = -1;
     m_sym_stack.clear();
     while (true) {
@@ -72,21 +67,10 @@ private:
       } else if (marker.is_end_marker()) {
         m_sym_stack.clear();
         m_sym_stack.emplace_back(marker.get_machine_id(), start_marker.get_offset(), marker.get_offset());
-        m_sv_list = &ast[position + 1];
-#ifdef CHASER_ENABLED
-        const void *chaser_result = (*m_chaser)[marker.get_machine_id()](this, start_marker.offset_ptr(m_input_window));
-        if (m_sv_list - &ast[position + 1] < j - position - 1) {
-          std::cerr << "SV list undigested: " << (m_sv_list - &ast[position + 1]) / 2 << "/" << (j - position - 1) / 2 << "." << std::endl;
-        }
-        if (chaser_result != marker.offset_ptr(m_input_window)) {
-          std::cerr << "Chaser aborted: " << std::hex << (uint64_t)chaser_result << "/" << (uint64_t)marker.offset_ptr(m_input_window) << std::dec << std::endl;
-        }
-#else
         for (int l = position + 1; l < j; l += 2) {
           CSTMarker sv_marker(ast[l]);
           m_sym_stack.emplace_back(sv_marker.get_machine_id(), 0, 0, ast[l + 1]);
         }
-#endif
         long tag = 0;
         if (m_listener != nullptr)
           tag = m_listener(m_sym_stack.data(), m_sym_stack.size(), m_listener_context);
@@ -137,8 +121,8 @@ private:
   }
 
 public:
-  Stage2Runner(const char *filename, IChaser *chaser, size_t bank_size, int bank_num, int master_pid, void *context, std::atomic<int> *counter = nullptr)
-    : BaseRunner(filename, bank_size, bank_num, master_pid), m_chaser(chaser), m_listener_context(context), reduction_counter(counter)
+  Stage2Runner(const char *filename, size_t bank_size, int bank_num, int master_pid, void *context = nullptr, std::atomic<int> *counter = nullptr)
+    : BaseRunner(filename, bank_size, bank_num, master_pid), m_listener_context(context), reduction_counter(counter)
   {
     acquire_memory(false);
     open_semaphore();
@@ -151,21 +135,6 @@ public:
   virtual void start() override
   {
     _start<Stage2Runner>();
-  }
-
-  virtual void terminal_callback(int id, const void *start, const void *end) override
-  {
-    long start_offset = (const char *)start - (const char *)m_input_window;
-    long end_offset = (const char *)end - (const char *)m_input_window;
-    //m_sym_stack.emplace_back(-id, start_offset, end_offset);
-  }
-  virtual const void *nonterminal_callback(int id, const void *input) override
-  {
-    long start_offset = (const char *)input - (const char *)m_input_window;
-    long end_offset = m_sv_list[0] & 0xFFFFFFFFFFFFul;
-    m_sym_stack.emplace_back(id, start_offset, end_offset, m_sv_list[1]);
-    m_sv_list += 2;
-    return (const char *)m_input_window + end_offset;
   }
 
   virtual void register_python_listener(ReductionListener listener, TransferListener xferlistener) override

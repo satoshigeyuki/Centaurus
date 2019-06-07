@@ -2,16 +2,6 @@
 
 #include "stdafx.h"
 
-#if defined(CENTAURUS_BUILD_LINUX)
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <semaphore.h>
-#include <pthread.h>
-#endif
-
 #include <stdio.h>
 #include <atomic>
 

@@ -116,13 +116,13 @@ namespace Centaurus __attribute__((visibility("default")))
 		return runner->get_input();
 	}
 
-	CENTAURUS_EXPORT(Stage2Runner *) Stage2RunnerCreate(const char *filename, IChaser *chaser, size_t bank_size, int bank_num, int master_pid)
+	CENTAURUS_EXPORT(Stage2Runner *) Stage2RunnerCreate(const char *filename, size_t bank_size, int bank_num, int master_pid)
 	{
-		return new Stage2Runner(filename, chaser, bank_size, bank_num, master_pid);
+		return new Stage2Runner(filename, bank_size, bank_num, master_pid);
 	}
 
-	CENTAURUS_EXPORT(Stage3Runner *) Stage3RunnerCreate(const char *filename, IChaser *chaser, size_t bank_size, int bank_num, int master_pid)
+	CENTAURUS_EXPORT(Stage3Runner *) Stage3RunnerCreate(const char *filename, size_t bank_size, int bank_num, int master_pid)
 	{
-		return new Stage3Runner(filename, chaser, bank_size, bank_num, master_pid);
+		return new Stage3Runner(filename, bank_size, bank_num, master_pid);
 	}
 }

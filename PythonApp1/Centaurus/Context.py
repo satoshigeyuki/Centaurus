@@ -59,13 +59,12 @@ class Stage2Process(object):
         logger.setLevel(logging.DEBUG)
 
         self.grammar = Grammar(self.context.grammar_path)
-        self.chaser = Chaser(self.grammar)
         while True:
             cmd = self.cmd_queue.get()
             if cmd[0] == 'stop':
                 return
             elif cmd[0] == 'parse':
-                runner = Stage2Runner(cmd[1], self.chaser, self.context.bank_size, self.context.bank_num, self.master_pid)
+                runner = Stage2Runner(cmd[1], self.context.bank_size, self.context.bank_num, self.master_pid)
                 #adapter = Stage2BytecodeListenerAdapter(self.grammar, self.listener, self.context.channels, runner)
                 adapter = Stage2ListenerAdapter(self.grammar, self.listener, self.context.channels, runner)
                 runner.start()
@@ -100,13 +99,12 @@ class Stage3Process(object):
         logger.setLevel(logging.DEBUG)
 
         self.grammar = Grammar(self.context.grammar_path)
-        self.chaser = Chaser(self.grammar)
         while True:
             cmd = self.cmd_queue.get()
             if cmd[0] == 'stop':
                 return
             elif cmd[0] == 'parse':
-                runner = Stage3Runner(cmd[1], self.chaser, self.context.bank_size, self.context.bank_num, self.master_pid)
+                runner = Stage3Runner(cmd[1], self.context.bank_size, self.context.bank_num, self.master_pid)
                 adapter = Stage3ListenerAdapter(self.grammar, self.listener, self.context.channels, runner)
                 #adapter = Stage3BytecodeListenerAdapter(self.grammar, self.listener, self.context.channels, runner)
                 runner.start()

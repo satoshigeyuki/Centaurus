@@ -1,3 +1,6 @@
+#pragma once
+
+#include "CodeGenEM64T.hpp"
 #include "Stage1Runner.hpp"
 #include "Stage2Runner.hpp"
 #include "Stage3Runner.hpp"
@@ -84,7 +87,6 @@ class Context
 {
     Grammar<TCHAR> m_grammar;
     ParserEM64T<TCHAR> m_parser;
-    ChaserEM64T<TCHAR> m_chaser;
     std::vector<CppReductionCallback<TCHAR> > m_callbacks;
     static long CENTAURUS_CALLBACK callback(const SymbolEntry *symbols, int symbol_num, void *context)
     {
@@ -107,7 +109,6 @@ public:
         m_grammar.parse(stream);
 
         m_parser.init(m_grammar);
-        m_chaser.init(m_grammar);
 
         m_callbacks.resize(m_grammar.get_machine_num() + 1, nullptr);
     }
@@ -122,13 +123,13 @@ public:
         runners.push_back(new Stage1Runner{ input_path, &m_parser, 8 * 1024 * 1024, worker_num * 2 });
         for (int i = 0; i < worker_num; i++)
         {
-            Stage2Runner *st2 = new Stage2Runner{input_path, &m_chaser, 8 * 1024 * 1024, worker_num * 2, pid, static_cast<void *>(&context), &reduction_count};
+            Stage2Runner *st2 = new Stage2Runner{input_path, 8 * 1024 * 1024, worker_num * 2, pid, static_cast<void *>(&context), &reduction_count};
 
             st2->register_listener(callback);
 
             runners.push_back(st2);
         }
-        Stage3Runner *st3 = new Stage3Runner{ input_path, &m_chaser, 8 * 1024 * 1024, worker_num * 2, pid, static_cast<void *>(&context), &reduction_count };
+        Stage3Runner *st3 = new Stage3Runner{ input_path, 8 * 1024 * 1024, worker_num * 2, pid, static_cast<void *>(&context), &reduction_count };
 
         st3->register_listener(callback);
 

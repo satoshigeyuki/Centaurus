@@ -50,14 +50,14 @@ class Stage1Runner(BaseRunner):
 
 class Stage2Runner(BaseRunner):
     CoreLib.Stage2RunnerCreate.restype = ctypes.c_void_p
-    CoreLib.Stage2RunnerCreate.argtypes = [ctypes.c_char_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int, ctypes.c_int]
+    CoreLib.Stage2RunnerCreate.argtypes = [ctypes.c_char_p, ctypes.c_size_t, ctypes.c_int, ctypes.c_int]
 
-    def __init__(self, filename, chaser, bank_size, bank_num, master_pid):
-        super(Stage2Runner, self).__init__(CoreLib.Stage2RunnerCreate(filename.encode('utf-8'), chaser.handle, bank_size, bank_num, master_pid))
+    def __init__(self, filename, bank_size, bank_num, master_pid):
+        super(Stage2Runner, self).__init__(CoreLib.Stage2RunnerCreate(filename.encode('utf-8'), bank_size, bank_num, master_pid))
 
 class Stage3Runner(BaseRunner):
     CoreLib.Stage3RunnerCreate.restype = ctypes.c_void_p
-    CoreLib.Stage3RunnerCreate.argtypes = [ctypes.c_char_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int, ctypes.c_int]
+    CoreLib.Stage3RunnerCreate.argtypes = [ctypes.c_char_p, ctypes.c_size_t, ctypes.c_int, ctypes.c_int]
 
-    def __init__(self, filename, chaser, bank_size, bank_num, master_pid):
-        super(Stage3Runner, self).__init__(CoreLib.Stage3RunnerCreate(filename.encode('utf-8'), chaser.handle, bank_size, bank_num, master_pid))
+    def __init__(self, filename, bank_size, bank_num, master_pid):
+        super(Stage3Runner, self).__init__(CoreLib.Stage3RunnerCreate(filename.encode('utf-8'), bank_size, bank_num, master_pid))
