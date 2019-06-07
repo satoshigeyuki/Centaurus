@@ -119,8 +119,6 @@ protected:
     void *m_main_window, *m_sub_window;
     size_t m_bank_size;
 	int m_bank_num;
-	ReductionListener m_listener;
-    TransferListener m_xferlistener;
 #if defined(CENTAURUS_BUILD_WINDOWS)
     HANDLE m_mem_handle;
     HANDLE m_slave_lock;
@@ -133,7 +131,7 @@ protected:
 #endif
 public:
 	BaseRunner(const char *filename, size_t bank_size, int bank_num, int pid)
-		: m_bank_size(bank_size), m_bank_num(bank_num), m_listener(nullptr), m_xferlistener(nullptr)
+		: m_bank_size(bank_size), m_bank_num(bank_num)
 	{
 #if defined(CENTAURUS_BUILD_WINDOWS)
 		HANDLE hInputFile = CreateFileA(filename, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
@@ -232,10 +230,7 @@ public:
 		pthread_join(m_thread, NULL);
 #endif
 	}
-	void register_listener(ReductionListener listener, TransferListener xferlistener = nullptr)
-	{
-		m_listener = listener;
-        m_xferlistener = xferlistener;
-	}
+
+  virtual void register_python_listener(ReductionListener listener, TransferListener xferlistener) {}
 };
 }

@@ -108,7 +108,7 @@ namespace Centaurus __attribute__((visibility("default")))
 
 	CENTAURUS_EXPORT(void) RunnerRegisterListener(BaseRunner *runner, ReductionListener listener, TransferListener xferlistener)
 	{
-		runner->register_listener(listener, xferlistener);
+		runner->register_python_listener(listener, xferlistener);
 	}
 
 	CENTAURUS_EXPORT(const void *) RunnerGetWindow(BaseRunner *runner)

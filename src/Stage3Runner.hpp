@@ -8,6 +8,8 @@ namespace Centaurus
 {
 class Stage3Runner : public BaseRunner
 {
+  ReductionListener m_listener;
+  TransferListener m_xferlistener;
     void *m_listener_context;
     IChaser *m_chaser;
     size_t m_bank_size;
@@ -53,5 +55,17 @@ public:
         }
         return NULL;
     }
+
+  virtual void register_python_listener(ReductionListener listener, TransferListener xferlistener) override
+  {
+    m_listener = listener;
+    m_xferlistener = xferlistener;
+  }
+
+  void register_listener(ReductionListener listener)
+  {
+    m_listener = listener;
+    m_xferlistener = nullptr;
+  }
 };
 }
