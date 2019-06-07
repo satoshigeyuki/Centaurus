@@ -163,7 +163,7 @@ void Stage2Runner::release_bank()
     s_nonterminal_count += m_bank_size / 16;
 }
 Stage2Runner::Stage2Runner(const char *filename, IChaser *chaser, size_t bank_size, int bank_num, int master_pid, void *context)
-	: BaseRunner(filename, bank_size, bank_num, master_pid), m_chaser(chaser), m_bank_size(bank_size), m_listener_context(context)
+	: BaseRunner(filename, bank_size, bank_num, master_pid), m_chaser(chaser), m_listener_context(context)
 {
 #if defined(CENTAURUS_BUILD_WINDOWS)
 	m_mem_handle = OpenFileMappingA(FILE_MAP_ALL_ACCESS, FALSE, m_memory_name);

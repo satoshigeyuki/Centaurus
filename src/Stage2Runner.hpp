@@ -15,7 +15,6 @@ class Stage2Runner : public BaseRunner
   TransferListener m_xferlistener;
     void *m_listener_context;
     IChaser *m_chaser;
-    size_t m_bank_size;
 	int m_current_bank;
     const uint64_t *m_sv_list;
 	std::vector<SymbolEntry> m_sym_stack;

@@ -12,7 +12,6 @@ class Stage3Runner : public BaseRunner
   TransferListener m_xferlistener;
     void *m_listener_context;
     IChaser *m_chaser;
-    size_t m_bank_size;
     int m_current_bank;
     int m_counter;
     const uint64_t *m_current_window;
