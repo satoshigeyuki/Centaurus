@@ -82,7 +82,7 @@ public:
     }
 };
 
-typedef long (CENTAURUS_CALLBACK * ReductionListener)(const SymbolEntry *symbols, int symbol_num, void *context);
+typedef long (CENTAURUS_CALLBACK * ReductionListener)(const SymbolEntry *symbol, uint64_t *values, int num_values, void *context);
 typedef void (CENTAURUS_CALLBACK * TransferListener)(int index, int new_index, void *context);
 
 class BaseRunner : public BaseListener

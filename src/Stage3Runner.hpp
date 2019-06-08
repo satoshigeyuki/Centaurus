@@ -16,7 +16,7 @@ class Stage3Runner : public BaseRunner
   int m_window_position;
   int m_sv_index;
   const std::vector<SVCapsule> *m_sv_list;
-  std::vector<SymbolEntry> m_sym_stack;
+  std::vector<uint64_t> val_stack;
 
   std::atomic<int>* reduction_counter;
 
@@ -27,7 +27,7 @@ private:
     m_counter = 0;
     m_current_window = NULL;
     m_window_position = 0;
-    m_sym_stack.clear();
+    val_stack.clear();
 
     reduce();
 
@@ -55,16 +55,16 @@ private:
           values.emplace_back(m_input_window, v0, v1);
           m_window_position++;
         } else if (marker.is_end_marker()) {
-          m_sym_stack.clear();
-          m_sym_stack.emplace_back(start_marker.get_machine_id(), start_marker.get_offset(), marker.get_offset());
+          val_stack.clear();
           m_sv_index = 0;
           m_sv_list = &values;
           for (int l = 0; l < values.size(); l++) {
-            m_sym_stack.emplace_back(values[l].get_machine_id(), 0, 0, values[l].get_tag());
+            val_stack.emplace_back(values[l].get_tag());
           }
           long tag = 0;
+          SymbolEntry sym(start_marker.get_machine_id(), start_marker.get_offset(), marker.get_offset());
           if (m_listener != nullptr)
-            tag = m_listener(m_sym_stack.data(), m_sym_stack.size(), m_listener_context);
+            tag = m_listener(&sym, val_stack.data(), val_stack.size(), m_listener_context);
           if (reduction_counter != nullptr) {
             (*reduction_counter)++;
           }

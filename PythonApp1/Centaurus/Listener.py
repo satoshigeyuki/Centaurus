@@ -14,7 +14,6 @@ logger.setLevel(logging.DEBUG)
 
 class SymbolEntry(ctypes.Structure):
     _fields_ = [('id', ctypes.c_int),
-                ('key', ctypes.c_int),
                 ('start', ctypes.c_long),
                 ('end', ctypes.c_long)]
 
@@ -24,11 +23,11 @@ class BaseListenerAdapter(object):
         self.window = runner.get_window()
         self.channels = channels
     def read(self):
-        start_addr = self.window + self.symbols[0].start
-        end_addr = self.window + self.symbols[0].end
+        start_addr = self.window + self.symbol.start
+        end_addr = self.window + self.symbol.end
         return ctypes.string_at(ctypes.c_void_p(start_addr), end_addr - start_addr)
     def count(self):
-        return self.num - 1
+        return self.argc
 
 class Stage2ListenerAdapter(BaseListenerAdapter):
     def __init__(self, grammar, handler, channels, runner):
@@ -44,13 +43,13 @@ class Stage2ListenerAdapter(BaseListenerAdapter):
                 if handler_name in dir(handler):
                     self.handlers[index - 1] = getattr(handler, handler_name)
 
-    def reduction_callback(self, symbols, num):
+    def reduction_callback(self, symbol, values, num_values):
         try:
-            self.symbols = symbols
-            self.num = num
-            lhs_value = self.handlers[symbols[0].id - 1](self)
-            for i in range(num - 1):
-                self.values.pop()
+            self.symbol = symbol[0]
+            self.argc = num_values
+            self.argv = [self.values.pop() for _ in range(num_values)]
+            self.argv.reverse()
+            lhs_value = self.handlers[self.symbol.id - 1](self)
             self.values.append(lhs_value)
             return ((self.page_index + 1) << 20) | (len(self.values) - 1)
         except:
@@ -71,9 +70,9 @@ class Stage2ListenerAdapter(BaseListenerAdapter):
             self.start_time = time.time()
 
     def value(self, index):
-        return self.values[-self.num + index]
+        return self.argv[index - 1]
     def all(self):
-        return [self.values[i] for i in range(-self.num + 1, 0)]
+        return self.argv
 
 class Stage3ListenerAdapter(BaseListenerAdapter):
     def __init__(self, grammar, handler, channels, runner):
@@ -92,11 +91,12 @@ class Stage3ListenerAdapter(BaseListenerAdapter):
                 if handler_name in dir(handler):
                     self.handlers[index - 1] = getattr(handler, handler_name)
 
-    def reduction_callback(self, symbols, num):
+    def reduction_callback(self, symbol, values, num_values):
         try:
-            self.symbols = symbols
-            self.num = num
-            lhs_value = self.handlers[symbols[0].id - 1](self)
+            self.symbol = symbol[0]
+            self.argv = values
+            self.argc = num_values
+            lhs_value = self.handlers[self.symbol.id - 1](self)
             self.values.append(lhs_value)
             return len(self.values) - 1
         except:
@@ -114,11 +114,11 @@ class Stage3ListenerAdapter(BaseListenerAdapter):
         logger.debug("Accepted %d values" % len(values))
 
     def value(self, index):
-        key = self.symbols[index].key & ((1 << 20) - 1)
-        page = self.symbols[index].key >> 20
+        key = self.argv[index - 1] & ((1 << 20) - 1)
+        page = self.argv[index - 1] >> 20
         if page == 0:
             return self.values[key]
         else:
             return self.page_values[page - 1][key]
     def all(self):
-        return [self.value(index) for index in range(1, self.num)]
+        return [self.value(i) for i in range(1, self.argc + 1)]

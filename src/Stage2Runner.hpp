@@ -14,7 +14,7 @@ class Stage2Runner : public BaseRunner
   TransferListener m_xferlistener;
   void *m_listener_context;
   int m_current_bank;
-  std::vector<SymbolEntry> m_sym_stack;
+  std::vector<uint64_t> val_stack;
 
   std::atomic<int>* reduction_counter;
 
@@ -22,7 +22,7 @@ private:
   void thread_runner_impl()
   {
     m_current_bank = -1;
-    m_sym_stack.clear();
+    val_stack.clear();
     while (true) {
       uint64_t *data = reinterpret_cast<uint64_t*>(acquire_bank());
       if (data == NULL) break;
@@ -65,15 +65,14 @@ private:
         }
         i = k;
       } else if (marker.is_end_marker()) {
-        m_sym_stack.clear();
-        m_sym_stack.emplace_back(marker.get_machine_id(), start_marker.get_offset(), marker.get_offset());
+        val_stack.clear();
         for (int l = position + 1; l < j; l += 2) {
-          CSTMarker sv_marker(ast[l]);
-          m_sym_stack.emplace_back(sv_marker.get_machine_id(), 0, 0, ast[l + 1]);
+          val_stack.emplace_back(ast[l + 1]);
         }
         long tag = 0;
+        SymbolEntry sym(marker.get_machine_id(), start_marker.get_offset(), marker.get_offset());
         if (m_listener != nullptr)
-          tag = m_listener(m_sym_stack.data(), m_sym_stack.size(), m_listener_context);
+          tag = m_listener(&sym, val_stack.data(), val_stack.size(), m_listener_context);
         if (reduction_counter != nullptr) {
           (*reduction_counter)++;
         }

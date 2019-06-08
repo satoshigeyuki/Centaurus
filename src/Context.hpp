@@ -24,79 +24,57 @@ struct ParseContext
 template<typename TCHAR>
 class SymbolContext
 {
-    const void *m_window;
-    const SymbolEntry *m_symbols;
-    int m_symbol_num;
+  const ParseContext<TCHAR>& context;
+  const SymbolEntry& symbol;
+  const uint64_t * const values;
+  const int num_values;
 public:
-    SymbolContext(const void *window, const SymbolEntry *symbols, int symbol_num)
-        : m_window(window), m_symbols(symbols), m_symbol_num(symbol_num)
-    {
-    }
-    std::basic_string<TCHAR> read(int index = 0) const
-    {
-        if (index < m_symbol_num)
-        {
-            long start = m_symbols[index].start;
-            long end = m_symbols[index].end;
-            const TCHAR *p = (const TCHAR *)m_window + start;
-            long len = end - start;
-            return std::basic_string<TCHAR>(p, len);
-        }
-        return std::basic_string<TCHAR>();
-    }
-    const TCHAR *start(int index = 0) const
-    {
-        if (index < m_symbol_num)
-        {
-            long start = m_symbols[index].start;
-            return (const TCHAR *)m_window + start;
-        }
-        return NULL;
-    }
-    const TCHAR *end(int index = 0) const
-    {
-        if (index < m_symbol_num)
-        {
-            long end = m_symbols[index].end;
-            return (const TCHAR *)m_window + end;
-        }
-        return NULL;
-    }
-    const int len(int index = 0) const
-    {
-        if (index < m_symbol_num)
-        {
-            long start = m_symbols[index].start;
-            long end = m_symbols[index].end;
-            return end - start;
-        }
-        return 0;
-    }
-    int count() const
-    {
-        return m_symbol_num - 1;
-    }
-    template<typename T>
-    T *value(int index) const
-    {
-        return reinterpret_cast<T *>(m_symbols[index].key);
-    }
+  SymbolContext(const ParseContext<TCHAR>& context, const SymbolEntry& symbol, uint64_t *values, int num_values)
+    : context(context), symbol(symbol), values(values), num_values(num_values)
+  {
+  }
+  std::basic_string<TCHAR> read() const
+  {
+    const TCHAR *p = reinterpret_cast<const TCHAR *>(context.m_window) + symbol.start;
+    return std::basic_string<TCHAR>(p, len());
+  }
+  const TCHAR *start() const
+  {
+    return reinterpret_cast<const TCHAR *>(context.m_window) + symbol.start;
+  }
+  const TCHAR *end() const
+  {
+    return reinterpret_cast<const TCHAR *>(context.m_window) + symbol.end;
+  }
+  const int len() const
+  {
+    return symbol.end - symbol.start;
+  }
+  int count() const
+  {
+    return num_values;
+  }
+  template<typename T>
+  T *value(int i) const
+  {
+    return reinterpret_cast<T*>( values[i - 1]);
+  }
 };
 template<typename TCHAR>
 class Context
 {
-    Grammar<TCHAR> m_grammar;
-    ParserEM64T<TCHAR> m_parser;
-    std::vector<CppReductionCallback<TCHAR> > m_callbacks;
-    static long CENTAURUS_CALLBACK callback(const SymbolEntry *symbols, int symbol_num, void *context)
-    {
-        ParseContext<TCHAR> *ctx = (ParseContext<TCHAR> *)context;
-        SymbolContext<TCHAR> sc(ctx->m_window, symbols, symbol_num);
-        if (symbols[0].id < ctx->m_callbacks.size())
-            if (ctx->m_callbacks[symbols[0].id] != nullptr)
-                return (long)ctx->m_callbacks[symbols[0].id](sc);
-        return 0;
-    }
+  Grammar<TCHAR> m_grammar;
+  ParserEM64T<TCHAR> m_parser;
+  std::vector<CppReductionCallback<TCHAR> > m_callbacks;
+  static long CENTAURUS_CALLBACK callback(const SymbolEntry *symbol, uint64_t *values, int num_values, void *context)
+  {
+    auto& ctx = *reinterpret_cast<ParseContext<TCHAR>*>(context);
+    SymbolContext<TCHAR> rc(ctx, *symbol, values, num_values);
+    if (symbol->id < ctx.m_callbacks.size() &&
+        ctx.m_callbacks[symbol->id] != nullptr)
+      return (long)ctx.m_callbacks[symbol->id](rc);
+    return 0;
+  }
 public:
     Context(const char *filename)
     {
