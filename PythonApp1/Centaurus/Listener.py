@@ -88,8 +88,6 @@ class Stage3ListenerAdapter(BaseListenerAdapter):
         runner.attach(self.reduction_callback, self.transfer_callback)
         self.start_time = time.time()
         self.run_time = 0.0
-        self.logger = logging.getLogger("Centaurus.Stage3Listener")
-        self.logger.setLevel(logging.DEBUG)
 
     def reduction_callback(self, symbol, values, num_values):
         try:
