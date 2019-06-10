@@ -15,12 +15,10 @@ logger.setLevel(logging.DEBUG)
 
 class XMLElement(object):
     def __init__(self, ctx):
-        self.name = ctx.value(1)
-        self.attr = {}
-        for i in range(2, ctx.count()):
-            attr = ctx.value(i)
-            self.attr[attr[0]] = attr[1]
-        self.body = ctx.value(ctx.count())
+        it = iter(ctx)
+        self.name = next(it)
+        self.attr = dict(next(it) for _ in range(len(ctx) - 2))
+        self.body = next(it)
     def get_content(self):
         if len(self.body) == 0:
             return ""
@@ -37,17 +35,11 @@ class XMLListener(object):
     def parseValue(self, ctx):
         return ctx.read().strip()[1:-1]
     def parseAttribute(self, ctx):
-        return (ctx.value(1), ctx.value(2))
+        return tuple(ctx)
     def parseContent(self, ctx):
         return ctx.read()
     def parseElementBody(self, ctx):
-        if ctx.count() == 0:
-            return []
-        else:
-            ret = []
-            for i in range(1, ctx.count()):
-                ret.append(ctx.value(i))
-            return ret
+        return list(ctx)
     def parseElement(self, ctx):
         e = XMLElement(ctx)
         if e.name == "article":
@@ -60,7 +52,7 @@ class XMLListener(object):
             return None
         return e
     def parseDocument(self, ctx):
-        return ctx.value(3)
+        return ctx[2]
     def parseProlog(self, ctx):
         return None
     def parseDocType(self, ctx):

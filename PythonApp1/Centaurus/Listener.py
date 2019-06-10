@@ -26,7 +26,7 @@ class BaseListenerAdapter(object):
         start_addr = self.window + self.symbol.start
         end_addr = self.window + self.symbol.end
         return ctypes.string_at(ctypes.c_void_p(start_addr), end_addr - start_addr)
-    def count(self):
+    def __len__(self):
         return self.argc
 
 class Stage2ListenerAdapter(BaseListenerAdapter):
@@ -47,9 +47,8 @@ class Stage2ListenerAdapter(BaseListenerAdapter):
         try:
             self.symbol = symbol[0]
             self.argc = num_values
-            self.argv = [self.values.pop() for _ in range(num_values)]
-            self.argv.reverse()
             lhs_value = self.handlers[self.symbol.id - 1](self)
+            del self.values[len(self.values) - self.argc:]
             self.values.append(lhs_value)
             return ((self.page_index + 1) << 20) | (len(self.values) - 1)
         except:
@@ -66,19 +65,20 @@ class Stage2ListenerAdapter(BaseListenerAdapter):
             self.values = None
         else:
             self.page_index = new_index
-            self.values = collections.deque()
+            self.values = []
             self.start_time = time.time()
 
-    def value(self, index):
-        return self.argv[index - 1]
-    def all(self):
-        return self.argv
+    def __getitem__(self, index):
+        return self.values[len(self.values) - self.argc + index]
+    def __iter__(self):
+        return (self.values[i] for i in range(len(self.values) - self.argc, len(self.values)))
+
 
 class Stage3ListenerAdapter(BaseListenerAdapter):
     def __init__(self, grammar, handler, channels, runner):
         super(Stage3ListenerAdapter, self).__init__(grammar, channels, runner)
         self.page_values = []
-        self.values = collections.deque()
+        self.values = []
         runner.attach(self.reduction_callback, self.transfer_callback)
         self.start_time = time.time()
         self.run_time = 0.0
@@ -113,12 +113,12 @@ class Stage3ListenerAdapter(BaseListenerAdapter):
         logger.debug("Stage3 cumulative runtime = %f[s]" % (self.run_time,))
         logger.debug("Accepted %d values" % len(values))
 
-    def value(self, index):
-        key = self.argv[index - 1] & ((1 << 20) - 1)
-        page = self.argv[index - 1] >> 20
+    def __getitem__(self, index):
+        key = self.argv[index] & ((1 << 20) - 1)
+        page = self.argv[index] >> 20
         if page == 0:
             return self.values[key]
         else:
             return self.page_values[page - 1][key]
-    def all(self):
-        return [self.value(i) for i in range(1, self.argc + 1)]
+    def __iter__(self):
+        return (self[i] for i in range(self.argc))

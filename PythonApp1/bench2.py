@@ -30,16 +30,11 @@ class JsonListener(object):
     def parseNone(self, ctx):
         return None
     def parseObject(self, ctx):
-        return ctx.value(1)
+        return ctx[0]
     def parseList(self, ctx):
-        ret = []
-        for i in range(1, ctx.count() + 1):
-            v = ctx.value(i)
-            if v is not None:
-                ret.append(ctx.value(i))
-        return ret
+        return [v for v in ctx if v is not None]
     def parseDictionary(self, ctx):
-        ret = dict(ctx.all())
+        ret = dict(ctx)
         """for i in range(1, ctx.count() + 1):
             p = ctx.value(i)
             ret[p[0]] = p[1]"""
@@ -54,7 +49,7 @@ class JsonListener(object):
         """obj = ctx.value(1)
         return obj"""
     def parseDictionaryEntry(self, ctx):
-        return (ctx.value(1), ctx.value(2))
+        return tuple(ctx)
 
 if __name__ == "__main__":
     logging.basicConfig(filename="app.log", filemode='w', level=logging.DEBUG)
