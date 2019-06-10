@@ -5,10 +5,7 @@
 
 #include "Grammar.hpp"
 #include "Util.hpp"
-#include "CodeGenEM64T.hpp"
-#include "Stage1Runner.hpp"
-#include "Stage2Runner.hpp"
-#include "Stage3Runner.hpp"
+#include "StageRunners.hpp"
 
 #if defined(CENTAURUS_BUILD_WINDOWS)
 #define CENTAURUS_EXPORT(T) extern "C" __declspec(dllexport) T __cdecl
