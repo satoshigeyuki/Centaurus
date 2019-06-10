@@ -65,8 +65,8 @@ class Stage2Process(object):
                 return
             elif cmd[0] == 'parse':
                 runner = Stage2Runner(cmd[1], self.context.bank_size, self.context.bank_num, self.master_pid)
-                #adapter = Stage2BytecodeListenerAdapter(self.grammar, self.listener, self.context.channels, runner)
-                adapter = Stage2ListenerAdapter(self.grammar, self.listener, self.context.channels, runner)
+                adapter = Stage2ListenerAdapter(self.grammar, self.listener, self.context.channels, runner.get_window())
+                runner.attach(adapter.reduction_callback, adapter.transfer_callback)
                 runner.start()
                 runner.wait()
     def attach(self, listener):
@@ -105,8 +105,8 @@ class Stage3Process(object):
                 return
             elif cmd[0] == 'parse':
                 runner = Stage3Runner(cmd[1], self.context.bank_size, self.context.bank_num, self.master_pid)
-                adapter = Stage3ListenerAdapter(self.grammar, self.listener, self.context.channels, runner)
-                #adapter = Stage3BytecodeListenerAdapter(self.grammar, self.listener, self.context.channels, runner)
+                adapter = Stage3ListenerAdapter(self.grammar, self.listener, self.context.channels, runner.get_window())
+                runner.attach(adapter.reduction_callback, adapter.transfer_callback)
                 runner.start()
                 runner.wait()
                 self.context.drain.put(adapter.values[-1])

@@ -19,9 +19,9 @@ class SymbolEntry(ctypes.Structure):
                 ('end', ctypes.c_long)]
 
 class BaseListenerAdapter(object):
-    def __init__(self, grammar, handler, channels, runner):
+    def __init__(self, grammar, handler, channels, window):
         self.grammar = grammar
-        self.window = runner.get_window()
+        self.window = window
         self.channels = channels
         self.handlers = [None] #NOTE: padding for 1-based symbol.id
         for index in range(1, grammar.get_machine_num() + 1):
@@ -44,11 +44,10 @@ class BaseListenerAdapter(object):
         return self.argc
 
 class Stage2ListenerAdapter(BaseListenerAdapter):
-    def __init__(self, grammar, handler, channels, runner):
-        super(Stage2ListenerAdapter, self).__init__(grammar, handler, channels, runner)
+    def __init__(self, grammar, handler, channels, window):
+        super(Stage2ListenerAdapter, self).__init__(grammar, handler, channels, window)
         self.values = None
         self.page_index = -1
-        runner.attach(self.reduction_callback, self.transfer_callback)
         self.run_time = 0.0
 
     def reduction_callback(self, symbol, values, num_values):
@@ -81,11 +80,10 @@ class Stage2ListenerAdapter(BaseListenerAdapter):
 
 
 class Stage3ListenerAdapter(BaseListenerAdapter):
-    def __init__(self, grammar, handler, channels, runner):
-        super(Stage3ListenerAdapter, self).__init__(grammar, handler, channels, runner)
+    def __init__(self, grammar, handler, channels, window):
+        super(Stage3ListenerAdapter, self).__init__(grammar, handler, channels, window)
         self.page_values = []
         self.values = []
-        runner.attach(self.reduction_callback, self.transfer_callback)
         self.start_time = time.time()
         self.run_time = 0.0
 
