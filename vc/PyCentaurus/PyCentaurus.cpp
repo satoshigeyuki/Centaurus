@@ -5,6 +5,10 @@
 
 #include "Grammar.hpp"
 #include "Util.hpp"
+#ifdef PYCENTAURUS
+#undef PYCENTAURUS
+#endif
+#define PYCENTAURUS 1
 #include "StageRunners.hpp"
 
 #if defined(CENTAURUS_BUILD_WINDOWS)
