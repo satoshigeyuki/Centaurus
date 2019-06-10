@@ -57,6 +57,8 @@ class XMLListener(object):
         return None
     def parseDocType(self, ctx):
         return None
+    def parseComment(self, ctx):
+        return None
 
 if __name__ == "__main__":
     logging.basicConfig(filename="app.log", filemode='w', level=logging.DEBUG)
