@@ -35,8 +35,8 @@ class JsonListener(object):
         ret = []
         for i in range(1, ctx.count() + 1):
             v = ctx.value(i)
-            #if v is not None:
-                #ret.append(ctx.value(i))
+            if v is not None:
+                ret.append(ctx.value(i))
         return ret
     def parseDictionary(self, ctx):
         ret = dict(ctx.all())

@@ -60,7 +60,7 @@ class XMLListener(object):
             return None
         return e
     def parseDocument(self, ctx):
-        return ctx.value(2)
+        return ctx.value(3)
     def parseProlog(self, ctx):
         return None
     def parseDocType(self, ctx):
