@@ -85,12 +85,24 @@ if __name__ == "__main__":
         context.stop()
         print("%d %f" % (n, end_time - start_time), file=perf_log)
 
-        """
         result_log = open('result.log', 'w')
-        features_list = result['features']
-        for item in features_list:
-            if isinstance(item, dict) and len(item) > 0:
-                print(item, file=result_log)
-        """
+        def print_xml(doc):
+            if isinstance(doc, XMLElement):
+                print('<' + doc.name, end='',  file=result_log)
+                n = len(doc.body)
+                if n == 0:
+                    print('>', end='', file=result_log)
+                elif n > 1:
+                    print('>', end='',  file=result_log)
+                    if doc.name in ('dblp', 'article'):
+                        print(file=result_log)
+                    for i in range(n - 1):
+                        print_xml(doc.body[i])
+                    print('</' + doc.body[n - 1] + '>', file=result_log)
+                else:
+                    assert False
+            elif isinstance(doc, str):
+                print(doc.replace('\n', ''), end='', file=result_log)
+        print_xml(result)
 
     log_sink.stop()
