@@ -48,7 +48,7 @@ class XMLListener(object):
                 return e
             else:
                 return None
-        elif e.name == "inproceedings" or e.name == "proceedings" or e.name == "book" or e.name == "incollection" or e.name == "phdthesis" or e.name == "masterthesis" or e.name == "www":
+        elif e.name == "inproceedings" or e.name == "proceedings" or e.name == "book" or e.name == "incollection" or e.name == "phdthesis" or e.name == "mastersthesis" or e.name == "www":
             return None
         return e
     def parseDocument(self, ctx):
