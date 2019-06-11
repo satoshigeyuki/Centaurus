@@ -49,6 +49,7 @@ protected:
   }
   static void push_value(const semantic_value_type val, std::vector<semantic_value_type>& values, std::vector<detail::StackEntryTag>& tags)
   {
+    if (val == 0) return;
     tags.emplace_back(detail::StackEntryTag::VALUE);
 #if PYCENTAURUS
     values.front()++;

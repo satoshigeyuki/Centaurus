@@ -109,7 +109,8 @@ class Stage3Process(object):
                 runner.attach(adapter.reduction_callback, adapter.transfer_callback)
                 runner.start()
                 runner.wait()
-                self.context.drain.put(adapter.values[-1])
+                assert len(adapter.values) <= 1
+                self.context.drain.put(adapter.values[0] if adapter.values else None)
             
     def attach(self, listener):
         self.listener = listener

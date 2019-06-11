@@ -205,7 +205,7 @@ void *parseString(const SymbolContext<char>& ctx)
 
 void *parseNone(const SymbolContext<char>& ctx)
 {
-    return new JSONValue();
+    return nullptr;
 }
 
 void *parseBoolean(const SymbolContext<char>& ctx)
@@ -243,7 +243,7 @@ void *parseDictionary(const SymbolContext<char>& ctx)
 void *parseDictionaryEntry(const SymbolContext<char>& ctx)
 {
     JSONValue *s = ctx.value<JSONValue>(1);
-    JSONValue *o = ctx.value<JSONValue>(2);
+    JSONValue *o = (ctx.count() == 2) ? ctx.value<JSONValue>(2) : new JSONValue;
     void *p = new std::pair<JSONString, JSONValue>(s->str(), std::move(*o));
     delete s;
     delete o;
@@ -254,6 +254,8 @@ std::atomic<int> count;
 
 void *parseObject(const SymbolContext<char>& ctx)
 {
+    if (ctx.count() == 0) return nullptr;
+
     JSONValue *v = ctx.value<JSONValue>(1);
 
     /*if (v->is_object())
@@ -286,7 +288,7 @@ void *parseObject(const SymbolContext<char>& ctx)
                         if (street.str() != "JEFFERSON")
                         {
                             delete v;
-                            return new JSONValue();
+                            return nullptr;
                         }
                         else
                         {

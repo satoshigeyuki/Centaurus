@@ -34,7 +34,13 @@ class BaseListenerAdapter(object):
     def invoke_hander(self, symbol, argc):
         self.symbol = symbol
         self.argc = argc
-        return self.handlers[symbol.id](self)
+        lhs_value = self.handlers[symbol.id](self)
+        del self.values[len(self.values) - argc:]
+        if lhs_value is None:
+            return 0
+        else:
+            self.values.append(lhs_value)
+            return 1
 
     def read(self):
         start_addr = self.window + self.symbol.start
@@ -56,10 +62,7 @@ class Stage2ListenerAdapter(BaseListenerAdapter):
 
     def reduction_callback(self, symbol, values, num_values):
         try:
-            lhs_value = self.invoke_hander(symbol[0], num_values)
-            del self.values[len(self.values) - num_values:]
-            self.values.append(lhs_value)
-            return 1
+            return self.invoke_hander(symbol[0], num_values)
         except:
             logger.debug('Exception in Stage2Listener:')
             logger.debug(traceback.format_exc())
@@ -96,10 +99,7 @@ class Stage3ListenerAdapter(BaseListenerAdapter):
                         break
                 else:
                     self.valueiters.popleft()
-            lhs_value = self.invoke_hander(symbol[0], num_values)
-            del self.values[len(self.values) - num_values:]
-            self.values.append(lhs_value)
-            return 1
+            return self.invoke_hander(symbol[0], num_values)
         except:
             logger.debug('Exception in Stage3Listener:')
             logger.debug(traceback.format_exc())

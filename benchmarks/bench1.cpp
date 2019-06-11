@@ -176,7 +176,7 @@ XMLElementBody::XMLElementBody(const SymbolContext<char>& ctx)
 
 void *parseDocument(const SymbolContext<char>& ctx)
 {
-    return ctx.value<XMLElement>(3);
+    return ctx.value<XMLElement>(1);
 }
 
 void *parseName(const SymbolContext<char>& ctx)

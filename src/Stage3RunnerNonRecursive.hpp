@@ -132,10 +132,10 @@ private:
     }
     assert(starts.empty());
     assert(ends.empty());
-    assert(values.size() == 1);
-    assert(tags.size() == 1);
+    assert(values.size() <= 1);
+    assert(tags.size() <= 1);
 
-    auto result = std::move(values.front());
+    auto result = (values.empty()) ? 0 : std::move(values.front());
 #if !PYCENTAURUS
     delete &stack_tuple_base;
 #endif
