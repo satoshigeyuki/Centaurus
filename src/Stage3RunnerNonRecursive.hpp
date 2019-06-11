@@ -61,6 +61,7 @@ private:
     assert(ends.empty());
     std::vector<semantic_value_type> values(*bank_ptr++);
     std::memcpy(values.data(), bank_ptr, values.size()*sizeof(semantic_value_type));
+    assert(values[0] == 0 && values.size() == 1);
     bank_ptr += values.size();
     std::vector<detail::StackEntryTag> tags(*bank_ptr++);
     std::memcpy(tags.data(), bank_ptr, tags.size()*sizeof(detail::StackEntryTag));
@@ -105,7 +106,11 @@ private:
           push_start_marker(*starts_next_it++, starts, tags);
           break;
         case detail::StackEntryTag::VALUE:
+#if PYCENTAURUS
+          push_value(1, values, tags);
+#else
           push_value(*values_next_it++, values, tags);
+#endif
           break;
         case detail::StackEntryTag::END_MARKER: {
           assert(!starts.empty());
@@ -117,7 +122,9 @@ private:
       }
       assert(starts_next_it == starts_next.end());
       assert(ends_next_it == ends_next.end());
+#if !PYCENTAURUS
       assert(values_next_it == values_next.end());
+#endif
 #if !PYCENTAURUS
       delete &stack_tuple;
 #endif

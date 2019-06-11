@@ -50,7 +50,11 @@ protected:
   static void push_value(const semantic_value_type val, std::vector<semantic_value_type>& values, std::vector<detail::StackEntryTag>& tags)
   {
     tags.emplace_back(detail::StackEntryTag::VALUE);
+#if PYCENTAURUS
+    values.front()++;
+#else
     values.emplace_back(val);
+#endif
   }
   void reduce_by_end_marker(const CSTMarker& marker, std::vector<CSTMarker>& starts, std::vector<semantic_value_type>& values, std::vector<detail::StackEntryTag>& tags)
   {
@@ -61,8 +65,12 @@ protected:
       tags.pop_back();
       value_count++;
     }
+#if PYCENTAURUS
+    auto new_val = m_listener(&sym, values.data(), value_count, m_listener_context);
+#else
     auto new_val = m_listener(&sym, &values[values.size() - value_count], value_count, m_listener_context);
     values.resize(values.size() - value_count);
+#endif
     if (reduction_counter != nullptr) {
       (*reduction_counter)++;
     }
@@ -71,6 +79,9 @@ protected:
     tags.pop_back();
     starts.pop_back();
     push_value(new_val, values, tags);
+#if PYCENTAURUS
+    values.front() = 0;
+#endif
   }
 
   void invoke_transfer_listener(int index, int new_index)
@@ -118,6 +129,9 @@ private:
     auto& ends   = std::get<1>(*ptr);
     auto& values = std::get<2>(*ptr);
     auto& tags   = std::get<3>(*ptr);
+#if PYCENTAURUS
+    values.emplace_back(0);
+#endif
     for (int i = 0; i < m_bank_size / 8; i++) {
       if (src[i] == 0) break;
       CSTMarker marker(src[i]);

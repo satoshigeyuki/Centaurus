@@ -42,6 +42,10 @@ class BaseListenerAdapter(object):
         return ctypes.string_at(ctypes.c_void_p(start_addr), end_addr - start_addr)
     def __len__(self):
         return self.argc
+    def __getitem__(self, index):
+        return self.values[len(self.values) - self.argc + index]
+    def __iter__(self):
+        return (self.values[i] for i in range(len(self.values) - self.argc, len(self.values)))
 
 class Stage2ListenerAdapter(BaseListenerAdapter):
     def __init__(self, grammar, handler, channels, window):
@@ -55,64 +59,60 @@ class Stage2ListenerAdapter(BaseListenerAdapter):
             lhs_value = self.invoke_hander(symbol[0], num_values)
             del self.values[len(self.values) - num_values:]
             self.values.append(lhs_value)
-            return ((self.page_index + 1) << 20) | (len(self.values) - 1)
+            return 1
         except:
             logger.debug('Exception in Stage2Listener:')
             logger.debug(traceback.format_exc())
             sys.exit()
-    
+
     def transfer_callback(self, index, new_index):
         if self.values:
             end_time = time.time()
             self.run_time += end_time - self.start_time
             logger.debug("Stage2 cumulative runtime = %f[s]" % (self.run_time,))
-            self.channels[index].put(list(self.values))
+            self.channels[index].put(self.values)
             self.values = None
         else:
             self.page_index = new_index
             self.values = []
             self.start_time = time.time()
 
-    def __getitem__(self, index):
-        return self.values[len(self.values) - self.argc + index]
-    def __iter__(self):
-        return (self.values[i] for i in range(len(self.values) - self.argc, len(self.values)))
-
-
 class Stage3ListenerAdapter(BaseListenerAdapter):
     def __init__(self, grammar, handler, channels, window):
         super(Stage3ListenerAdapter, self).__init__(grammar, handler, channels, window)
-        self.page_values = []
-        self.values = []
+        self.valueiters = collections.deque()
+        self.values = None
         self.start_time = time.time()
         self.run_time = 0.0
 
     def reduction_callback(self, symbol, values, num_values):
         try:
-            self.argv = values
+            shift_count = values[0]
+            while shift_count > 0:
+                for v in self.valueiters[0]:
+                    self.values.append(v)
+                    shift_count -= 1
+                    if shift_count == 0:
+                        break
+                else:
+                    self.valueiters.popleft()
             lhs_value = self.invoke_hander(symbol[0], num_values)
+            del self.values[len(self.values) - num_values:]
             self.values.append(lhs_value)
-            return len(self.values) - 1
+            return 1
         except:
             logger.debug('Exception in Stage3Listener:')
             logger.debug(traceback.format_exc())
             sys.exit()
-        
+
     def transfer_callback(self, index, new_index):
         values = self.channels[index].get()
-        self.page_values.append(values)
+        if self.values is None:
+            self.values = values
+        else:
+            self.valueiters.append(iter(values))
         end_time = time.time()
         self.run_time += end_time - self.start_time
         self.start_time = end_time
         logger.debug("Stage3 cumulative runtime = %f[s]" % (self.run_time,))
         logger.debug("Accepted %d values" % len(values))
-
-    def __getitem__(self, index):
-        key = self.argv[index] & ((1 << 20) - 1)
-        page = self.argv[index] >> 20
-        if page == 0:
-            return self.values[key]
-        else:
-            return self.page_values[page - 1][key]
-    def __iter__(self):
-        return (self[i] for i in range(len(self)))
