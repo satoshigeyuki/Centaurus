@@ -241,7 +241,7 @@ void *parseElement(const SymbolContext<char>& ctx)
             return new XMLElement(n);
         }
     }
-    else if (n == "inproceedings" || n == "proceedings" || n == "book" || n == "incollection" || n == "phdthesis" || n == "masterthesis" || n == "www")
+    else if (n == "inproceedings" || n == "proceedings" || n == "book" || n == "incollection" || n == "phdthesis" || n == "mastersthesis" || n == "www")
     {
         delete elem;
         return new XMLElement(n);
