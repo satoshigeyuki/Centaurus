@@ -53,11 +53,13 @@ class XMLListener(object):
         return e
     def parseDocument(self, ctx):
         return ctx[0]
-    def parseProlog(self, ctx):
-        return None
-    def parseDocType(self, ctx):
-        return None
-    def parseComment(self, ctx):
+    # def parseProlog(self, ctx):
+    #     return None
+    # def parseDocType(self, ctx):
+    #     return None
+    # def parseComment(self, ctx):
+    #     return None
+    def defaultact(self, ctx):
         return None
 
 if __name__ == "__main__":

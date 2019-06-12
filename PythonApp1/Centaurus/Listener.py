@@ -19,6 +19,8 @@ class SymbolEntry(ctypes.Structure):
                 ('end', ctypes.c_long)]
 
 class BaseListenerAdapter(object):
+    default_handler_name = 'defaultact'
+
     def __init__(self, grammar, handler, channels, window):
         self.grammar = grammar
         self.window = window
@@ -28,6 +30,8 @@ class BaseListenerAdapter(object):
             handler_name = 'parse' + grammar.get_machine_name(index)
             if hasattr(handler, handler_name):
                 self.handlers.append(getattr(handler, handler_name))
+            elif hasattr(handler, self.default_handler_name):
+                self.handlers.append(getattr(handler, self.default_handler_name))
             else:
                 raise GrammarException('Method %s for Nonterminal %s is missing.' % (handler_name, grammar.get_machine_name(index)))
 
