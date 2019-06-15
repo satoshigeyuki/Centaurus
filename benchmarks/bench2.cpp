@@ -324,14 +324,14 @@ int main(int argc, const char *argv[])
     context.attach(L"Content", parseContent);
     context.attach(L"Element", parseElement);*/
 
-    /*context.attach(L"None", parseNone);
+    context.attach(L"None", parseNone);
     context.attach(L"String", parseString);
     context.attach(L"Dictionary", parseDictionary);
     context.attach(L"List", parseList);
     context.attach(L"DictionaryEntry", parseDictionaryEntry);
     context.attach(L"Number", parseNumber);
     context.attach(L"Boolean", parseBoolean);
-    context.attach(L"Object", parseObject);*/
+    context.attach(L"Object", parseObject);
 
     count.store(0);
 

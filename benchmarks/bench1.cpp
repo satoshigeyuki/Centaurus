@@ -259,12 +259,12 @@ int main(int argc, const char *argv[])
 
     Context<char> context{grammar_path};
 
-    /*context.attach(L"ElementBody", parseElementBody);
+    context.attach(L"ElementBody", parseElementBody);
     context.attach(L"Name", parseName);
     context.attach(L"Value", parseValue);
     context.attach(L"Attribute", parseAttribute);
     context.attach(L"Content", parseContent);
-    context.attach(L"Element", parseElement);*/
+    context.attach(L"Element", parseElement);
 
     uint64_t start_time = get_us_clock();
 
