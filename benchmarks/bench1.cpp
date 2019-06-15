@@ -231,7 +231,7 @@ void *parseElement(const SymbolContext<char>& ctx)
     if (n == "article")
     {
         const XMLElement *year = elem->get_element("year");
-        if (year->get_content() == "1990")
+        if (year != nullptr && year->get_content() == "1990")
         {
             //printf("\"%s\" article\n", year->get_content().c_str());
         }
