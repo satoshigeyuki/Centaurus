@@ -46,10 +46,12 @@ class BaseListenerAdapter(object):
             self.values.append(lhs_value)
             return 1
 
-    def read(self):
+    def readbytes(self):
         start_addr = self.window + self.symbol.start
         end_addr = self.window + self.symbol.end
         return ctypes.string_at(ctypes.c_void_p(start_addr), end_addr - start_addr)
+    def read(self):
+        return self.readbytes().decode()
     def __len__(self):
         return self.argc
     def __getitem__(self, index):
