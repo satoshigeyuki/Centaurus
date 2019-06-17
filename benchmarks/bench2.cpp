@@ -245,10 +245,15 @@ void *parseDictionary(const SymbolContext<char>& ctx)
 void *parseDictionaryEntry(const SymbolContext<char>& ctx)
 {
     JSONValue *s = ctx.value<JSONValue>(1);
-    JSONValue *o = (ctx.count() == 2) ? ctx.value<JSONValue>(2) : new JSONValue;
-    void *p = new std::pair<JSONString, JSONValue>(s->str(), std::move(*o));
+    void *p;
+    if (ctx.count() == 2) {
+      JSONValue *o = ctx.value<JSONValue>(2);
+      p = new std::pair<JSONString, JSONValue>(s->str(), std::move(*o));
+      delete o;
+    } else {
+      p = new std::pair<JSONString, JSONValue>(s->str(), JSONValue());
+    }
     delete s;
-    delete o;
     return p;
 }
 
