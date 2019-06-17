@@ -16,14 +16,16 @@ logger.setLevel(logging.DEBUG)
 class JsonListener(object):
     def parseNumber(self, ctx):
         try:
-            return float(ctx.read().strip())
+            return float(ctx.read())
         except ValueError:
             return 0.0
     def parseString(self, ctx):
         return ctx.read().strip()[1:-1]
-    def parseBoolean(self, ctx):
-        return ctx.read().strip().lower() == 'true'
-    def parseNone(self, ctx):
+    def parseTrue(self, ctx):
+        return True
+    def parseFalse(self, ctx):
+        return False
+    def parseNull(self, ctx):
         pass
     def parseObject(self, ctx):
         if ctx:

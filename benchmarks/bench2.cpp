@@ -203,17 +203,19 @@ void *parseString(const SymbolContext<char>& ctx)
     return new JSONValue(new std::string(start, len));
 }
 
-void *parseNone(const SymbolContext<char>& ctx)
+void *parseNull(const SymbolContext<char>& ctx)
 {
     return nullptr;
 }
 
-void *parseBoolean(const SymbolContext<char>& ctx)
+void *parseTrue(const SymbolContext<char>& ctx)
 {
-    if (ctx.read() == "true")
-        return new JSONValue(true);
-    else
-        return new JSONValue(false);
+  return new JSONValue(true);
+}
+
+void *parseFalse(const SymbolContext<char>& ctx)
+{
+  return new JSONValue(false);
 }
 
 void *parseList(const SymbolContext<char>& ctx)
@@ -324,13 +326,14 @@ int main(int argc, const char *argv[])
     context.attach(L"Content", parseContent);
     context.attach(L"Element", parseElement);*/
 
-    context.attach(L"None", parseNone);
+    context.attach(L"Null", parseNull);
     context.attach(L"String", parseString);
     context.attach(L"Dictionary", parseDictionary);
     context.attach(L"List", parseList);
     context.attach(L"DictionaryEntry", parseDictionaryEntry);
     context.attach(L"Number", parseNumber);
-    context.attach(L"Boolean", parseBoolean);
+    context.attach(L"True", parseTrue);
+    context.attach(L"False", parseFalse);
     context.attach(L"Object", parseObject);
 
     count.store(0);
