@@ -4,9 +4,7 @@ import time
 import multiprocessing as mp
 import logging
 import traceback
-from .Grammar import *
-from .CodeGen import *
-from .Runner import *
+from .CoreLib import *
 from .Listener import *
 
 class Stage1Process(object):

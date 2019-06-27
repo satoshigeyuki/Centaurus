@@ -5,9 +5,6 @@ import traceback
 import time
 import ctypes
 from io import StringIO
-from .CoreLib import CoreLib
-from .Grammar import Grammar
-from .Runner import *
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)

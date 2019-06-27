@@ -10,7 +10,7 @@ os.environ['CENTAURUS_DL_PATH'] = os.path.join(os.path.dirname(os.path.abspath(_
 
 from Centaurus import *
 
-logger = getLogger(__name__)
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 class XMLElement(object):
