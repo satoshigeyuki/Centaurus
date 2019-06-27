@@ -71,8 +71,6 @@ if __name__ == '__main__':
     app_name = os.path.basename(sys.argv[0]).split('.')[0]
     num_workers = int(sys.argv[1]) if len(sys.argv) > 1 else 1
     logging.basicConfig(filename='debug_{}-p{}.log'.format(app_name, num_workers), filemode='w', level=logging.DEBUG)
-    log_sink = LoggerManifold('')
-    log_sink.start()
 
     context = Context('../grammar/xml.cgr', num_workers)
     input_path = '../datasets/dblp.xml'
@@ -88,5 +86,3 @@ if __name__ == '__main__':
     if len(sys.argv) > 2 and sys.argv[2].lower() == 'debug':
         with open('result_{}.log'.format(app_name), 'w') as dst:
             print_xml(result, dst)
-
-    log_sink.stop()

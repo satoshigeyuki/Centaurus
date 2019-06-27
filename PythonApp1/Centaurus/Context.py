@@ -8,7 +8,6 @@ from .Grammar import *
 from .CodeGen import *
 from .Runner import *
 from .Listener import *
-from .Logger import *
 
 class Stage1Process(object):
     def __init__(self, context, core_affinity=-1):
@@ -53,8 +52,6 @@ class Stage2Process(object):
         if sys.platform.startswith('linux') and self.core_affinity >= 0:
             os.system("taskset -p -c %d %d" % (self.core_affinity, os.getpid()))
 
-        LoggerManifold.init_process(self.context.log_queue)
-
         logger = logging.getLogger("Centaurus.Stage2Process[%d]" % os.getpid())
         logger.setLevel(logging.DEBUG)
 
@@ -93,8 +90,6 @@ class Stage3Process(object):
         if sys.platform.startswith('linux') and self.core_affinity >= 0:
             os.system("taskset -p -c %d %d" % (self.core_affinity, os.getpid()))
 
-        LoggerManifold.init_process(self.context.log_queue)
-
         logger = logging.getLogger("Centaurus.Stage3Process[%d]" % os.getpid())
         logger.setLevel(logging.DEBUG)
 
@@ -126,7 +121,6 @@ class Context(object):
         for i in range(self.bank_num):
             self.channels.append(mp.Queue())
         self.drain = mp.Queue()
-        self.log_queue = LoggerManifold.get_queue()
         self.workers = []
         self.workers.append(Stage1Process(self))
         for i in range(worker_num):
