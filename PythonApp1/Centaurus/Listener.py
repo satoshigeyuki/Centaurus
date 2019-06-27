@@ -7,7 +7,6 @@ import ctypes
 from io import StringIO
 from .CoreLib import CoreLib
 from .Grammar import Grammar
-from .Exception import GrammarException
 from .Runner import *
 
 logger = logging.getLogger(__name__)
@@ -17,6 +16,9 @@ class SymbolEntry(ctypes.Structure):
     _fields_ = [('id', ctypes.c_int),
                 ('start', ctypes.c_long),
                 ('end', ctypes.c_long)]
+
+class GrammarException(Exception):
+    pass
 
 class BaseListenerAdapter(object):
     default_handler_name = 'defaultact'

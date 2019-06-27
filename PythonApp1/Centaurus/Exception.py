@@ -1,2 +1,0 @@
-class GrammarException(Exception):
-    pass
