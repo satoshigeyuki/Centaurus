@@ -4,8 +4,8 @@ import time
 import multiprocessing as mp
 import logging
 import traceback
-from .CoreLib import *
-from .Listener import *
+from .corelib import *
+from .listener import *
 
 class Stage1Process(object):
     def __init__(self, context, core_affinity=-1):
