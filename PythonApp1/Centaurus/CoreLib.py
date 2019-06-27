@@ -17,10 +17,6 @@ def load_dll():
 
 CoreLib = load_dll()
 
-class GrammarAction(object):
-    def __init__(self):
-        pass
-
 EnumMachinesCallback = ctypes.CFUNCTYPE(None, ctypes.c_wchar_p, ctypes.c_int)
 
 class Grammar(object):

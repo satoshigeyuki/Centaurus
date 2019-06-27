@@ -9,11 +9,6 @@ from io import StringIO
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-class SymbolEntry(ctypes.Structure):
-    _fields_ = [('id', ctypes.c_int),
-                ('start', ctypes.c_long),
-                ('end', ctypes.c_long)]
-
 class GrammarException(Exception):
     pass
 
