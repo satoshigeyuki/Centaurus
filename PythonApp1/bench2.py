@@ -8,7 +8,7 @@ import time
 
 os.environ['CENTAURUS_DL_PATH'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'build')
 
-from Centaurus import *
+from centaurus import *
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
