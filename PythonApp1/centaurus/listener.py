@@ -69,7 +69,7 @@ class Stage2ListenerAdapter(BaseListenerAdapter):
             sys.exit()
 
     def transfer_callback(self, index, new_index):
-        if self.values:
+        if self.values is not None:
             end_time = time.time()
             self.run_time += end_time - self.start_time
             logger.debug("Stage2 cumulative runtime = %f[s]" % (self.run_time,))
