@@ -72,11 +72,11 @@ if __name__ == '__main__':
     num_workers = int(sys.argv[1]) if len(sys.argv) > 1 else 1
     logging.basicConfig(filename='debug_{}-p{}.log'.format(app_name, num_workers), filemode='w', level=logging.DEBUG)
 
-    context = Context('../grammar/xml.cgr', num_workers)
+    context = Context('../grammar/xml.cgr')
     input_path = '../datasets/dblp.xml'
     listener = XMLListener()
     context.attach(listener)
-    context.start()
+    context.start(num_workers)
     start_time = time.time()
     result = context.parse(input_path)
     end_time = time.time()

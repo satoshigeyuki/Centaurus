@@ -4,6 +4,7 @@ import time
 import multiprocessing as mp
 import logging
 import traceback
+import itertools
 from .corelib import *
 from .listener import *
 
@@ -111,30 +112,25 @@ class Stage3Process(object):
         self.core_affinity = core_affinity
 
 class Context(object):
-    def __init__(self, grammar_path, worker_num):
+    bank_size = 8 * 1024 * 1024
+    def __init__(self, grammar_path):
         self.grammar_path = grammar_path
-        self.bank_size = 8 * 1024 * 1024
-        self.bank_num = worker_num * 2
-        self.channels = []
-        for i in range(self.bank_num):
-            self.channels.append(mp.Queue())
         self.drain = mp.Queue()
-        self.workers = []
-        self.workers.append(Stage1Process(self))
-        for i in range(worker_num):
-            self.workers.append(Stage2Process(self))
-        self.workers.append(Stage3Process(self))
-    def start(self):
-        for worker in self.workers:
-            worker.start()
+        self.serial_workers = (Stage1Process(self), Stage3Process(self))
+    def start(self, num_workers=1):
+        self.bank_num = num_workers * 2
+        self.channels = tuple(mp.Queue() for _ in range(self.bank_num))
+        self.parallel_workers = tuple(Stage2Process(self) for _ in range(num_workers))
+        for w in itertools.chain(self.serial_workers, self.parallel_workers):
+            w.attach(self.listener)
+            w.start()
     def parse(self, path):
-        for worker in self.workers:
-            worker.parse(path)
-        result = self.drain.get()
-        return result
+        for w in itertools.chain(self.serial_workers, self.parallel_workers):
+            w.parse(path)
+        return self.drain.get()
     def stop(self):
-        for worker in self.workers:
-            worker.stop()
+        for w in itertools.chain(self.serial_workers, self.parallel_workers):
+            w.stop()
+        del self.bank_num, self.channels, self.parallel_workers
     def attach(self, listener):
-        for worker in self.workers:
-            worker.attach(listener)
+        self.listener = listener
