@@ -8,7 +8,7 @@ import itertools
 from .corelib import *
 from .listener import *
 
-class Stage1Process(object):
+class Stage1Worker(object):
     def __init__(self, context, core_affinity=-1):
         self.context = context
         self.grammar = Grammar(context.grammar_path)
@@ -30,97 +30,69 @@ class Stage1Process(object):
     def set_core_affinity(self, core_affinity):
         self.core_affinity = core_affinity
 
-class Stage2Process(object):
+class SubprocessWorker:
     """Methods invoked from the master process"""
     def __init__(self, context, core_affinity=-1):
         self.context = context
         self.master_pid = os.getpid()
-        self.proc = mp.Process(target=self.worker)
+        self.proc = mp.Process(target=self.workloop)
         self.cmd_queue = mp.Queue()
         self.listener = None
         self.core_affinity = core_affinity
     def start(self):
         self.proc.start()
     def stop(self):
-        self.cmd_queue.put(('stop', ''))
+        self.cmd_queue.put(('stop', None))
         self.proc.join()
     def parse(self, path):
         self.cmd_queue.put(('parse', path))
+    def attach(self, listener):
+        self.listener = listener
+    def set_core_affinity(self, core_affinity):
+        self.core_affinity = core_affinity
+
     """Methods invoked from the worker process"""
-    def worker(self):
+    def workloop(self):
         if sys.platform.startswith('linux') and self.core_affinity >= 0:
-            os.system("taskset -p -c %d %d" % (self.core_affinity, os.getpid()))
-
-        logger = logging.getLogger("Centaurus.Stage2Process[%d]" % os.getpid())
-        logger.setLevel(logging.DEBUG)
-
+            os.system('taskset -p -c {} {}'.format(self.core_affinity, os.getpid()))
+        self.logger = logging.getLogger('Centaurus.{}[{}]'.format(type(self).__name__, os.getpid()))
+        self.logger.setLevel(logging.DEBUG)
         self.grammar = Grammar(self.context.grammar_path)
         while True:
-            cmd = self.cmd_queue.get()
-            if cmd[0] == 'stop':
-                return
-            elif cmd[0] == 'parse':
-                runner = Stage2Runner(cmd[1], self.context.bank_size, self.context.bank_num, self.master_pid)
-                adapter = Stage2ListenerAdapter(self.grammar, self.listener, self.context.channels, runner.get_window())
-                runner.attach(adapter.reduction_callback, adapter.transfer_callback)
-                runner.start()
-                runner.wait()
-    def attach(self, listener):
-        self.listener = listener
-    def set_core_affinity(self, core_affinity):
-        self.core_affinity = core_affinity
+            cmd, arg =  self.cmd_queue.get()
+            if cmd == 'stop':
+                break
+            elif cmd == 'parse':
+                self.parse_impl(arg)
 
-class Stage3Process(object):
-    def __init__(self, context, core_affinity=-1):
-        self.context = context
-        self.master_pid = os.getpid()
-        self.proc = mp.Process(target=self.worker)
-        self.cmd_queue = mp.Queue()
-        self.listener = None
-        self.core_affinity = core_affinity
-    def start(self):
-        self.proc.start()
-    def stop(self):
-        self.cmd_queue.put(('stop', ''))
-        self.proc.join()
-    def parse(self, path):
-        self.cmd_queue.put(('parse', path))
-    def worker(self):
-        if sys.platform.startswith('linux') and self.core_affinity >= 0:
-            os.system("taskset -p -c %d %d" % (self.core_affinity, os.getpid()))
+class Stage2Worker(SubprocessWorker):
+    def parse_impl(self, path):
+        runner = Stage2Runner(path, self.context.bank_size, self.context.bank_num, self.master_pid)
+        adapter = Stage2ListenerAdapter(self.grammar, self.listener, self.context.channels, runner.get_window())
+        runner.attach(adapter.reduction_callback, adapter.transfer_callback)
+        runner.start()
+        runner.wait()
 
-        logger = logging.getLogger("Centaurus.Stage3Process[%d]" % os.getpid())
-        logger.setLevel(logging.DEBUG)
-
-        self.grammar = Grammar(self.context.grammar_path)
-        while True:
-            cmd = self.cmd_queue.get()
-            if cmd[0] == 'stop':
-                return
-            elif cmd[0] == 'parse':
-                runner = Stage3Runner(cmd[1], self.context.bank_size, self.context.bank_num, self.master_pid)
-                adapter = Stage3ListenerAdapter(self.grammar, self.listener, self.context.channels, runner.get_window())
-                runner.attach(adapter.reduction_callback, adapter.transfer_callback)
-                runner.start()
-                runner.wait()
-                assert len(adapter.values) <= 1
-                self.context.drain.put(adapter.values[0] if adapter.values else None)
-            
-    def attach(self, listener):
-        self.listener = listener
-    def set_core_affinity(self, core_affinity):
-        self.core_affinity = core_affinity
+class Stage3Worker(SubprocessWorker):
+    def parse_impl(self, path):
+        runner = Stage3Runner(path, self.context.bank_size, self.context.bank_num, self.master_pid)
+        adapter = Stage3ListenerAdapter(self.grammar, self.listener, self.context.channels, runner.get_window())
+        runner.attach(adapter.reduction_callback, adapter.transfer_callback)
+        runner.start()
+        runner.wait()
+        assert len(adapter.values) <= 1
+        self.context.drain.put(adapter.values[0] if adapter.values else None)
 
 class Context(object):
     bank_size = 8 * 1024 * 1024
     def __init__(self, grammar_path):
         self.grammar_path = grammar_path
         self.drain = mp.Queue()
-        self.serial_workers = (Stage1Process(self), Stage3Process(self))
+        self.serial_workers = (Stage1Worker(self), Stage3Worker(self))
     def start(self, num_workers=1):
         self.bank_num = num_workers * 2
         self.channels = tuple(mp.Queue() for _ in range(self.bank_num))
-        self.parallel_workers = tuple(Stage2Process(self) for _ in range(num_workers))
+        self.parallel_workers = tuple(Stage2Worker(self) for _ in range(num_workers))
         for w in itertools.chain(self.serial_workers, self.parallel_workers):
             w.attach(self.listener)
             w.start()
