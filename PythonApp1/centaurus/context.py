@@ -11,8 +11,7 @@ from .listener import *
 class Stage1Worker(object):
     def __init__(self, context, core_affinity=-1):
         self.context = context
-        self.grammar = Grammar(context.grammar_path)
-        self.parser = Parser(self.grammar)
+        self.parser = Parser(self.context.grammar)
         self.runner = None
         self.core_affinity=core_affinity
     def parse(self, path):
@@ -57,7 +56,6 @@ class SubprocessWorker:
             os.system('taskset -p -c {} {}'.format(self.core_affinity, os.getpid()))
         self.logger = logging.getLogger('Centaurus.{}[{}]'.format(type(self).__name__, os.getpid()))
         self.logger.setLevel(logging.DEBUG)
-        self.grammar = Grammar(self.context.grammar_path)
         while True:
             cmd, arg =  self.cmd_queue.get()
             if cmd == 'stop':
@@ -68,7 +66,7 @@ class SubprocessWorker:
 class Stage2Worker(SubprocessWorker):
     def parse_impl(self, path):
         runner = Stage2Runner(path, self.context.bank_size, self.context.bank_num, self.master_pid)
-        adapter = Stage2ListenerAdapter(self.grammar, self.listener, self.context.channels, runner.get_window())
+        adapter = Stage2ListenerAdapter(self.context.grammar, self.listener, self.context.channels, runner.get_window())
         runner.attach(adapter.reduction_callback, adapter.transfer_callback)
         runner.start()
         runner.wait()
@@ -76,7 +74,7 @@ class Stage2Worker(SubprocessWorker):
 class Stage3Worker(SubprocessWorker):
     def parse_impl(self, path):
         runner = Stage3Runner(path, self.context.bank_size, self.context.bank_num, self.master_pid)
-        adapter = Stage3ListenerAdapter(self.grammar, self.listener, self.context.channels, runner.get_window())
+        adapter = Stage3ListenerAdapter(self.context.grammar, self.listener, self.context.channels, runner.get_window())
         runner.attach(adapter.reduction_callback, adapter.transfer_callback)
         runner.start()
         runner.wait()
@@ -86,7 +84,7 @@ class Stage3Worker(SubprocessWorker):
 class Context(object):
     bank_size = 8 * 1024 * 1024
     def __init__(self, grammar_path):
-        self.grammar_path = grammar_path
+        self.grammar = Grammar(grammar_path)
         self.drain = mp.Queue()
         self.serial_workers = (Stage1Worker(self), Stage3Worker(self))
     def start(self, num_workers=1):
