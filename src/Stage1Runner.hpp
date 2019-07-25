@@ -11,6 +11,7 @@ class Stage1Runner : public BaseRunner
   IParser *m_parser;
   int m_current_bank, m_counter;
   const void *m_result;
+  const bool is_dry;
 
 private:
   void thread_runner_impl()
@@ -43,8 +44,10 @@ private:
       WindowBankEntry *banks = (WindowBankEntry *)m_sub_window;
       banks[m_current_bank].number = m_counter++;
       banks[m_current_bank].state.store(WindowBankState::Stage1_Unlocked);
-      // Stage2--3を飛ばす場合
-      //banks[m_current_bank].state.store(WindowBankState::Free);
+      if (is_dry) {
+        // Stage2--3を飛ばす
+        banks[m_current_bank].state.store(WindowBankState::Free);
+      }
       m_current_bank = -1;
       release_semaphore();
     }
@@ -75,8 +78,8 @@ private:
   }
 
 public:
-  Stage1Runner(const char *filename, IParser *parser, size_t bank_size, int bank_num)
-    : BaseRunner(filename, bank_size, bank_num), m_parser(parser)
+  Stage1Runner(const char *filename, IParser *parser, size_t bank_size, int bank_num, bool is_dry=false)
+    : BaseRunner(filename, bank_size, bank_num), m_parser(parser), is_dry(is_dry)
   {
     acquire_memory(true);
     create_semaphore();

@@ -57,6 +57,10 @@ add_executable(citylots benchmarks/citylots.cpp)
 target_include_directories(citylots PRIVATE asmjit/src vc src)
 target_link_libraries(citylots libcentaurus)
 
+add_executable(dry benchmarks/dry.cpp)
+target_include_directories(dry PRIVATE asmjit/src vc src)
+target_link_libraries(dry libcentaurus)
+
 if(NOT MSVC)
     add_subdirectory(UnitTest1)
 	add_subdirectory(MsTestEmulator)
