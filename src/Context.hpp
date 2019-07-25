@@ -93,18 +93,17 @@ public:
 
         ParseContext<TCHAR> context{m_callbacks, nullptr};
 
-        std::atomic<int> reduction_count(0);
         std::vector<BaseRunner *> runners;
         runners.push_back(new Stage1Runner{ input_path, &m_parser, 8 * 1024 * 1024, worker_num * 2 });
         for (int i = 0; i < worker_num; i++)
         {
-            Stage2Runner *st2 = new Stage2Runner{input_path, 8 * 1024 * 1024, worker_num * 2, pid, static_cast<void *>(&context), &reduction_count};
+            Stage2Runner *st2 = new Stage2Runner{input_path, 8 * 1024 * 1024, worker_num * 2, pid, static_cast<void *>(&context) };
 
             st2->register_listener(callback);
 
             runners.push_back(st2);
         }
-        Stage3Runner *st3 = new Stage3Runner{ input_path, 8 * 1024 * 1024, worker_num * 2, pid, static_cast<void *>(&context), &reduction_count };
+        Stage3Runner *st3 = new Stage3Runner{ input_path, 8 * 1024 * 1024, worker_num * 2, pid, static_cast<void *>(&context) };
 
         st3->register_listener(callback);
 
@@ -120,9 +119,6 @@ public:
         {
             p->wait();
         }
-
-        std::cout << reduction_count.load() << " reductions" << std::endl;
-
         for (auto p : runners)
         {
             delete p;
