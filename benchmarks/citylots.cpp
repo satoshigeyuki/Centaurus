@@ -1,27 +1,12 @@
 #include <list>
 #include <unordered_map>
 #include <atomic>
-#include <assert.h>
-#include <sys/time.h>
+#include <cassert>
+#include <chrono>
 
 #include "Context.hpp"
 
 using namespace Centaurus;
-
-static uint64_t get_us_clock()
-{
-#if defined(CENTAURUS_BUILD_LINUX)
-	struct timeval tv;
-	gettimeofday(&tv, NULL);
-	return tv.tv_sec * 1000000 + tv.tv_usec;
-#elif defined(CENTAURUS_BUILD_WINDOWS)
-	LARGE_INTEGER qpc;
-	QueryPerformanceCounter(&qpc);
-	LARGE_INTEGER qpf;
-	QueryPerformanceFrequency(&qpf);
-	return (uint64_t)qpc.QuadPart * 1000000 / (uint64_t)qpf.QuadPart;
-#endif
-}
 
 enum class JSONType
 {
@@ -265,19 +250,6 @@ void *parseObject(const SymbolContext<char>& ctx)
 
     JSONValue *v = ctx.value<JSONValue>(1);
 
-    /*if (v->is_object())
-    {
-        const JSONObject& obj = v->object();
-
-        for (const auto& p : obj)
-        {
-            if (p.second.is_str())
-            {
-                std::cout << p.first << p.second.str() << std::endl;
-            }
-        }
-    }*/
-
     if (v->is_object() && v->has_item("type"))
     {
         if (v->operator[]("type").str() == "Feature")
@@ -291,7 +263,6 @@ void *parseObject(const SymbolContext<char>& ctx)
                     const JSONValue& street = properties.operator[]("STREET");
                     if (street.is_str())
                     {
-                        //std::cout << street.str() << std::endl;
                         if (street.str() != "JEFFERSON")
                         {
                             delete v;
@@ -299,13 +270,12 @@ void *parseObject(const SymbolContext<char>& ctx)
                         }
                         else
                         {
-                            count++;
+                            // count++;
                         }
                     }
                     else
                     {
-                        //std::cout << street << std::endl;
-                        count++;
+                        // count++;
                     }
                 }
             }
@@ -317,41 +287,35 @@ void *parseObject(const SymbolContext<char>& ctx)
 int main(int argc, const char *argv[])
 {
     if (argc < 1) return 1;
-    int worker_num = atoi(argv[1]);
+    int worker_num = std::atoi(argv[1]);
+    bool no_action = argc >= 3 && argv[2] == std::string("dry");
 
     const char *input_path = "datasets/citylots.json";
     const char *grammar_path = "grammar/json2.cgr";
 
     Context<char> context{grammar_path};
 
-    /*context.attach(L"ElementBody", parseElementBody);
-    context.attach(L"Name", parseName);
-    context.attach(L"Value", parseValue);
-    context.attach(L"Attribute", parseAttribute);
-    context.attach(L"Content", parseContent);
-    context.attach(L"Element", parseElement);*/
+    if (!no_action) {
+      context.attach(L"Null", parseNull);
+      context.attach(L"String", parseString);
+      context.attach(L"Dictionary", parseDictionary);
+      context.attach(L"List", parseList);
+      context.attach(L"DictionaryEntry", parseDictionaryEntry);
+      context.attach(L"Number", parseNumber);
+      context.attach(L"True", parseTrue);
+      context.attach(L"False", parseFalse);
+      context.attach(L"Object", parseObject);
+    }
 
-    context.attach(L"Null", parseNull);
-    context.attach(L"String", parseString);
-    context.attach(L"Dictionary", parseDictionary);
-    context.attach(L"List", parseList);
-    context.attach(L"DictionaryEntry", parseDictionaryEntry);
-    context.attach(L"Number", parseNumber);
-    context.attach(L"True", parseTrue);
-    context.attach(L"False", parseFalse);
-    context.attach(L"Object", parseObject);
+    using namespace std::chrono;
 
-    count.store(0);
-
-    uint64_t start_time = get_us_clock();
+    auto start = high_resolution_clock::now();;
 
     context.parse(input_path, worker_num);
 
-    uint64_t end_time = get_us_clock();
+    auto end = high_resolution_clock::now();;
 
-    //printf("%d elements found\n", count.load());
-    //printf("Elapsed time: %ld[us]\n", end_time - start_time);
-    printf("%d %ld\n", worker_num, end_time - start_time);
+    std::cout << worker_num << " " << duration_cast<milliseconds>(end - start).count() << std::endl;
 
     return 0;
 }

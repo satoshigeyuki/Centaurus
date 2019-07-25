@@ -1,24 +1,9 @@
-#include <sys/time.h>
 #include <map>
+#include <chrono>
 
 #include "Context.hpp"
 
 using namespace Centaurus;
-
-static uint64_t get_us_clock()
-{
-#if defined(CENTAURUS_BUILD_LINUX)
-	struct timeval tv;
-	gettimeofday(&tv, NULL);
-	return tv.tv_sec * 1000000 + tv.tv_usec;
-#elif defined(CENTAURUS_BUILD_WINDOWS)
-	LARGE_INTEGER qpc;
-	QueryPerformanceCounter(&qpc);
-	LARGE_INTEGER qpf;
-	QueryPerformanceFrequency(&qpf);
-	return (uint64_t)qpc.QuadPart * 1000000 / (uint64_t)qpf.QuadPart;
-#endif
-}
 
 class XMLElement;
 
@@ -220,8 +205,9 @@ void *parseAttribute(const SymbolContext<char>& ctx)
 void *parseElementBody(const SymbolContext<char>& ctx)
 {
     return new XMLElementBody(ctx);
-    //std::cout << "ElementBody" << ctx.count() << std::endl;
 }
+
+std::atomic<int> count;
 
 void *parseElement(const SymbolContext<char>& ctx)
 {
@@ -233,7 +219,7 @@ void *parseElement(const SymbolContext<char>& ctx)
         const XMLElement *year = elem->get_element("year");
         if (year != nullptr && year->get_content() == "1990")
         {
-            //printf("\"%s\" article\n", year->get_content().c_str());
+          // count++
         }
         else
         {
@@ -252,28 +238,32 @@ void *parseElement(const SymbolContext<char>& ctx)
 int main(int argc, const char *argv[])
 {
     if (argc < 1) return 1;
-    int worker_num = atoi(argv[1]);
+    int worker_num = std::atoi(argv[1]);
+    bool no_action = argc >= 3 && argv[2] == std::string("dry");
 
     const char *input_path = "datasets/dblp.xml";
     const char *grammar_path = "grammar/xml.cgr";
 
     Context<char> context{grammar_path};
 
-    context.attach(L"ElementBody", parseElementBody);
-    context.attach(L"Name", parseName);
-    context.attach(L"Value", parseValue);
-    context.attach(L"Attribute", parseAttribute);
-    context.attach(L"Content", parseContent);
-    context.attach(L"Element", parseElement);
+    if (!no_action) {
+      context.attach(L"ElementBody", parseElementBody);
+      context.attach(L"Name", parseName);
+      context.attach(L"Value", parseValue);
+      context.attach(L"Attribute", parseAttribute);
+      context.attach(L"Content", parseContent);
+      context.attach(L"Element", parseElement);
+    }
 
-    uint64_t start_time = get_us_clock();
+    using namespace std::chrono;
+
+    auto start = high_resolution_clock::now();;
 
     context.parse(input_path, worker_num);
 
-    uint64_t end_time = get_us_clock();
+    auto end = high_resolution_clock::now();;
 
-    //printf("Elapsed time: %ld[us]\n", end_time - start_time);
-    printf("%d %ld\n", worker_num, end_time - start_time);
+    std::cout << worker_num << " " << duration_cast<milliseconds>(end - start).count() << std::endl;
 
     return 0;
 }
