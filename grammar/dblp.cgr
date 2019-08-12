@@ -1,0 +1,19 @@
+grammar DBLP;
+
+Document : XmlDecl DocType Element ;
+XmlDecl : '<?xml' Attribute* '?>' ;
+DocType : '<!DOCTYPE' 'dblp' 'SYSTEM' Value '>' ;
+
+Element : '<' ElementName Attribute* '>' Text (Element Text)* /<[/][a-z]*>/ ;
+ElementName : 'address' | 'article' | 'author' | 'book' | 'booktitle' 
+            | 'cdrom' | 'chapter' | 'cite' | 'crossref' | 'dblp' 
+            | 'editor' | 'ee' | 'i' | 'incollection' | 'inproceedings' | 'isbn' 
+            | 'journal' | 'mastersthesis' | 'month' | 'note' | 'number' 
+            | 'pages' | 'phdthesis' | 'proceedings' | 'publisher' 
+            | 'school' | 'series' | 'sub' | 'sup' 
+            | 'title' | 'tt' | 'url' | 'volume' | 'www' | 'year' ;
+
+Text : /[^<]*+/ ;
+Attribute : AttrName '=' Value ;
+AttrName : /[a-zA-Z][a-zA-Z0-9_]*/ ;
+Value : /"[^"]*+"/ ;
