@@ -4,7 +4,7 @@ Document : XmlDecl DocType Element ;
 XmlDecl : '<?xml' Attribute* '?>' ;
 DocType : '<!DOCTYPE' 'dblp' 'SYSTEM' Value '>' ;
 
-Element : '<' ElementName Attribute* '>' Text (Element Text)* /<[/][a-z]*>/ ;
+Element : '<' ElementName (' ' Attribute)* '>' Text (Element Text)* '</' ElementName '>' ;
 ElementName : 'address' | 'article' | 'author' | 'book' | 'booktitle' 
             | 'cdrom' | 'chapter' | 'cite' | 'crossref' | 'dblp' 
             | 'editor' | 'ee' | 'i' | 'incollection' | 'inproceedings' | 'isbn' 
