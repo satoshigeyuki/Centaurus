@@ -1,7 +1,7 @@
 grammar XML;
-Document : Prolog DocType Element ;
-Prolog : '<?' Name Attribute* '?>' ;
-DocType : '<!' 'DOCTYPE' Name 'SYSTEM' Value '>' ;
+Document : XmlDecl? Comment* (DocType Comment*)? Element* ;
+XmlDecl : '<?xml' Attribute* '?>' ;
+DocType : '<!DOCTYPE' Name 'SYSTEM' Value '>' ;
 Comment : '<!--' /((-[^\-])|[^\-])*+/ '-->' ;
 Element : '<' Name Attribute* ElementBody ;
 ElementBody : '/>' | '>' Content (Element Content)* '</' Name '>' ;
