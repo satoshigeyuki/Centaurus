@@ -1,0 +1,32 @@
+grammar DBLP ;
+
+Document : XmlDecl DocType DblpRoot ;
+XmlDecl : '<?xml' Attribute* '?>' ;
+DocType : '<!DOCTYPE' 'dblp' 'SYSTEM' Value '>' ;
+
+DblpRoot : '<dblp>' PubRecord* '</dblp>' ;
+PubRecord : '<' PubRecordName Attribute* '>' BibInfo*  /<[/][a-z]*>/ ;
+PubRecordName : 'article' | 'book' | 'incollection' | 'inproceedings'
+              | 'mastersthesis' | 'phdthesis' | 'proceedings' | 'www' ;
+
+BibInfo : FlatBibInfo | HtmlBibInfo ;
+BibInfoName : 'address' | 'author' | 'cdrom' | 'chapter' | 'cite' | 'crossref'
+            | 'editor' | 'ee' | 'isbn' | 'journal' | 'month' | 'note' | 'number' 
+            | 'pages' | 'publisher' | 'school' | 'series' | 'url' | 'volume' | 'year' 
+            | 'booktitle' | 'title' ;
+
+FlatBibInfo : '<' FlatBibInfoName Attribute* '>' Text /<[/][a-z]*>/ ;
+FlatBibInfoName : 'address' | 'author' | 'cdrom' | 'chapter' | 'cite' | 'crossref'
+                | 'editor' | 'ee' | 'isbn' | 'journal' | 'month' | 'note' | 'number' 
+                | 'pages' | 'publisher' | 'school' | 'series' | 'url' | 'volume' | 'year' ;
+
+HtmlBibInfo : '<' HtmlBibInfoName Attribute* '>' Text (HtmlContent Text)* /<[/][a-z]*>/ ;
+HtmlBibInfoName : 'booktitle' | 'title' ;
+
+HtmlContent : '<' HtmlElemName '>' Text (HtmlContent Text)* /<[/][a-z]*>/ ;
+HtmlElemName : 'i' | 'sub' | 'sup' | 'tt' | 'ref' ;
+
+Text : /[^<]*+/ ;
+Attribute : AttrName '=' Value ;
+AttrName : /[a-zA-Z][a-zA-Z0-9_]*/ ;
+Value : /"[^"]*+"/ ;
