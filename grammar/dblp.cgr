@@ -12,7 +12,7 @@ NonArticleName : 'book' | 'incollection' | 'inproceedings'
 
 YearInfo : TargetYearInfo | OtherYearInfo ;
 TargetYearInfo : '<year>1990</year>' ;
-OtherYearInfo : '<year>' /([^1][0-9]*)|(1[^9][0-9]*)|(19[^9][0-9]*)|(199[^0][0-9]*)/ '</year>' ;
+OtherYearInfo : '<year>' /(([^1])|(1[^9])|(19[^9])|(199[^0]))[0-9]*/ '</year>' ;
 
 NonYearInfo : '<' NonYearInfoName Attribute* '>' Text (HtmlContent Text)* /<[/][a-z]+>/ ;
 NonYearInfoName : 'address' | 'author' | 'cdrom' | 'chapter' | 'cite' | 'crossref'
