@@ -139,9 +139,9 @@ public:
         //CloseHandle(hInputMapping);
         //CloseHandle(hInputFile);
 
-		sprintf_s(m_memory_name, "%s%s[%u]Window", PROGRAM_UUID, PROGRAM_NAME, pid);
+		sprintf(m_memory_name, "%s%s[%u]Window", PROGRAM_UUID, PROGRAM_NAME, pid);
 
-		sprintf_s(m_slave_lock_name, "%s%s[%u]SlaveLock", PROGRAM_UUID, PROGRAM_NAME, pid);
+		sprintf(m_slave_lock_name, "%s%s[%u]SlaveLock", PROGRAM_UUID, PROGRAM_NAME, pid);
 #elif defined(CENTAURUS_BUILD_LINUX)
         int fd = open(filename, O_RDONLY);
 
@@ -272,7 +272,7 @@ protected:
   void create_semaphore()
   {
 #if defined(CENTAURUS_BUILD_WINDOWS)
-    m_slave_lock = CreateSemaphoreExA(NULL, 0, bank_num, m_slave_lock_name, 0, SEMAPHORE_MODIFY_STATE);
+    m_slave_lock = CreateSemaphoreA(NULL, 0, m_bank_num, m_slave_lock_name);
 #elif defined(CENTAURUS_BUILD_LINUX)
     m_slave_lock = sem_open(m_slave_lock_name, O_CREAT | O_EXCL, 0600, 0);
 #endif

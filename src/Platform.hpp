@@ -2,6 +2,7 @@
 
 #if defined(CENTAURUS_BUILD_WINDOWS)
 #define CENTAURUS_CALLBACK __cdecl
+#include <Windows.h>
 #else
 #define CENTAURUS_CALLBACK 
 #endif
