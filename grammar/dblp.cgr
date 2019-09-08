@@ -1,17 +1,27 @@
 grammar DBLP;
 
-Document : XmlDecl DocType Element ;
+Document : XmlDecl DocType DblpRoot ;
 XmlDecl : '<?xml' Attribute* '?>' ;
 DocType : '<!DOCTYPE' 'dblp' 'SYSTEM' Value '>' ;
 
-Element : '<' ElementName (' ' Attribute)* '>' Text (Element Text)* '</' ElementName '>' ;
-ElementName : 'address' | 'article' | 'author' | 'book' | 'booktitle' 
-            | 'cdrom' | 'chapter' | 'cite' | 'crossref' | 'dblp' 
-            | 'editor' | 'ee' | 'i' | 'incollection' | 'inproceedings' | 'isbn' 
-            | 'journal' | 'mastersthesis' | 'month' | 'note' | 'number' 
-            | 'pages' | 'phdthesis' | 'proceedings' | 'publisher' 
-            | 'school' | 'series' | 'sub' | 'sup' 
-            | 'title' | 'tt' | 'url' | 'volume' | 'www' | 'year' ;
+DblpRoot : '<dblp>' (Article | NonArticle)* '</dblp>' ;
+Article : '<article' Attribute* '>' (YearInfo | NonYearInfo)*  '</article>' ;
+NonArticle : '<' NonArticleName Attribute* '>' (YearInfo | NonYearInfo)*  /<[/][a-z]+>/ ;
+NonArticleName : 'book' | 'incollection' | 'inproceedings'
+               | 'mastersthesis' | 'phdthesis' | 'proceedings' | 'www' ;
+
+YearInfo : TargetYearInfo | OtherYearInfo ;
+TargetYearInfo : '<year>1990</year>' ;
+OtherYearInfo : '<year>' /(([^1])|(1[^9])|(19[^9])|(199[^0]))[0-9]*/ '</year>' ;
+
+NonYearInfo : '<' NonYearInfoName Attribute* '>' Text (HtmlContent Text)* /<[/][a-z]+>/ ;
+NonYearInfoName : 'address' | 'author' | 'cdrom' | 'chapter' | 'cite' | 'crossref'
+                | 'editor' | 'ee' | 'isbn' | 'journal' | 'month' | 'note' | 'number' 
+                | 'pages' | 'publisher' | 'school' | 'series' | 'url' | 'volume'
+                | 'booktitle' | 'title' ;
+
+HtmlContent : '<' HtmlElemName '>' Text (HtmlContent Text)* /<[/][a-z]+>/ ;
+HtmlElemName : 'i' | 'sub' | 'sup' | 'tt' | 'ref' ;
 
 Text : /[^<]*+/ ;
 Attribute : AttrName '=' Value ;

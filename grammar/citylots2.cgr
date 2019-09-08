@@ -1,0 +1,24 @@
+grammar CityLotsEBNF;
+
+RootObject : '{' '"type"' ':' '"FeatureCollection"' ',' '"features"' ':' FeatureList '}' ;
+FeatureList : '[' FeatureDict (',' FeatureDict)* ']' ;
+FeatureDict : '{' '"type"' ':' '"Feature"' ',' '"properties"' ':' PropertyDict ',' '"geometry"' ':' Object '}' ;
+PropertyDict : '{' (TargetPropertyEntry | OtherPropertyEntry) (','  (TargetPropertyEntry | OtherPropertyEntry))* '}' ;
+
+TargetPropertyEntry : TargetPropertyKey ':' TargetPropertyValue ;
+OtherPropertyEntry : OtherPropertyKey ':' (String | Null)
+                   | TargetPropertyKey  ':' (OtherPropertyValue | Null) ; 
+TargetPropertyKey : '"STREET"' ;
+OtherPropertyKey : /"([^S"]|(S[^T"])|(ST[^R"])|(STR[^E"])|(STRE[^E"])|(STREE[^T"]))[^"]*+"/ ;
+TargetPropertyValue : '"JEFFERSON"' ;
+OtherPropertyValue : /"([^J"]|(J[^E"])|(JE[^F"])|(JEF[^F"])|(JEFF[^E"])|(JEFFE[^R"])|(JEFFER[^S"])|(JEFFERS[^O"])|(JEFFERSO[^N"]))[^"]*+"/ ;
+
+Object : Number | String | List | Dict | False | True | Null ;
+Number : /-?[0-9]++[.]?[0-9]*+/ ;
+String : /"([^\\"]|(\\["]))*+"/ ;
+List : '[' Object? (',' Object)* ']' ;
+DictEntry : String ':' Object ;
+Dict : '{' DictEntry? (',' DictEntry)* '}' ;
+False: 'false' ;
+True : 'true' ;
+Null : 'null' ;
