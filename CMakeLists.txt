@@ -53,8 +53,8 @@ add_executable(dblp benchmarks/dblp.cpp)
 target_include_directories(dblp PRIVATE asmjit/src vc src)
 target_link_libraries(dblp libcentaurus)
 
-add_executable(dblp_opt benchmarks/dblp_opt.cpp)
-target_include_directories(dblp_opt PRIVATE asmjit/src vc src)
+add_executable(dblp_opt benchmarks/dblp_opt.cpp pugixmltest/pugixml-1.9/src/pugixml.cpp)
+target_include_directories(dblp_opt PRIVATE asmjit/src vc src pugixmltest/pugixml-1.9/src)
 target_link_libraries(dblp_opt libcentaurus)
 
 add_executable(citylots benchmarks/citylots.cpp)

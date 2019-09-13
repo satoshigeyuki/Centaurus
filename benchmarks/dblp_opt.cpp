@@ -1,7 +1,8 @@
-#include <map>
+#include <vector>
 #include <chrono>
 
 #include "Context.hpp"
+#include "pugixml.hpp"
 
 using namespace Centaurus;
 
@@ -12,19 +13,30 @@ void *parseDocument(const SymbolContext<char>& ctx)
   return ctx.value<int>(1);
 }
 
-static std::vector<std::string*> result;
+static std::vector<std::vector<std::string>*> result;
 
 void *parseDblpRoot(const SymbolContext<char>& ctx)
 {
   for (int i = 0; i < ctx.count(); i++) {
-    result.emplace_back(ctx.value<std::string>(i+1));
+    result.emplace_back(ctx.value<std::vector<std::string>>(i+1));
   }
   return &result;
 }
 
 void *parseArticle(const SymbolContext<char>& ctx)
 {
-  return (ctx.count() > 0) ? new std::string(ctx.start(), ctx.len()) : nullptr;
+  if (ctx.count() > 0) {
+    auto ret = new std::vector<std::string>;
+    pugi::xml_document doc;
+    doc.load_buffer(ctx.start(), ctx.end() -  ctx.start());
+    pugi::xpath_node_set authors = doc.select_nodes("/article/author/text()");
+    for (auto& node : authors) {
+      ret->emplace_back(node.node().value());
+    }
+    return ret;
+  } else {
+    return nullptr;
+  }
 }
 
 void *parseYearInfo(const SymbolContext<char>& ctx)
@@ -72,8 +84,11 @@ int main(int argc, const char *argv[])
       std::cout << result.size() << std::endl;
     }
     if (debug) {
-      for (auto p : result) {
-        std::cout << *p << std::endl;
+      for (auto vec_ptr : result) {
+        for (auto& author : *vec_ptr) {
+          std::cout << author << std::endl;
+        }
+        std::cout << std::endl;
       }
     }
     return 0;

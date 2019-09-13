@@ -5,6 +5,7 @@ import os
 import logging
 import multiprocessing as mp
 import time
+import re
 
 os.environ['CENTAURUS_DL_PATH'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'build')
 
@@ -20,7 +21,7 @@ class DBLPListener(object):
         return list(ctx)
     def parseArticle(self, ctx):
         if ctx:
-            return ctx.read()
+            return re.findall('<author.*>([^<]*)</author>', ctx.read())
     def parseYearInfo(self, ctx):
         return True if ctx else None
     def parseTargetYearInfo(self, ctx):
