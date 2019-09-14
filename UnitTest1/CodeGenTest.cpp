@@ -12,8 +12,8 @@
 
 #if defined(CENTAURUS_BUILD_LINUX)
 #include <sys/time.h>
-#include <sys/stat.h>
 #endif
+#include <sys/stat.h>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -62,11 +62,7 @@ public:
         DFA<char> dfa(nfa);
 
         FILE *logfile;
-#if defined(CENTAURUS_BUILD_WINDOWS)
-        fopen_s(&logfile, "dfaroutine.asm", "w");
-#else
         logfile = fopen("dfaroutine.asm", "w");
-#endif
         asmjit::FileLogger logger(logfile);
 
         DFARoutineEM64T<char> dfa_routine(dfa);
@@ -236,9 +232,9 @@ public:
         std::vector<Stage2Runner *> st2_runners;
         for (int i = 0; i < worker_num; i++)
         {
-            st2_runners.push_back(new Stage2Runner{input_path, &chaser, 8 * 1024 * 1024, worker_num, pid});
+            st2_runners.push_back(new Stage2Runner{input_path, 8 * 1024 * 1024, worker_num, pid});
         }
-        Stage3Runner runner3{ input_path, &chaser, 8 * 1024 * 1024, worker_num, pid };
+        Stage3Runner runner3{ input_path, 8 * 1024 * 1024, worker_num, pid };
 
 		uint64_t start_time = get_us_clock();
 
