@@ -3,7 +3,12 @@
 run='numactl --localalloc --cpunodebind=0'
 trials=15
 
-apps='citylots dblp'
+if [ $# -eq 0 ]
+then
+    apps='citylots_opt2 dblp_opt'
+else
+    apps=$@
+fi
 
 for app in ${apps}
 do
