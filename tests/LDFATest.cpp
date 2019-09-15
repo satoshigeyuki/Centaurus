@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "Grammar.hpp"
 #include "LookaheadDFA.hpp"
 
