@@ -17,7 +17,12 @@
 !vc
 !vc/PyCentaurus
 !UnitTest1
+!tests
 !src
+!src/core
+!src/tool
+!src/pydll
+!src/python
 !asmjit
 !MsTestEmulator
 !grammar

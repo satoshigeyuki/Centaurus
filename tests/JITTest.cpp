@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include <CppUnitTest.h>
 #include "asmjit/asmjit.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
