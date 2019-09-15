@@ -1,5 +1,26 @@
 #include "CompositeATN.hpp"
 #include "LookaheadDFA.hpp"
+#include "Encoding.hpp"
+
+namespace
+{
+std::string make_include_path(const std::string& base_path, const std::string& dest_path)
+{
+    size_t last_slash_pos = base_path.find_last_of('/');
+
+    if (last_slash_pos == base_path.length())
+    {
+        return dest_path;
+    }
+
+    if (dest_path.length() >= 1 && dest_path[0] == '/')
+    {
+        return dest_path;
+    }
+
+    return base_path.substr(0, last_slash_pos + 1) + dest_path;
+}
+}
 
 namespace Centaurus
 {
@@ -20,11 +41,13 @@ void Grammar<TCHAR>::print_ldfa(std::wostream& os, const ATNPath& path) const
     ldfa.print(os, path.leaf_id().str());
 }
 template<typename TCHAR>
-void Grammar<TCHAR>::parse(Stream& stream)
+int Grammar<TCHAR>::parse(const char *filename, int machine_id)
 {
-    int machine_id = 1;
+    std::wifstream grammar_file(filename, std::ios::in);
 
-	std::unordered_map<Identifier, ATNMachine<TCHAR> > fragments;
+    std::wstring grammar_str(std::istreambuf_iterator<wchar_t>(grammar_file), {});
+
+    Stream stream(std::move(grammar_str));
 
     while (1)
     {
@@ -50,7 +73,7 @@ void Grammar<TCHAR>::parse(Stream& stream)
                 throw stream.unexpected(ch);
             stream.discard();
         }
-        else if (id == L"options")
+        /*else if (id == L"options")
         {
             GrammarOptions options(stream);
         }
@@ -61,7 +84,31 @@ void Grammar<TCHAR>::parse(Stream& stream)
 			ATNMachine<TCHAR> atn(-1, stream);
 
 			fragments.emplace(frag_id, std::move(atn));
-		}
+		}*/
+        else if (id == L"include")
+        {
+            wchar_t ch = stream.skip_whitespace();
+
+            if (ch != L'"')
+                throw stream.unexpected(ch);
+            stream.discard();
+
+            std::wstring wide_path;
+
+            for (ch = stream.get(); ch != L'"'; ch = stream.get())
+            {
+                wide_path.push_back(ch);
+            }
+
+            ch = stream.skip_whitespace();
+            if (ch != L';')
+                throw stream.unexpected(ch);
+            stream.discard();
+
+            Encoder enc{};
+
+            machine_id = parse(make_include_path(filename, enc.wcstombs(wide_path)), machine_id);
+        }
         else
         {
             ATNMachine<TCHAR> atn(machine_id++, stream);
@@ -76,8 +123,13 @@ void Grammar<TCHAR>::parse(Stream& stream)
 
         //m_networks.emplace(Identifier(stream), ATN<TCHAR>(stream));
     }
+    return machine_id;
 }
-
+template<typename TCHAR>
+int Grammar<TCHAR>::parse(const std::string& filename, int machine_id)
+{
+    return parse(filename.c_str(), machine_id);
+}
 template<typename TCHAR>
 bool Grammar<TCHAR>::verify() const
 {

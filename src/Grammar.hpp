@@ -54,30 +54,19 @@ template<typename TCHAR> class Grammar : public IGrammar
 	Identifier m_grammar_name;
     GrammarOptions m_options;
 public:
-    void parse(Stream& stream);
+    int parse(const char *filename, int machine_id = 1);
+    int parse(const std::string& filename, int machine_id = 1);
     const ATNNode<TCHAR>& resolve(const ATNPath& path) const
     {
         return m_networks.at(path.leaf_id()).get_node(path.leaf_index());
     }
 public:
-    Grammar(Stream& stream)
-    {
-        parse(stream);
-
-        optimize();
-    }
     Grammar()
     {
     }
     Grammar(const char *path)
     {
-        std::wifstream grammar_file(path);
-
-        std::wstring grammar_str(std::istreambuf_iterator<wchar_t>(grammar_file), {});
-
-        Stream stream(std::move(grammar_str));
-
-        parse(stream);
+        parse(path);
 
         optimize();
     }

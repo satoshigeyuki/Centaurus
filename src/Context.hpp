@@ -75,13 +75,13 @@ class Context
 public:
     Context(const char *filename)
     {
-        std::wifstream grammar_file(filename, std::ios::in);
+        /*std::wifstream grammar_file(filename, std::ios::in);
 
         std::wstring wide_grammar(std::istreambuf_iterator<wchar_t>(grammar_file), {});
 
-        Stream stream(std::move(wide_grammar));
+        Stream stream(std::move(wide_grammar));*/
 
-        m_grammar.parse(stream);
+        m_grammar.parse(filename);
 
         m_parser.init(m_grammar);
 

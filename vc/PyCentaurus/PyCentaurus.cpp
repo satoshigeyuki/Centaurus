@@ -25,9 +25,7 @@ namespace Centaurus __attribute__((visibility("default")))
 {
 	CENTAURUS_EXPORT(IGrammar *) GrammarCreate(const char *filename)
 	{
-		Stream grammar_stream(readwcsfromfile(filename));
-
-		return new Grammar<unsigned char>(grammar_stream);
+		return new Grammar<unsigned char>(filename);
 	}
 
 	CENTAURUS_EXPORT(void) GrammarDestroy(IGrammar *grammar)

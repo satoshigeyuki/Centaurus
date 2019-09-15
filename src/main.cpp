@@ -28,21 +28,6 @@ std::locale::id std::codecvt<char32_t, char, std::mbstate_t>::id;
 
 using namespace Centaurus;
 
-static IGrammar *LoadGrammar(const char *filename)
-{
-    std::wifstream grammar_file(filename, std::ios::in);
-
-    std::wstring grammar_str(std::istreambuf_iterator<wchar_t>(grammar_file), {});
-
-    Stream stream(std::move(grammar_str));
-
-    Grammar<unsigned char> *grammar = new Grammar<unsigned char>();
-
-    grammar->parse(stream);
-
-    return grammar;
-}
-
 int main(int argc, char *argv[])
 {
     std::wcin.imbue(std::locale(""));
@@ -201,7 +186,7 @@ int main(int argc, char *argv[])
 
             if (source == GrammarFileSource)
             {
-                std::unique_ptr<IGrammar> grammar(LoadGrammar(grammar_path.c_str()));
+                std::unique_ptr<IGrammar> grammar(new Grammar<char>(grammar_path.c_str()));
                 
                 switch (mode)
                 {
