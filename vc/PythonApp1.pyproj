@@ -4,7 +4,8 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>38a139a7-f4e4-4eac-add8-b1a41c296b69</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>PythonApp1.py</StartupFile>
+    <StartupFile>
+    </StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -26,32 +27,6 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="bench.py" />
-    <Compile Include="bench2.py" />
-    <Compile Include="Centaurus\Context.py">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Centaurus\Listener.py">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Centaurus\__init__.py">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Centaurus\CodeGen.py">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Centaurus\CoreLib.py">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Centaurus\Grammar.py">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="PythonApp1.py" />
-    <Compile Include="Centaurus\Runner.py">
-      <SubType>Code</SubType>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\vc\Centaurus.vcxproj">
       <Name>Centaurus</Name>
       <Project>{5845a67d-1501-40a7-8192-a13ce0530446}</Project>
@@ -59,10 +34,17 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <InterpreterReference Include="Global|PythonCore|2.7" />
+  </ItemGroup>
+  <ItemGroup>
     <Folder Include="Centaurus\" />
   </ItemGroup>
   <ItemGroup>
-    <InterpreterReference Include="Global|PythonCore|2.7" />
+    <Compile Include="Centaurus\context.py" />
+    <Compile Include="Centaurus\corelib.py" />
+    <Compile Include="Centaurus\listener.py" />
+    <Compile Include="Centaurus\Logger.py" />
+    <Compile Include="Centaurus\__init__.py" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in

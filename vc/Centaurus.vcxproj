@@ -98,6 +98,7 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard>stdcpp14</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <AdditionalIncludeDirectories>..\src\core;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -113,7 +114,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <LanguageStandard>stdcpp14</LanguageStandard>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\src\core;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <StringPooling>true</StringPooling>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
@@ -180,34 +181,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\src\ATN.hpp" />
-    <ClInclude Include="..\src\BaseListener.hpp" />
-    <ClInclude Include="..\src\BaseRunner.hpp" />
-    <ClInclude Include="..\src\CharClass.hpp" />
-    <ClInclude Include="..\src\Charset.hpp" />
-    <ClInclude Include="..\src\clipp.h" />
-    <ClInclude Include="..\src\CodeGenCommonEM64T.hpp" />
-    <ClInclude Include="..\src\CodeGenEM64T.hpp" />
-    <ClInclude Include="..\src\CodeGenInterface.hpp" />
-    <ClInclude Include="..\src\CodeGenUtilsEM64T.hpp" />
-    <ClInclude Include="..\src\CompositeATN.hpp" />
-    <ClInclude Include="..\src\DFA.hpp" />
-    <ClInclude Include="..\src\Encoding.hpp" />
-    <ClInclude Include="..\src\Exception.hpp" />
-    <ClInclude Include="..\src\Grammar.hpp" />
-    <ClInclude Include="..\src\Identifier.hpp" />
-    <ClInclude Include="..\src\LookaheadDFA.hpp" />
-    <ClInclude Include="..\src\NFA.hpp" />
-    <ClInclude Include="..\src\Stage1Runner.hpp" />
-    <ClInclude Include="..\src\Stage2Runner.hpp" />
-    <ClInclude Include="..\src\Stage3Runner.hpp" />
-    <ClInclude Include="..\src\Stream.hpp" />
-    <ClInclude Include="..\src\UnifiedRunner.hpp" />
-    <ClInclude Include="..\src\Util.hpp" />
-    <ClInclude Include="stdafx.h" />
-    <ClInclude Include="targetver.h" />
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="..\asmjit\src\asmjit\base\arch.cpp" />
     <ClCompile Include="..\asmjit\src\asmjit\base\assembler.cpp" />
     <ClCompile Include="..\asmjit\src\asmjit\base\codebuilder.cpp" />
@@ -238,17 +211,45 @@
     <ClCompile Include="..\asmjit\src\asmjit\x86\x86operand.cpp" />
     <ClCompile Include="..\asmjit\src\asmjit\x86\x86operand_regs.cpp" />
     <ClCompile Include="..\asmjit\src\asmjit\x86\x86regalloc.cpp" />
-    <ClCompile Include="..\src\ATN.cpp" />
-    <ClCompile Include="..\src\CharClass.cpp" />
-    <ClCompile Include="..\src\CodeGenEM64T.cpp" />
-    <ClCompile Include="..\src\CompositeATN.cpp" />
-    <ClCompile Include="..\src\Grammar.cpp" />
-    <ClCompile Include="..\src\main.cpp" />
-    <ClCompile Include="..\src\Stage1Runner.cpp" />
-    <ClCompile Include="..\src\Stage2Runner.cpp" />
-    <ClCompile Include="..\src\Stage3Runner.cpp" />
-    <ClCompile Include="..\src\Util.cpp" />
+    <ClCompile Include="..\src\core\ATN.cpp" />
+    <ClCompile Include="..\src\core\CharClass.cpp" />
+    <ClCompile Include="..\src\core\CodeGenEM64T.cpp" />
+    <ClCompile Include="..\src\core\CompositeATN.cpp" />
+    <ClCompile Include="..\src\core\Grammar.cpp" />
+    <ClCompile Include="..\src\core\Util.cpp" />
+    <ClCompile Include="..\src\tool\main.cpp" />
     <ClCompile Include="stdafx.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\src\core\ATN.hpp" />
+    <ClInclude Include="..\src\core\BaseListener.hpp" />
+    <ClInclude Include="..\src\core\BaseRunner.hpp" />
+    <ClInclude Include="..\src\core\CharClass.hpp" />
+    <ClInclude Include="..\src\core\Charset.hpp" />
+    <ClInclude Include="..\src\core\CodeGenCommonEM64T.hpp" />
+    <ClInclude Include="..\src\core\CodeGenEM64T.hpp" />
+    <ClInclude Include="..\src\core\CodeGenInterface.hpp" />
+    <ClInclude Include="..\src\core\CodeGenUtilsEM64T.hpp" />
+    <ClInclude Include="..\src\core\CompositeATN.hpp" />
+    <ClInclude Include="..\src\core\Context.hpp" />
+    <ClInclude Include="..\src\core\DFA.hpp" />
+    <ClInclude Include="..\src\core\Encoding.hpp" />
+    <ClInclude Include="..\src\core\Exception.hpp" />
+    <ClInclude Include="..\src\core\Grammar.hpp" />
+    <ClInclude Include="..\src\core\Identifier.hpp" />
+    <ClInclude Include="..\src\core\Input.hpp" />
+    <ClInclude Include="..\src\core\LookaheadDFA.hpp" />
+    <ClInclude Include="..\src\core\NFA.hpp" />
+    <ClInclude Include="..\src\core\Platform.hpp" />
+    <ClInclude Include="..\src\core\Stage1Runner.hpp" />
+    <ClInclude Include="..\src\core\Stage2Runner.hpp" />
+    <ClInclude Include="..\src\core\Stage2RunnerNonRecursive.hpp" />
+    <ClInclude Include="..\src\core\Stage3Runner.hpp" />
+    <ClInclude Include="..\src\core\Stage3RunnerNonRecursive.hpp" />
+    <ClInclude Include="..\src\core\StageRunners.hpp" />
+    <ClInclude Include="..\src\core\Stream.hpp" />
+    <ClInclude Include="..\src\core\Util.hpp" />
+    <ClInclude Include="..\src\tool\clipp.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

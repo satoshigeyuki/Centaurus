@@ -1,21 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27130.2026
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29215.179
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Centaurus", "Centaurus.vcxproj", "{5845A67D-1501-40A7-8192-A13CE0530446}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UnitTest1", "..\UnitTest1\UnitTest1.vcxproj", "{825533C1-6455-45A2-A676-67EA0C379EB3}"
-	ProjectSection(ProjectDependencies) = postProject
-		{5845A67D-1501-40A7-8192-A13CE0530446} = {5845A67D-1501-40A7-8192-A13CE0530446}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UnitTest1", "UnitTest1.vcxproj", "{825533C1-6455-45A2-A676-67EA0C379EB3}"
 EndProject
-Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "PythonApp1", "..\PythonApp1\PythonApp1.pyproj", "{38A139A7-F4E4-4EAC-ADD8-B1A41C296B69}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PyCentaurus", "PyCentaurus.vcxproj", "{58639AF9-5A14-4522-9C9D-1A86A9992348}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PyCentaurus", "PyCentaurus\PyCentaurus.vcxproj", "{58639AF9-5A14-4522-9C9D-1A86A9992348}"
-	ProjectSection(ProjectDependencies) = postProject
-		{5845A67D-1501-40A7-8192-A13CE0530446} = {5845A67D-1501-40A7-8192-A13CE0530446}
-	EndProjectSection
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "PythonApp1", "PythonApp1.pyproj", "{38A139A7-F4E4-4EAC-ADD8-B1A41C296B69}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -47,12 +41,6 @@ Global
 		{825533C1-6455-45A2-A676-67EA0C379EB3}.Release|x64.Build.0 = Release|x64
 		{825533C1-6455-45A2-A676-67EA0C379EB3}.Release|x86.ActiveCfg = Release|Win32
 		{825533C1-6455-45A2-A676-67EA0C379EB3}.Release|x86.Build.0 = Release|Win32
-		{38A139A7-F4E4-4EAC-ADD8-B1A41C296B69}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{38A139A7-F4E4-4EAC-ADD8-B1A41C296B69}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{38A139A7-F4E4-4EAC-ADD8-B1A41C296B69}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{38A139A7-F4E4-4EAC-ADD8-B1A41C296B69}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{38A139A7-F4E4-4EAC-ADD8-B1A41C296B69}.Release|x64.ActiveCfg = Release|Any CPU
-		{38A139A7-F4E4-4EAC-ADD8-B1A41C296B69}.Release|x86.ActiveCfg = Release|Any CPU
 		{58639AF9-5A14-4522-9C9D-1A86A9992348}.Debug|Any CPU.ActiveCfg = Debug|Win32
 		{58639AF9-5A14-4522-9C9D-1A86A9992348}.Debug|x64.ActiveCfg = Debug|x64
 		{58639AF9-5A14-4522-9C9D-1A86A9992348}.Debug|x64.Build.0 = Debug|x64
@@ -63,6 +51,12 @@ Global
 		{58639AF9-5A14-4522-9C9D-1A86A9992348}.Release|x64.Build.0 = Release|x64
 		{58639AF9-5A14-4522-9C9D-1A86A9992348}.Release|x86.ActiveCfg = Release|Win32
 		{58639AF9-5A14-4522-9C9D-1A86A9992348}.Release|x86.Build.0 = Release|Win32
+		{38A139A7-F4E4-4EAC-ADD8-B1A41C296B69}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{38A139A7-F4E4-4EAC-ADD8-B1A41C296B69}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{38A139A7-F4E4-4EAC-ADD8-B1A41C296B69}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{38A139A7-F4E4-4EAC-ADD8-B1A41C296B69}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{38A139A7-F4E4-4EAC-ADD8-B1A41C296B69}.Release|x64.ActiveCfg = Release|Any CPU
+		{38A139A7-F4E4-4EAC-ADD8-B1A41C296B69}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

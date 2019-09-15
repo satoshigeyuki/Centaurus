@@ -1,6 +1,7 @@
 ﻿// PyCentaurus.cpp : DLL アプリケーション用にエクスポートされる関数を定義します。
 //
 
+#include "stdafx.h"
 #include "Grammar.hpp"
 #include "Util.hpp"
 #ifdef PYCENTAURUS
