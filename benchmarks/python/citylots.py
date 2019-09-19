@@ -6,7 +6,8 @@ import logging
 import multiprocessing as mp
 import time
 
-os.environ['CENTAURUS_DL_PATH'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'build')
+os.environ['CENTAURUS_DL_PATH'] = '../../build'
+sys.path.append('../../src/python/')
 
 from centaurus import *
 
@@ -44,8 +45,8 @@ if __name__ == '__main__':
     num_workers = int(sys.argv[1]) if len(sys.argv) > 1 else 1
     logging.basicConfig(filename='debug_{}-p{}.log'.format(app_name, num_workers), filemode='w', level=logging.DEBUG)
 
-    context = Context('../grammar/json2.cgr')
-    input_path = '../datasets/citylots.json'
+    context = Context('../../grammars/json2.cgr')
+    input_path = '../../datasets/citylots.json'
     listener = JsonListener()
     context.attach(listener)
     context.start(num_workers)
