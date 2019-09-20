@@ -241,8 +241,8 @@ int main(int argc, const char *argv[])
     int worker_num = std::atoi(argv[1]);
     bool no_action = argc >= 3 && argv[2] == std::string("dry");
 
-    const char *input_path = "datasets/dblp.xml";
-    const char *grammar_path = "grammar/xml.cgr";
+    const char *input_path = "../../datasets/dblp.xml";
+    const char *grammar_path = "../../grammars/xml.cgr";
 
     Context<char> context{grammar_path};
 

@@ -57,8 +57,8 @@ int main(int argc, const char *argv[])
     bool size = argc >= 3 && argv[2] == std::string("size");
     bool debug = argc >= 3 && argv[2] == std::string("debug");
 
-    const char *input_path = "datasets/dblp.xml";
-    const char *grammar_path = "grammar/dblp.cgr";
+    const char *input_path = "../../datasets/dblp.xml";
+    const char *grammar_path = "../../grammars/dblp.cgr";
 
     Context<char> context{grammar_path};
 

@@ -290,8 +290,8 @@ int main(int argc, const char *argv[])
     int worker_num = std::atoi(argv[1]);
     bool no_action = argc >= 3 && argv[2] == std::string("dry");
 
-    const char *input_path = "datasets/citylots.json";
-    const char *grammar_path = "grammar/json2.cgr";
+    const char *input_path = "../../datasets/citylots.json";
+    const char *grammar_path = "../../grammars/json2.cgr";
 
     Context<char> context{grammar_path};
 
