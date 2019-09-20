@@ -45,7 +45,7 @@ if __name__ == '__main__':
     num_workers = int(sys.argv[1]) if len(sys.argv) > 1 else 1
     logging.basicConfig(filename='debug_{}-p{}.log'.format(app_name, num_workers), filemode='w', level=logging.DEBUG)
 
-    context = Context('../../grammars/json2.cgr')
+    context = Context('../../grammars/json.cgr')
     input_path = '../../datasets/citylots.json'
     listener = JsonListener()
     context.attach(listener)
