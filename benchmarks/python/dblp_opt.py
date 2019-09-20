@@ -51,4 +51,4 @@ if __name__ == '__main__':
     if len(sys.argv) > 2 and sys.argv[2].lower() == 'debug':
         with open('result_{}.log'.format(app_name), 'w') as dst:
             for s in result:
-                print(s)
+                print(s, file=dst)
