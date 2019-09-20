@@ -5,15 +5,7 @@ FeatureList : '[' FeatureObject (',' FeatureObject)* ']' ;
 FeatureObject : TargetFeatureObject | OtherFeatureObject ;
 TargetFeatureObject : '{' '"type"' ':' '"Feature"' ',' '"properties"' ':' TargetPropertyDictionary ',' '"geometry"' ':' Object '}' ;
 OtherFeatureObject  : '{' '"type"' ':' '"Feature"' ',' '"properties"' ':' OtherPropertyDictionary  ',' '"geometry"' ':' Object '}' ;
-TargetPropertyDictionary : '{' '"MAPBLKLOT"' ':' String ',' '"BLKLOT"' ':' String ',' '"BLOCK_NUM"' ':' String ',' '"LOT_NUM"' ':' String ',' '"FROM_ST"' ':' (String | Null) ',' '"TO_ST"' ':' (String | Null) ',' '"STREET"' ':' '"JEFFERSON"' (',' DictionaryEntry)* '}' ;
-OtherPropertyDictionary  : '{' '"MAPBLKLOT"' ':' String ',' '"BLKLOT"' ':' String ',' '"BLOCK_NUM"' ':' String ',' '"LOT_NUM"' ':' String ',' '"FROM_ST"' ':' (String | Null) ',' '"TO_ST"' ':' (String | Null) ',' '"STREET"' ':' /("([^J"]|(J[^E"])|(JE[^F"])|(JEF[^F"])|(JEFF[^E"])|(JEFFE[^R"])|(JEFFER[^S"])|(JEFFERS[^O"])|(JEFFERSO[^N"])|(JEFFERSON[^"]))[^"]*")|(null)/ (',' DictionaryEntry)* '}' ;
+TargetPropertyDictionary : '{' '"MAPBLKLOT"' ':' String ',' '"BLKLOT"' ':' String ',' '"BLOCK_NUM"' ':' String ',' '"LOT_NUM"' ':' String ',' '"FROM_ST"' ':' (String | Null) ',' '"TO_ST"' ':' (String | Null) ',' '"STREET"' ':' '"JEFFERSON"' (',' DictEntry)* '}' ;
+OtherPropertyDictionary  : '{' '"MAPBLKLOT"' ':' String ',' '"BLKLOT"' ':' String ',' '"BLOCK_NUM"' ':' String ',' '"LOT_NUM"' ':' String ',' '"FROM_ST"' ':' (String | Null) ',' '"TO_ST"' ':' (String | Null) ',' '"STREET"' ':' /("([^J"]|(J[^E"])|(JE[^F"])|(JEF[^F"])|(JEFF[^E"])|(JEFFE[^R"])|(JEFFER[^S"])|(JEFFERS[^O"])|(JEFFERSO[^N"])|(JEFFERSON[^"]))[^"]*")|(null)/ (',' DictEntry)* '}' ;
 
-Object : Number | String | List | Dictionary | False | True | Null;
-Number : /-?[0-9]++[.]?[0-9]*+/ ;
-String : /"([^\\"]|(\\["]))*+"/ ;
-List : '[' Object? (',' Object)* ']' ;
-DictionaryEntry : String ':' Object ;
-Dictionary : '{' DictionaryEntry? (',' DictionaryEntry)* '}' ;
-False: 'false' ;
-True : 'true' ;
-Null : 'null' ;
+include "json.cgr";
