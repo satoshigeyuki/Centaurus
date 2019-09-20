@@ -14,8 +14,6 @@
 !.gitmodules
 !CMakeLists.txt
 !*.sh
-!vc
-!vc/PyCentaurus
 !UnitTest1
 !tests
 !src
@@ -25,11 +23,10 @@
 !src/python
 !asmjit
 !MsTestEmulator
-!grammar
-!python
-!python/Centaurus
-!PythonApp1
-!PythonApp1/Centaurus
+!grammars
+!datasets
 !benchmarks
 !benchmarks/cpp
 !benchmarks/python
+!rapidjson
+!pugixml
