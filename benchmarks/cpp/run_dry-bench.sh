@@ -2,16 +2,16 @@
 
 trials=15
 
-app=dry_dblp
-rm -fv perf_${app}.log
+rm -fv perf_dblp_stage1.log perf_dblp_dry.log
 for _ in $(seq $trials)
 do
-    ./build/dry ../../grammars/dblp.cgr ../../datasets/dblp.xml >> perf_${app}.log
+    ./build/dry ../../grammars/dblp.cgr ../../datasets/dblp.xml >> perf_dblp_stage1.log
+    ./build/dblp_opt 1 dry >> perf_dblp_dry.log
 done
 
-app=dry_citylots
-rm -fv perf_${app}.log
+rm -fv perf_citylots_stage1.log perf_citylots_dry.log
 for _ in $(seq $trials)
 do
-    ./build/dry ../../grammars/citylots2.cgr  ../../datasets/citylots.json >> perf_${app}.log
+    ./build/dry ../../grammars/citylots2.cgr  ../../datasets/citylots.json >> perf_citylots_stage1.log
+    ./build/citylots_opt2 1 dry >> perf_citylots_dry.log
 done
