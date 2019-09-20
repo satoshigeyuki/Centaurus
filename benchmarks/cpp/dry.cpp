@@ -6,8 +6,8 @@ int main(int argc, const char *argv[])
 {
     if (argc < 3) return 0;
 
-    const char *input_path = argv[1];
-    const char *grammar_path = argv[2];
+    const char *grammar_path = argv[1];
+    const char *input_path = argv[2];
 
     Centaurus::Context<char> context{grammar_path};
 
