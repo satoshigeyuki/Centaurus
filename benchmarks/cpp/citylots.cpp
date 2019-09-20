@@ -298,9 +298,9 @@ int main(int argc, const char *argv[])
     if (!no_action) {
       context.attach(L"Null", parseNull);
       context.attach(L"String", parseString);
-      context.attach(L"Dictionary", parseDictionary);
+      context.attach(L"Dict", parseDictionary);
       context.attach(L"List", parseList);
-      context.attach(L"DictionaryEntry", parseDictionaryEntry);
+      context.attach(L"DictEntry", parseDictionaryEntry);
       context.attach(L"Number", parseNumber);
       context.attach(L"True", parseTrue);
       context.attach(L"False", parseFalse);

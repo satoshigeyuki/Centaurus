@@ -33,11 +33,11 @@ class JsonListener(object):
             return ctx[0]
     def parseList(self, ctx):
         return list(ctx)
-    def parseDictionary(self, ctx):
+    def parseDict(self, ctx):
         ret = dict(ctx)
         if ret.get('type') != 'Feature' or ret.get('properties', {}).get('STREET') == 'JEFFERSON':
             return ret
-    def parseDictionaryEntry(self, ctx):
+    def parseDictEntry(self, ctx):
         return tuple(ctx) if len(ctx) == 2 else (ctx[0], None)
 
 if __name__ == '__main__':

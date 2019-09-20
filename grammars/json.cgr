@@ -1,12 +1,11 @@
 grammar JSON;
 
-Object : Number | String | List | Dictionary | True | False | Null;
+Object : Number | String | List | Dict | False | True | Null ;
 Number : /-?[0-9]++[.]?[0-9]*+/ ;
-//String : /"([\t\n\r !#-\[\]-~]|(\\["]))*"/ ;
 String : /"([^\\"]|(\\["]))*+"/ ;
 List : '[' Object? (',' Object)* ']' ;
-DictionaryEntry : String ':' Object ;
-Dictionary : '{' DictionaryEntry? (',' DictionaryEntry)* '}' ;
+DictEntry : String ':' Object ;
+Dict : '{' DictEntry? (',' DictEntry)* '}' ;
+False: 'false' ;
 True : 'true' ;
-False : 'false' ;
 Null : 'null' ;
