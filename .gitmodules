@@ -6,7 +6,7 @@
 	url = https://github.com/ihr486/MsTestEmulator.git
 [submodule "rapidjson"]
 	path = rapidjson
-	url = git@github.com:Tencent/rapidjson.git
+	url = https://github.com/Tencent/rapidjson.git
 [submodule "pugixml"]
 	path = pugixml
-	url = git@github.com:zeux/pugixml.git
+	url = https//github.com/zeux/pugixml.git
