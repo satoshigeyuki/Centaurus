@@ -68,6 +68,22 @@ add_executable(dry benchmarks/cpp/dry.cpp)
 target_include_directories(dry PRIVATE asmjit/src src/core)
 target_link_libraries(dry libcentaurus)
 
+add_executable(pugixml_load_file benchmarks/cpp/pugixml_load_file.cpp pugixml/src/pugixml.cpp)
+target_include_directories(pugixml_load_file PRIVATE pugixml/src)
+
+add_executable(pugixml_load_mmap benchmarks/cpp/pugixml_load_mmap.cpp pugixml/src/pugixml.cpp)
+target_include_directories(pugixml_load_mmap PRIVATE pugixml/src benchmarks/cpp/)
+
+add_executable(rapidjson_load_file benchmarks/cpp/rapidjson_load_file.cpp)
+target_include_directories(rapidjson_load_file PRIVATE rapidjson/include)
+
+add_executable(rapidjson_load_mmap benchmarks/cpp/rapidjson_load_mmap.cpp)
+target_include_directories(rapidjson_load_mmap PRIVATE rapidjson/include benchmarks/cpp/)
+
+add_executable(rapidjson_read benchmarks/cpp/rapidjson_read.cpp)
+target_include_directories(rapidjson_read PRIVATE rapidjson/include benchmarks/cpp/)
+
+
 if(NOT MSVC)
     add_subdirectory(tests)
 	add_subdirectory(MsTestEmulator)
