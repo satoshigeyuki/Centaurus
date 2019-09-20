@@ -36,7 +36,7 @@ if __name__ == '__main__':
     logging.basicConfig(filename='debug_{}-p{}.log'.format(app_name, num_workers), filemode='w', level=logging.DEBUG)
 
     start_time = time.time()
-    context = Context('../../grammars/citylots2.cgr')
+    context = Context('../../grammars/citylots.cgr')
     end_time = time.time()
     gen_time = end_time - start_time
     input_path = '../../datasets/citylots.json'

@@ -53,7 +53,7 @@ int main(int argc, const char *argv[])
   int worker_num = atoi(argv[1]);
 
   const char *input_path = "../../datasets/citylots.json";
-  const char *grammar_path = "../../grammars/citylots2.cgr";
+  const char *grammar_path = "../../grammars/citylots.cgr";
 
   Context<char> context{grammar_path};
 
