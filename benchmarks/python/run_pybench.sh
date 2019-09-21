@@ -5,7 +5,7 @@ trials=15
 
 if [ $# -eq 0 ]
 then
-    apps='citylots_opt2 dblp_opt'
+    apps='citylots dblp'
 else
     apps=$@
 fi
