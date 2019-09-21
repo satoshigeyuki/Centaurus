@@ -52,17 +52,17 @@ add_executable(dblp_std benchmarks/cpp/dblp_std.cpp)
 target_include_directories(dblp_std PRIVATE asmjit/src src/core)
 target_link_libraries(dblp_std libcentaurus)
 
-add_executable(dblp_opt benchmarks/cpp/dblp_opt.cpp pugixml/src/pugixml.cpp)
-target_include_directories(dblp_opt PRIVATE asmjit/src src/core pugixml/src)
-target_link_libraries(dblp_opt libcentaurus)
+add_executable(dblp benchmarks/cpp/dblp.cpp pugixml/src/pugixml.cpp)
+target_include_directories(dblp PRIVATE asmjit/src src/core pugixml/src)
+target_link_libraries(dblp libcentaurus)
 
 add_executable(citylots_std benchmarks/cpp/citylots_std.cpp)
 target_include_directories(citylots_std PRIVATE asmjit/src src/core)
 target_link_libraries(citylots_std libcentaurus)
 
-add_executable(citylots_opt2 benchmarks/cpp/citylots_opt2.cpp)
-target_include_directories(citylots_opt2 PRIVATE asmjit/src src/core rapidjson/include)
-target_link_libraries(citylots_opt2 libcentaurus)
+add_executable(citylots benchmarks/cpp/citylots.cpp)
+target_include_directories(citylots PRIVATE asmjit/src src/core rapidjson/include)
+target_link_libraries(citylots libcentaurus)
 
 add_executable(dry benchmarks/cpp/dry.cpp)
 target_include_directories(dry PRIVATE asmjit/src src/core)
