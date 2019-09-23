@@ -16,15 +16,13 @@ int main(int argc, const char *argv[])
     grammar.parse(grammar_path);
     parser.init(grammar);
 
-    const int bank_size = 8 * 1024 * 1024;
     const int worker_num = 1;
-    const int num_banks = worker_num * 2;
 
     using namespace std::chrono;
 
     auto start = high_resolution_clock::now();;
 
-    Centaurus::Stage1Runner runner{input_path, &parser, bank_size, num_banks, true, result_captured};
+    Centaurus::Stage1Runner runner{input_path, &parser, 8 * 1024 * 1024,  worker_num * 2, true, result_captured};
     runner.start();
     runner.wait();
 
@@ -33,7 +31,8 @@ int main(int argc, const char *argv[])
     if (result_captured) {
       for (auto& chunk : runner.result_chunks()) {
         for (auto& m : chunk) {
-          std::cout << m.get_machine_id() << "\t" << m.get_offset() << std::endl;
+          if (m.get_machine_id() == 0 && m.get_offset() == 0) break;
+          std::cout << (m.is_start_marker() ? "S " : "E ") << m.get_machine_id() << "\t" << m.get_offset() << std::endl;
         }
       }
     } else {
