@@ -2,31 +2,10 @@
 
 #include "BaseRunner.hpp"
 #include "Stage2RunnerNonRecursive.hpp"
+#include "PtrRange.hpp"
 
 namespace Centaurus
 {
-
-namespace detail
-{
-
-template <typename A>
-struct PtrRange {
-  A * ptr;
-  const std::size_t n;
-  PtrRange() : ptr(nullptr), n(0) {}
-  PtrRange(A *ptr, std::size_t n) : ptr(ptr), n(n) {}
-        A* begin()        { return ptr; }
-  const A* begin()  const { return ptr; }
-  const A* cbegin() const { return ptr; }
-        A* end()          { return ptr + n; }
-  const A* end()    const { return ptr + n; }
-  const A* cend()   const { return ptr + n; }
-        A& operator[](std::size_t i)       { return ptr[i]; }
-  const A& operator[](std::size_t i) const { return ptr[i]; }
-  std::size_t size() const { return n; }
-};
-
-}
 
 class Stage3Runner : public NonRecursiveReductionRunner
 {
@@ -83,13 +62,13 @@ private:
     while ((current_bank = acquire_bank()) != nullptr) {
 #if PYCENTAURUS
       auto bank_ptr = reinterpret_cast<uint64_t*>(current_bank);
-      detail::PtrRange<CSTMarker> starts_next(reinterpret_cast<CSTMarker*>(bank_ptr + 1), bank_ptr[0]);
+      detail::ConstPtrRange<CSTMarker> starts_next(reinterpret_cast<CSTMarker*>(bank_ptr + 1), bank_ptr[0]);
       bank_ptr += starts_next.size() + 1;
-      detail::PtrRange<CSTMarker> ends_next(reinterpret_cast<CSTMarker*>(bank_ptr + 1), bank_ptr[0]);
+      detail::ConstPtrRange<CSTMarker> ends_next(reinterpret_cast<CSTMarker*>(bank_ptr + 1), bank_ptr[0]);
       bank_ptr += ends_next.size() + 1;
-      detail::PtrRange<semantic_value_type> values_next(bank_ptr + 1, bank_ptr[0]);
+      detail::ConstPtrRange<semantic_value_type> values_next(bank_ptr + 1, bank_ptr[0]);
       bank_ptr += values_next.size() + 1;
-      detail::PtrRange<detail::StackEntryTag> tags_next(reinterpret_cast<detail::StackEntryTag*>(bank_ptr + 1), bank_ptr[0]);
+      detail::ConstPtrRange<detail::StackEntryTag> tags_next(reinterpret_cast<detail::StackEntryTag*>(bank_ptr + 1), bank_ptr[0]);
 #else
       auto& stack_tuple = **reinterpret_cast<std::decay<decltype(stack_tuple_base)>::type**>(current_bank);
       auto& starts_next = std::get<0>(stack_tuple);
