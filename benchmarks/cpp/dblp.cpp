@@ -51,7 +51,7 @@ void *parseTargetYearInfo(const SymbolContext<char>& ctx)
 
 int main(int argc, const char *argv[])
 {
-    if (argc < 1) return 1;
+    if (argc < 2) return 1;
     int worker_num = std::atoi(argv[1]);
     bool no_action = argc >= 3 && argv[2] == std::string("dry");
     bool size = argc >= 3 && argv[2] == std::string("size");

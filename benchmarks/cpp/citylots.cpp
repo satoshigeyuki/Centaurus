@@ -49,7 +49,7 @@ void *parseTargetPropertyEntry(const SymbolContext<char>& ctx)
 
 int main(int argc, const char *argv[])
 {
-  if (argc < 1) return 1;
+  if (argc < 2) return 1;
   int worker_num = atoi(argv[1]);
 
   const char *input_path = "../../datasets/citylots.json";
