@@ -15,11 +15,16 @@ namespace Centaurus
 namespace detail
 {
 
-enum struct StackEntryTag : std::int_fast8_t {
-  START_MARKER = 1,
-  END_MARKER = 2,
-  VALUE = 3,
+enum struct StackEntryTag : int {
+  START_MARKER = -1,
+  END_MARKER = 0,
+  VALUE = 1,
 };
+
+constexpr inline bool isValueTag(StackEntryTag tag)
+{
+  return static_cast<int>(tag) >= static_cast<int>(detail::StackEntryTag::VALUE);
+}
 
 }
 
@@ -50,7 +55,11 @@ protected:
   static void push_value(const semantic_value_type val, std::vector<semantic_value_type>& values, std::vector<detail::StackEntryTag>& tags)
   {
     if (val == 0) return;
-    tags.emplace_back(detail::StackEntryTag::VALUE);
+    if (detail::isValueTag(tags.back())) {
+      tags.back() = static_cast<detail::StackEntryTag>(static_cast<int>(tags.back()) + 1);
+    } else {
+      tags.emplace_back(detail::StackEntryTag::VALUE);
+    }
 #if PYCENTAURUS
     values.front()++;
 #else
@@ -61,11 +70,13 @@ protected:
   {
     assert(marker.get_machine_id() == starts.back().get_machine_id());
     SymbolEntry sym(marker.get_machine_id(), starts.back().get_offset(), marker.get_offset());
-    int value_count = 0;
-    while (tags.back() == detail::StackEntryTag::VALUE) {
+    int value_count = static_cast<int>(tags.back());
+    if (value_count < 1) {
+      value_count = 0;
+    } else {
       tags.pop_back();
-      value_count++;
     }
+    assert(tags.empty() || !detail::isValueTag(tags.back()));
 #if PYCENTAURUS
     auto new_val = m_listener(&sym, values.data(), value_count, m_listener_context);
 #else

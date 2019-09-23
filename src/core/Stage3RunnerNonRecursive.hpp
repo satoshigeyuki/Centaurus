@@ -105,19 +105,14 @@ private:
         case detail::StackEntryTag::START_MARKER:
           push_start_marker(*starts_next_it++, starts, tags);
           break;
-        case detail::StackEntryTag::VALUE:
-#if PYCENTAURUS
-          push_value(1, values, tags);
-#else
-          push_value(*values_next_it++, values, tags);
-#endif
-          break;
         case detail::StackEntryTag::END_MARKER: {
           assert(!starts.empty());
           reduce_by_end_marker(*ends_next_it++, starts, values, tags);
         } break;
         default:
-          assert(false);
+          assert(detail::isValueTag(cur_tag));
+          append_value(values_next_it, static_cast<int>(cur_tag), values, tags);
+          break;
         }
       }
       assert(starts_next_it == starts_next.end());
@@ -141,6 +136,23 @@ private:
 #endif
     return result;
   }
+  template <typename Iterator>
+  static void append_value(Iterator& values_next_it, int n, std::vector<semantic_value_type>& values, std::vector<detail::StackEntryTag>& tags)
+  {
+    if (detail::isValueTag(tags.back())) {
+      tags.back() = static_cast<detail::StackEntryTag>(static_cast<int>(tags.back()) + n);
+    } else {
+      tags.emplace_back(static_cast<detail::StackEntryTag>(n));
+    }
+#if PYCENTAURUS
+    values.front() += n;
+#else
+    for (int i = 0; i < n; i++) {
+      values.emplace_back(*values_next_it++);
+    }
+#endif
+  }
+
   void *acquire_bank()
   {
     WindowBankEntry *banks = reinterpret_cast<WindowBankEntry *>(m_sub_window);
