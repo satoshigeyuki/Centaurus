@@ -2,6 +2,10 @@
 
 #include "BaseRunner.hpp"
 #include "CodeGenInterface.hpp"
+#include "PtrRange.hpp"
+
+#include <cstring>
+#include <vector>
 
 namespace Centaurus
 {
@@ -12,6 +16,8 @@ class Stage1Runner : public BaseRunner
   int m_current_bank, m_counter;
   const void *m_result;
   const bool is_dry;
+  const bool is_result_captured;
+  std::vector<detail::ConstPtrRange<CSTMarker>> result_chunks_;
 
 private:
   void thread_runner_impl()
@@ -41,12 +47,17 @@ private:
   void release_bank()
   {
     if (m_current_bank != -1) {
+      if (is_result_captured) {
+        auto chunk_ptr = new char[m_bank_size];
+        std::memcpy(chunk_ptr, static_cast<char*>(m_main_window) + m_bank_size * m_current_bank, m_bank_size);
+        result_chunks_.emplace_back(reinterpret_cast<CSTMarker*>(chunk_ptr), m_bank_size / 8);
+      }
       WindowBankEntry *banks = (WindowBankEntry *)m_sub_window;
       banks[m_current_bank].number = m_counter++;
-      banks[m_current_bank].state.store(WindowBankState::Stage1_Unlocked);
       if (is_dry) {
-        // Stage2--3を飛ばす
-        banks[m_current_bank].state.store(WindowBankState::Free);
+        banks[m_current_bank].state.store(WindowBankState::Free); // skip Stages 2 & 3
+      } else {
+        banks[m_current_bank].state.store(WindowBankState::Stage1_Unlocked);
       }
       m_current_bank = -1;
       release_semaphore();
@@ -78,8 +89,8 @@ private:
   }
 
 public:
-  Stage1Runner(const char *filename, IParser *parser, size_t bank_size, int bank_num, bool is_dry=false)
-    : BaseRunner(filename, bank_size, bank_num), m_parser(parser), is_dry(is_dry)
+  Stage1Runner(const char *filename, IParser *parser, size_t bank_size, int bank_num, bool is_dry=false, bool is_result_captured=false)
+    : BaseRunner(filename, bank_size, bank_num), m_parser(parser), is_dry(is_dry), is_result_captured(is_result_captured)
   {
     acquire_memory(true);
     create_semaphore();
@@ -101,6 +112,10 @@ public:
   const void *get_result() const
   {
     return m_result;
+  }
+  const std::vector<detail::ConstPtrRange<CSTMarker>>& result_chunks() const
+  {
+    return result_chunks_;
   }
 };
 }

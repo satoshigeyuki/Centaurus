@@ -124,12 +124,6 @@ public:
             delete p;
         }
     }
-    void dry_parse(const char *input_path, int worker_num = 1)
-    {
-        Stage1Runner st{ input_path, &m_parser, 8 * 1024 * 1024, worker_num * 2, true };
-        st.start();
-        st.wait();
-    }
     void attach(const Identifier& id, CppReductionCallback<TCHAR> callback)
     {
         int index = m_grammar.get_machine_id(id);
