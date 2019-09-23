@@ -43,7 +43,7 @@ public:
   {
     return reinterpret_cast<const TCHAR *>(context.m_window) + symbol.end;
   }
-  const int len() const
+  int len() const
   {
     return symbol.end - symbol.start;
   }
