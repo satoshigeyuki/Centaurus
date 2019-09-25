@@ -7,7 +7,7 @@ import multiprocessing as mp
 import time
 import re
 
-os.environ['CENTAURUS_DL_PATH'] = 'build'
+os.environ['CENTAURUS_DL_PATH'] = '../../build'
 sys.path.append('../../src/python/')
 
 from centaurus import *
