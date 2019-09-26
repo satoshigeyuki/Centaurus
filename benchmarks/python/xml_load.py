@@ -4,7 +4,7 @@ import time
 # import xml.parsers.expat
 from xml.dom.minidom import parse
 
-input_path = '../datasets/dblp.xml'
+input_path = '../../datasets/dblp.xml'
 start_time = time.time()
 # parser = xml.parsers.expat.ParserCreate()
 # result = parser.Parse(open(input_path, 'rb').read())
