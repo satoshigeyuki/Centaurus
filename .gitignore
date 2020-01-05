@@ -14,6 +14,7 @@
 !.gitmodules
 !CMakeLists.txt
 !*.sh
+!*.md
 !UnitTest1
 !tests
 !src
@@ -23,6 +24,9 @@
 !src/python
 !asmjit
 !MsTestEmulator
+!MsTestEmulator/include
+!MsTestEmulator/scripts
+!MsTestEmulator/runner
 !grammars
 !datasets
 !benchmarks
