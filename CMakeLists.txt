@@ -83,6 +83,9 @@ target_include_directories(rapidjson_load_mmap PRIVATE rapidjson/include benchma
 add_executable(rapidjson_read benchmarks/cpp/rapidjson_read.cpp)
 target_include_directories(rapidjson_read PRIVATE rapidjson/include benchmarks/cpp/)
 
+add_executable(calc_test benchmarks/cpp/calc.cpp)
+target_include_directories(calc_test PRIVATE asmjit/src src/core)
+target_link_libraries(calc_test libcentaurus)
 
 if(NOT MSVC)
     add_subdirectory(tests)

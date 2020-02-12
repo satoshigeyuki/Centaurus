@@ -1,0 +1,6 @@
+grammar CALC;
+
+INPUT : EXPR '=' ;
+EXPR : TERM ('+' EXPR)? ;
+TERM : FACT ('*' TERM)? ;
+FACT : /[0-9]+/ | '(' EXPR ')' ;
