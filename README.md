@@ -1,27 +1,29 @@
 Centaurus
 ========
 
-Centaurus is a performance-oriented LL(\*)-S parser generator.
+Centaurus is a performance-oriented LL(\*)-S parser generator for large-scale data processing.
+LL(\*)-S (S stands for *scannerless*) grammars are a subset of token-level LL(\*) grammars such that the corresponding character-level LL(\*) ones exist; Centaurus thus generates scannerless parsers from token-level LL(\*) grammars.
+Centaurus parsers run actions in parallel for scalability.
 
 ## How to use
 
-Unlike famous parser generators like Bison and ANTLR, Centaurus is not packaged as a standalone executable. Instead of generating the parser source code from the grammar ahead of runtime (AOT), Centaurus directly generates the parser code at runtime (JIT). This operation principle requires Centaurus to be linked to the user program as a library.
+Unlike common parser generators like Bison and ANTLR, Centaurus is not packaged as a standalone tool. Instead of generating the source code of parsers to be included in the client code ahead of time, Centaurus generates the native code ready to run at runtime. Centaurus thus forms a linkable library.
 
-To generate a parser with Centaurus, the user program simply has to pass a grammar in the form of string to the library. Centaurus will generate the executable parser code on-the-fly which is returned encapsulated in an opaque object. The actual parsing could be performed by attaching semantic actions and handing the input data to this object.
+To generate a parser with Centaurus, the client code simply has to pass a grammar file to the library. Then, Centaurus generates the executable parser code immediately in the form of an opaque object if it succeeds in LL(\*)-S parser construction. After attaching semantic actions to the parser object, the parser object is ready to handle the input data.
 
-Build instructions for the library could be found below.
+Build instructions for the library as follows.
 
 ## Operating principle and key features
 
-### JIT parser generation
+### Runtime parser generation
 
-Centaurus compiles a CFG-style grammar written in EBNF into an executable parser code at runtime. The direct translation from the grammar to the executable code enables the loophole optimizer to utilize the structural information of the grammar, which is lost when the grammar is translated into source code.
+Centaurus compiles a CFG-style grammar written in EBNF to an executable parser code at runtime. The direct translation from the grammar to the executable code allows the optimizer of Centaurus to utilize the structural information of the grammar, which is difficult to obtain from the parser source code generated in a common manner.
 
-One of the loophole optimization techniques implemented in the current version is efficient regex matching using the SSE4.2 instruction set. When instructed, the JIT code generator will employ the PCMPISTRI instruction to match against an indefinite repetition of character classes, which is denoted using Kleene stars. This optimization will enable the generated program to read up to 16 characters in a single instruction, as opposed to one when the optimization does not take place.
+One of the loop optimization techniques implemented in the current version is efficient regex matching using the SSE4.2 instruction set. When instructed, the runtime code generator will employ the PCMPISTRI instruction to match against an indefinite repetition of character classes, which is denoted using Kleene stars. This optimization will enable the generated program to read up to 16 characters in a single instruction, as opposed to one when the optimization does not take place.
 
 ### Parallel reduction
 
-The generated parser itself does not get any meaningful job done; all it does is test if the input data matches the grammar specification. To actually parse the data, semantic actions must be attached to the grammar, which stipulate how the data are extracted and converted so the user program could utilize them.
+The generated parser itself does not get so meaningful job done; all it does is test if the input data matches the grammar specification. To process the data along the grammar, we must attach semantic actions to it, which stipulate how the data are extracted and converted so the user program could utilize them.
 
 With Centaurus, the semantic actions are defined in the form of callbacks within the user program, which are invoked from within the library as the parsing process goes on.
 
